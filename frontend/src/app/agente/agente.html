@@ -1,0 +1,41 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Supervisión del agente IA</h2>
+        <div class="flex">
+          <input class="input" style="width:220px" [(ngModel)]="q" (keyup.enter)="cargar()" placeholder="Buscar por teléfono o nombre" />
+          <button class="btn" (click)="cargar()">Buscar</button>
+          <button class="btn small" (click)="cargar()">⟳</button>
+        </div>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead><tr><th>Contacto</th><th>Paciente</th><th>Intención</th><th>Agente</th><th>Estado</th><th>Último mensaje</th><th></th></tr></thead>
+        <tbody>
+          @for (c of items; track c.id) {
+            <tr>
+              <td>{{ c.nombreContacto || c.telefono }}</td>
+              <td>{{ c.pacienteNombre || '—' }}</td>
+              <td><span class="badge info">{{ c.intencion || '—' }}</span></td>
+              <td>
+                <button class="btn small" [ngClass]="c.agenteActivo ? '' : 'primary'" (click)="toggleAgente(c)">
+                  {{ c.agenteActivo ? 'On' : 'Off' }}
+                </button>
+              </td>
+              <td><span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span></td>
+              <td class="muted" style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+                {{ c.ultimoMensaje || '—' }} <span style="font-size:11px">({{ c.ultimoMensajeAt | date:'HH:mm' }})</span>
+              </td>
+              <td>
+                <button class="btn small danger" (click)="transferir(c)">Transferir a humano</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty">Sin conversaciones del agente.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  

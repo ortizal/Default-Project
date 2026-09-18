@@ -1,0 +1,98 @@
+<div class="contenido">
+  <mat-toolbar class="toolbar" color="primary">
+    <span>Citas</span>
+    <span class="spacer"></span>
+    <span class="filtro-label">Desde</span>
+    <app-date class="on-primary" [(ngModel)]="desde" (change)="cargar(0)" />
+    <span class="filtro-label">Hasta</span>
+    <app-date class="on-primary" [(ngModel)]="hasta" (change)="cargar(0)" />
+    <mat-form-field appearance="outline" class="filtro">
+      <mat-label>Estado</mat-label>
+      <mat-select [(ngModel)]="estado" (ngModelChange)="cargar(0)">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="PENDIENTE">Pendiente</mat-option>
+        <mat-option value="CONFIRMADA">Confirmada</mat-option>
+        <mat-option value="REALIZADA">Realizada</mat-option>
+        <mat-option value="CANCELADA">Cancelada</mat-option>
+        <mat-option value="NO_ASISTIO">No asistió</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="filtro">
+      <mat-label>Odontólogo</mat-label>
+      <mat-select [(ngModel)]="doctorId" (ngModelChange)="cargar(0)">
+        <mat-option value="">Todos</mat-option>
+        @for (o of odontologos; track o.id) {
+          <mat-option [value]="o.id">{{ o.nombres }} {{ o.apellidos }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <button mat-raised-button color="accent" (click)="cargar(0)" [disabled]="cargando">
+      <mat-icon>refresh</mat-icon> Actualizar
+    </button>
+  </mat-toolbar>
+
+  @if (cargando) {
+    <div class="centro">
+      <mat-progress-spinner diameter="44" mode="indeterminate"></mat-progress-spinner>
+      <p class="muted">Cargando citas…</p>
+    </div>
+  } @else {
+    <mat-card>
+      <table mat-table [dataSource]="items">
+        <ng-container matColumnDef="fecha">
+          <th mat-header-cell *matHeaderCellDef>Fecha</th>
+          <td mat-cell *matCellDef="let c">{{ c.fecha }}</td>
+        </ng-container>
+        <ng-container matColumnDef="hora">
+          <th mat-header-cell *matHeaderCellDef>Hora</th>
+          <td mat-cell *matCellDef="let c">{{ c.hora }}</td>
+        </ng-container>
+        <ng-container matColumnDef="paciente">
+          <th mat-header-cell *matHeaderCellDef>Paciente</th>
+          <td mat-cell *matCellDef="let c">{{ c.paciente }}</td>
+        </ng-container>
+        <ng-container matColumnDef="servicio">
+          <th mat-header-cell *matHeaderCellDef>Servicio</th>
+          <td mat-cell *matCellDef="let c">{{ c.servicio }}</td>
+        </ng-container>
+        <ng-container matColumnDef="odontologo">
+          <th mat-header-cell *matHeaderCellDef>Odontólogo</th>
+          <td mat-cell *matCellDef="let c">{{ c.odontologo }}</td>
+        </ng-container>
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let c">
+            <mat-chip [ngClass]="badge(c.estado)">{{ c.estado }}</mat-chip>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let c" class="acciones">
+            @if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') {
+              <button mat-icon-button matTooltip="Confirmar" (click)="confirmar(c)"><mat-icon>check</mat-icon></button>
+            }
+            @if (c.estado === 'CONFIRMADA') {
+              <button mat-icon-button matTooltip="Atender" (click)="atender(c)"><mat-icon>event_available</mat-icon></button>
+            }
+            @if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') {
+              <button mat-icon-button matTooltip="Cancelar" (click)="cancelar(c)"><mat-icon>close</mat-icon></button>
+            }
+            @if (c.estado === 'CONFIRMADA') {
+              <button mat-icon-button matTooltip="No asistió" (click)="noAsistio(c)"><mat-icon>person_off</mat-icon></button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="cols"></tr>
+        <tr mat-row *matRowDef="let row; columns: cols"></tr>
+      </table>
+      <mat-paginator
+        [length]="total"
+        [pageSize]="size"
+        [pageIndex]="page"
+        (page)="cargar($event.pageIndex)"
+        [disabled]="cargando"
+        showFirstLastButtons
+      ></mat-paginator>
+    </mat-card>
+  }
+</div>

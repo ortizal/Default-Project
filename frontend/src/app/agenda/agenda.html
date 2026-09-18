@@ -1,0 +1,159 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Agenda del día</h2>
+        <div class="flex">
+          <app-date style="width:160px" [(ngModel)]="fecha" (change)="cargarTodo()" />
+          <select class="input" style="width:260px" [(ngModel)]="odontologoSeleccionado" (change)="cargarTodo()">
+            @for (o of odontologos; track o.id) {
+              <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+
+      <div class="seg" style="margin-top:10px">
+        @for (v of ['dia', 'semana', 'mes']; track v) {
+          <button class="seg-btn" [ngClass]="{ active: vista === v }" (click)="setVista(v)">
+            {{ v === 'dia' ? 'Día' : v === 'semana' ? 'Semana' : 'Mes' }}
+          </button>
+        }
+      </div>
+
+      @if (vista === 'dia') {
+      <div class="grid cols-2" style="margin-top:6px">
+        <div style="grid-column: 1 / -1">
+          <h3>Horarios atendidos hoy</h3>
+          @if (horarios.length === 0) {
+            <div class="empty">Sin horario configurado para hoy ({{ diario }}).</div>
+          }
+          <div class="flex">
+            @for (h of horarios; track h.id) {
+              <span class="badge info">{{ h.horaInicio }}–{{ h.horaFin }} ({{ h.intervaloMinutos }} min)</span>
+            }
+            <button class="btn small" (click)="crearBloqueo()">+ Bloquear hora</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin:0">
+          <h3>Citas del día</h3>
+          <table class="tbl">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Servicio</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @for (c of citas; track c.id) {
+                <tr>
+                  <td>{{ c.horaInicio }}–{{ c.horaFin }}</td>
+                  <td>{{ c.pacienteNombre }}</td>
+                  <td>{{ c.servicioNombre }}</td>
+                  <td><span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span></td>
+                  <td><a class="btn small" routerLink="/citas">Ver</a></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="empty">Sin citas este día.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin:0">
+          <h3>Bloqueos</h3>
+          @for (b of bloqueos; track b.id) {
+            <div class="between">
+              <span>{{ b.horaInicio || 'Todo el día' }}{{ b.horaInicio && b.horaFin ? '–' + b.horaFin : '' }} — {{ b.motivo || 'Sin motivo' }}</span>
+              <button class="btn small danger" (click)="quitarBloqueo(b)">Quitar</button>
+            </div>
+          } @empty {
+            <div class="empty">Sin bloqueos.</div>
+          }
+        </div>
+      </div>
+
+      <div class="card" style="margin:16px 0 0">
+        <div class="between">
+          <h3>Disponibilidad</h3>
+          <div class="flex">
+            <select class="input" style="width:240px" [(ngModel)]="servicioSeleccionado" (change)="cargarSlots()">
+              <option value="">Selecciona un servicio</option>
+              @for (s of servicios; track s.id) {
+                <option [value]="s.id">{{ s.nombre }} ({{ s.duracionMinutos }} min)</option>
+              }
+            </select>
+            <button class="btn" (click)="cargarSlots()">Buscar horarios libres</button>
+          </div>
+        </div>
+        @if (slots.length === 0) {
+          <div class="empty">Selecciona un servicio y fecha para ver los horarios libres.</div>
+        }
+        <div class="flex" style="flex-wrap:wrap; margin-top:8px">
+          @for (s of slots; track s.horaInicio) {
+            <button class="btn small" (click)="crearCitaEn(s)">{{ s.horaInicio }}</button>
+          }
+        </div>
+      </div>
+      } @else {
+        <div class="card" style="margin-top:6px">
+          <app-calendario
+            [modo]="vista"
+            [fecha]="fecha"
+            [odontologoId]="odontologoNum"
+            (irDia)="visitarDia($event)"
+          />
+        </div>
+      }
+    </div>
+
+    @if (showBloqueo) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>Bloquear horario</h2>
+          <div class="form-row">
+            <div><label class="label">Hora inicio</label><input class="input" type="time" [(ngModel)]="bloqueo.horaInicio" /></div>
+            <div><label class="label">Hora fin</label><input class="input" type="time" [(ngModel)]="bloqueo.horaFin" /></div>
+            <div class="full"><label class="label">Motivo</label><input class="input" [(ngModel)]="bloqueo.motivo" /></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showBloqueo = false">Cancelar</button>
+            <button class="btn primary" (click)="guardarBloqueo()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (showCita) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>Nueva cita</h2>
+          <div class="sub">{{ fecha }} — {{ horaSugerida }}</div>
+          <div class="form-row">
+            <div class="full">
+              <label class="label">Paciente *</label>
+              <select class="input" [(ngModel)]="cita.pacienteId">
+                <option value="">Selecciona un paciente</option>
+                @for (p of pacientes; track p.id) {
+                  <option [value]="p.id">{{ p.nombres }} {{ p.apellidos }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="label">Servicio *</label>
+              <select class="input" [(ngModel)]="cita.servicioId" (change)="onServicio()">
+                <option value="">—</option>
+                @for (s of servicios; track s.id) {
+                  <option [value]="s.id">{{ s.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div><label class="label">Hora *</label><input class="input" type="time" [(ngModel)]="cita.horaInicio" required /></div>
+            <div class="full"><label class="label">Observaciones</label><input class="input" [(ngModel)]="cita.observaciones" /></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showCita = false">Cancelar</button>
+            <button class="btn primary" (click)="guardarCita()">Agendar</button>
+          </div>
+        </div>
+      </div>
+    }
+  

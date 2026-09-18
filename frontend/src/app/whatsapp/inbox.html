@@ -1,0 +1,71 @@
+
+    <div class="grid cols-2" style="grid-template-columns:340px 1fr">
+      <div class="card" style="margin:0">
+        <div class="between">
+          <h2>Conversaciones</h2>
+          <button class="btn small" (click)="cargarLista()">⟳</button>
+        </div>
+        <input class="input" placeholder="Buscar por teléfono o nombre" [(ngModel)]="q" (keyup.enter)="cargarLista()" />
+        <div style="margin-top:10px; max-height:62vh; overflow:auto">
+          @for (c of conversaciones; track c.id) {
+            <div class="conv clickable" [ngClass]="{ sel: seleccion?.id === c.id }" (click)="abrir(c)">
+              <div class="between">
+                <strong>{{ c.nombreContacto || c.telefono }}</strong>
+                <span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span>
+              </div>
+              <div class="muted" style="font-size:12px; margin-top:2px">
+                {{ c.pacienteNombres || c.telefono }}
+                @if (c.ultimoMensajeAt) {
+                  · {{ c.ultimoMensajeAt | date:'HH:mm' }}
+                }
+              </div>
+              <div class="muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ c.ultimoMensaje }}</div>
+            </div>
+          } @empty {
+            <div class="empty">Sin conversaciones.</div>
+          }
+        </div>
+      </div>
+
+      <div class="card" style="margin:0; display:flex; flex-direction:column">
+        @if (detalle && seleccion) {
+          <div class="between" style="border-bottom:1px solid var(--border); padding-bottom:10px">
+            <div>
+              <h2 style="margin:0">{{ detalle.conversacion.nombreContacto || detalle.conversacion.telefono }}</h2>
+              <div class="muted">
+                Sesión {{ detalle.conversacion.sesionId }} · Paciente: {{ detalle.conversacion.pacienteNombres || 'no asociado' }}
+              </div>
+            </div>
+            <div class="flex">
+              <select class="input" style="width:200px" [(ngModel)]="nuevoEstado" (change)="cambiarEstado()">
+                <option value="" disabled>Cambiar estado…</option>
+                <option value="BOT">Bot</option>
+                <option value="ATENCION_HUMANA">Atención humana</option>
+                <option value="ATENDIDA">Atendida</option>
+                <option value="CERRADA">Cerrada</option>
+              </select>
+            </div>
+          </div>
+          <div class="chat" style="flex:1; max-height:52vh; overflow:auto; padding:12px 0">
+            @for (m of detalle.mensajes; track m.id) {
+              <div class="bubble" [ngClass]="{ in: m.direccion === 'INBOUND', out: m.direccion === 'OUTBOUND' }">
+                <div>{{ m.texto }}</div>
+                <div class="muted" style="font-size:11px; text-align:right">{{ m.receivedAt | date:'dd/MM HH:mm' }} @if (m.direccion === 'OUTBOUND') { · {{ m.estado }} }</div>
+                @if (m.error) {
+                  <div class="msg error" style="margin:4px 0 0">{{ m.error }}</div>
+                }
+              </div>
+            } @empty {
+              <div class="empty">Sin mensajes.</div>
+            }
+          </div>
+          <form class="flex" (ngSubmit)="enviar()">
+            <input class="input" [(ngModel)]="texto" name="texto" placeholder="Escribe un mensaje…" required />
+            <button class="btn primary" [disabled]="!texto.trim() || enviando">Enviar</button>
+          </form>
+        } @else {
+          <div class="empty">Selecciona una conversación del panel izquierdo.</div>
+        }
+      </div>
+    </div>
+  

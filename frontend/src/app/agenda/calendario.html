@@ -1,0 +1,74 @@
+
+    <div class="cal-head between">
+      <button class="btn small" (click)="navegar(-1)">← {{ modo === 'semana' ? 'Semana anterior' : 'Mes anterior' }}</button>
+      <h3>{{ titulo }}</h3>
+      <button class="btn small" (click)="navegar(1)">{{ modo === 'semana' ? 'Siguiente semana' : 'Siguiente mes' }} →</button>
+    </div>
+    @if (error) {
+      <div class="msg error">{{ error }}</div>
+    }
+
+    @if (modo === 'semana') {
+      <div class="cal-grid">
+        @for (d of dias; track d.iso) {
+          <div class="cal-cell" [ngClass]="{ hoy: d.iso === hoy, festivo: d.inactivo, bloqueado: d.bloqueado }">
+            <div class="cal-day" (click)="irDia.emit(d.iso)">
+              <strong>{{ d.iso }}</strong>
+              @if (d.inactivo) {
+                <span class="badge dim">sin horario</span>
+              } @else if (d.bloqueado) {
+                <span class="badge warn">bloqueo</span>
+              }
+            </div>
+            <div class="cal-items">
+              @for (c of d.citas; track c.id) {
+                <div class="cal-item">
+                  <span class="cal-hora">{{ c.horaInicio }}</span>
+                  <span class="cal-txt">{{ c.pacienteNombre }}</span>
+                  <span class="badge" [ngClass]="badge(c.estado)">{{ c.estadoNombre }}</span>
+                </div>
+              }
+              @if (!d.citas.length && (d.inactivo || d.bloqueado)) {
+                <div class="empty">—</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (modo === 'mes') {
+      <div class="cal-weekdays">
+        @for (d of ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']; track d) {
+          <div class="cal-wd">{{ d }}</div>
+        }
+      </div>
+      <div class="cal-grid mes">
+        @for (d of dias; track d.iso) {
+          <div
+            class="cal-cell"
+            [ngClass]="{ hoy: d.iso === hoy, otro: d.enOtroMes, festivo: d.inactivo, bloqueado: d.bloqueado }"
+            (click)="irDia.emit(d.iso)"
+          >
+            <div class="cal-day">
+              <strong>{{ d.numero }}</strong>
+              @if (d.bloqueado) {
+                <span class="badge warn" title="Día con bloqueo">B</span>
+              }
+            </div>
+            <div class="cal-items">
+              @for (c of d.citas.slice(0, 3); track c.id) {
+                <div class="cal-item">
+                  <span class="cal-hora">{{ c.horaInicio }}</span>
+                  <span class="cal-txt">{{ c.pacienteNombre }}</span>
+                </div>
+              }
+              @if (d.citas.length > 3) {
+                <div class="cal-more">+{{ d.citas.length - 3 }} más</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  

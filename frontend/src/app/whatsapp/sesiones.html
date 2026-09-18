@@ -1,0 +1,85 @@
+<div class="contenido">
+  <mat-toolbar class="toolbar" color="primary">
+    <mat-icon>smart_toy</mat-icon>
+    <span>Sesiones WhatsApp</span>
+    <span class="spacer"></span>
+    <mat-form-field appearance="outline" class="buscar">
+      <mat-label>Buscar</mat-label>
+      <input matInput [(ngModel)]="buscar" (keyup.enter)="cargar(0)" placeholder="número / nombre" />
+    </mat-form-field>
+    <button mat-raised-button color="accent" (click)="nueva()">
+      <mat-icon>add</mat-icon> Nueva sesión
+    </button>
+    <button mat-icon-button matTooltip="Refrescar" (click)="cargar(0)">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  @if (error) {
+    <mat-card class="msg error">{{ error }}</mat-card>
+  }
+
+  @if (cargando) {
+    <div class="centro">
+      <mat-progress-spinner diameter="44" mode="indeterminate"></mat-progress-spinner>
+      <p class="muted">Cargando sesiones…</p>
+    </div>
+  } @else {
+    <mat-card>
+      <table mat-table [dataSource]="items">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let s">{{ s.id }}</td>
+        </ng-container>
+        <ng-container matColumnDef="sesionId">
+          <th mat-header-cell *matHeaderCellDef>Sesión</th>
+          <td mat-cell *matCellDef="let s">{{ s.sesionId }}</td>
+        </ng-container>
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let s">{{ s.nombre }}</td>
+        </ng-container>
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let s">
+            <mat-chip [class.ok]="s.estado === 'CONECTADO'" [class.warn]="s.estado === 'ESPERANDO_QR'" [class.bad]="s.estado === 'DESCONECTADO'">
+              {{ s.estado }}
+            </mat-chip>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="qr">
+          <th mat-header-cell *matHeaderCellDef>QR</th>
+          <td mat-cell *matCellDef="let s">
+            @if (s.qr) {
+              <img [src]="s.qr" alt="QR de la sesión" class="qr" />
+            } @else {
+              <span class="muted">—</span>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let s">
+            <button mat-icon-button matTooltip="Refrescar QR" (click)="probar(s)">
+              <mat-icon>qr_code_2</mat-icon>
+            </button>
+            <button mat-icon-button matTooltip="Eliminar" (click)="borrar(s)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="cols"></tr>
+        <tr mat-row *matRowDef="let row; columns: cols"></tr>
+      </table>
+      <mat-card-actions class="paginador">
+        <button mat-button (click)="cargar(page - 1)" [disabled]="page <= 0 || cargando">
+          <mat-icon>chevron_left</mat-icon> Anterior
+        </button>
+        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
+        <button mat-button (click)="cargar(page + 1)" [disabled]="cargando || page + 1 >= totalPages">
+          Siguiente <mat-icon>chevron_right</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

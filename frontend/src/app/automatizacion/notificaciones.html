@@ -1,0 +1,31 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Notificaciones programadas</h2>
+        <button class="btn" (click)="cargar()">⟳ Refrescar</button>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Paciente</th><th>Teléfono</th><th>Evento</th><th>Plantilla</th><th>Programada</th><th>Enviada</th><th>Estado</th><th>Errores</th></tr></thead>
+        <tbody>
+          @for (n of items; track n.id) {
+            <tr>
+              <td>{{ n.id }}</td>
+              <td>{{ n.pacienteId }}</td>
+              <td>{{ n.telefono }}</td>
+              <td><span class="badge info">{{ n.evento }}</span></td>
+              <td>{{ n.plantilla }}</td>
+              <td>{{ n.programadaAt || '-' }}</td>
+              <td>{{ n.enviadaAt || '-' }}</td>
+              <td><span class="badge" [ngClass]="badge(n.estado)">{{ n.estado }}</span></td>
+              <td>{{ n.error || (n.intentos ? 'Intentos: ' + n.intentos : '-') }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="empty">Sin notificaciones.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  

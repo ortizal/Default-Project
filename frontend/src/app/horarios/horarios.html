@@ -1,0 +1,71 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Horarios de atención</h2>
+        <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevo()">+ Nuevo horario</button>
+      </div>
+      <div class="toolbar">
+        <label class="label" style="margin:0 6px 0 0">Odontólogo</label>
+        <select class="input" style="width:280px" [(ngModel)]="odontologoSeleccionado" (change)="cargar()">
+          <option value="" disabled>Selecciona un odontólogo</option>
+          @for (o of odontologos; track o.id) {
+            <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }} — {{ o.especialidad || 'General' }}</option>
+          }
+        </select>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead>
+          <tr><th>ID</th><th>Día</th><th>Inicio</th><th>Fin</th><th>Intervalo</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (h of items; track h.id) {
+            <tr>
+              <td>{{ h.id }}</td>
+              <td>{{ DIAS[h.diaSemana - 1] ?? h.diaSemana }}</td>
+              <td>{{ h.horaInicio }}</td>
+              <td>{{ h.horaFin }}</td>
+              <td>{{ h.intervaloMinutos }} min</td>
+              <td><span class="badge" [ngClass]="h.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ h.estado }}</span></td>
+              <td class="flex">
+                <button class="btn small" (click)="editar(h)">Editar</button>
+                <button class="btn small danger" (click)="eliminar(h)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty">{{ odontologoSeleccionado ? 'Sin horarios configurados.' : 'Selecciona un odontólogo para ver sus horarios.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (showForm) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>{{ form.id ? 'Editar horario' : 'Nuevo horario' }}</h2>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <div class="form-row">
+            <div class="full">
+              <label class="label">Día de la semana *</label>
+              <select class="input" [(ngModel)]="form.diaSemana">
+                @for (d of DIAS; track $index) {
+                  <option [value]="$index + 1">{{ d }}</option>
+                }
+              </select>
+            </div>
+            <div><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="form.horaInicio" required /></div>
+            <div><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="form.horaFin" required /></div>
+            <div class="full"><label class="label">Intervalo (min) *</label><input class="input" type="number" min="5" [(ngModel)]="form.intervaloMinutos" /></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showForm = false">Cancelar</button>
+            <button class="btn primary" (click)="guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+  

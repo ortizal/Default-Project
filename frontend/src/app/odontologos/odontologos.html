@@ -1,0 +1,88 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Odontólogos</h2>
+        <button class="btn primary" (click)="nuevo()">+ Nuevo odontólogo</button>
+      </div>
+      <div class="toolbar">
+        <input class="input" style="width:260px" placeholder="Buscar por nombre o especialidad" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <select class="input" style="width:150px" [(ngModel)]="estado" (change)="cargar(0)">
+          <option value="">Todos los estados</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
+        <button class="btn" (click)="cargar(0)">Buscar</button>
+        <button class="btn" (click)="cargar(page)" [disabled]="cargando" title="Recargar lista">↻ Refrescar</button>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Etiquetas</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @if (cargando) {
+            <tr><td colspan="8" class="empty"><span class="spinner"></span> Cargando odontólogos…</td></tr>
+          }
+          @for (o of items; track o.id) {
+            <tr>
+              <td>{{ o.id }}</td>
+              <td>{{ o.nombres }} {{ o.apellidos }}</td>
+              <td>{{ o.especialidad || '-' }}</td>
+              <td>{{ o.etiquetas || '-' }}</td>
+              <td>{{ o.telefono || '-' }}</td>
+              <td>{{ o.email || '-' }}</td>
+              <td><span class="badge" [ngClass]="o.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ o.estado }}</span></td>
+              <td class="flex">
+                <button class="btn small" (click)="editar(o)">Editar</button>
+                <button class="btn small danger" (click)="desactivar(o)" [disabled]="o.estado !== 'ACTIVO'">Desactivar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">Sin odontólogos registrados.</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="between" style="margin-top:10px">
+        <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
+        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
+        <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
+      </div>
+    </div>
+
+    @if (showForm) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>{{ form.id ? 'Editar odontólogo' : 'Nuevo odontólogo' }}</h2>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <div class="form-row">
+            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
+            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
+            <div><label class="label">Especialidad</label><input class="input" [(ngModel)]="form.especialidad" /></div>
+            <div><label class="label">Etiquetas</label><input class="input" placeholder="Ej: ortodoncia, niños, urgencias" [(ngModel)]="form.etiquetas" /></div>
+            <div><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
+            <div><label class="label">Email</label><input class="input" type="email" [(ngModel)]="form.email" /></div>
+            <div class="full">
+              <label class="label">Calendario personal (Google Calendar)</label>
+              <select class="input" [(ngModel)]="form.googleCalendarId">
+                <option value="">— Sin calendario personal —</option>
+                @for (c of calendarios; track c.id) {
+                  <option [value]="c.calendarId">{{ c.summary }}</option>
+                }
+              </select>
+              @if (calendarios.length === 0) {
+                <div class="muted" style="margin-top:4px">Conecta una cuenta de Google en el menú "Calendario Google" para asignar un calendario personal.</div>
+              }
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showForm = false">Cancelar</button>
+            <button class="btn primary" (click)="guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+  

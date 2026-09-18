@@ -1,0 +1,81 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Usuarios</h2>
+        <button class="btn primary" (click)="nuevo()">+ Nuevo usuario</button>
+      </div>
+      <div class="toolbar">
+        <input class="input" style="width:260px" placeholder="Buscar por usuario, nombre o email" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <button class="btn" (click)="cargar(0)">Buscar</button>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Usuario</th><th>Nombres</th><th>Email</th><th>Teléfono</th><th>Roles</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (u of items; track u.id) {
+            <tr>
+              <td>{{ u.id }}</td>
+              <td>{{ u.username }}</td>
+              <td>{{ u.nombres }} {{ u.apellidos }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.telefono || '-' }}</td>
+              <td>
+                @for (r of u.roles; track r) {
+                  <span class="badge info" style="margin-right:3px">{{ r }}</span>
+                }
+              </td>
+              <td><span class="badge" [ngClass]="u.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ u.estado }}</span></td>
+              <td class="flex">
+                <button class="btn small" (click)="editar(u)">Editar</button>
+                <button class="btn small danger" (click)="cambiarEstado(u)">{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">Sin usuarios.</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="between" style="margin-top:10px">
+        <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
+        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
+        <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
+      </div>
+    </div>
+
+    @if (showForm) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>{{ form.id ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <div class="form-row">
+            <div><label class="label">Usuario *</label><input class="input" [(ngModel)]="form.username" required [readonly]="!!form.id" /></div>
+            <div><label class="label">Email *</label><input class="input" type="email" [(ngModel)]="form.email" required /></div>
+            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
+            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
+            @if (!form.id) {
+              <div class="full"><label class="label">Contraseña *</label><input class="input" type="password" [(ngModel)]="form.password" required /></div>
+            }
+            <div class="full"><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
+            <div class="full">
+              <label class="label">Roles *</label>
+              <div class="flex" style="flex-wrap:wrap">
+                @for (r of ROLES; track r) {
+                  <label style="margin-right:10px; font-size:13px">
+                    <input type="checkbox" [checked]="rolMarcado(r)" (change)="toggleRol(r)" /> {{ r }}
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showForm = false">Cancelar</button>
+            <button class="btn primary" (click)="guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+  

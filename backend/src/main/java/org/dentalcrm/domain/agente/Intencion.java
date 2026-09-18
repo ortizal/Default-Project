@@ -1,0 +1,16 @@
+package org.dentalcrm.domain.agente;
+
+public enum Intencion {
+    SALUDO,
+    VER_CITAS,
+    VER_PERFIL,
+    CONECTAR_GOOGLE,
+    AGENDAR_CITA,
+    CONFIRMAR_CITA,
+    CANCELAR_CITA,
+    PREGUNTAR_DISPONIBILIDAD,
+    LISTAR_SERVICIOS,
+    REGISTRAR_PACIENTE,
+    TRANSFERIR_HUMANO,
+    DESCONOCIDO
+}

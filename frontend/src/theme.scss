@@ -1,0 +1,33 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+// Tema claro M3 — paleta cyan (dental, tecnológico)
+$light-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$cyan-palette,
+    tertiary: mat.$green-palette,
+  ),
+));
+
+// Tema oscuro M3 — mismo matiz, superficies profundas
+$dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$cyan-palette,
+    tertiary: mat.$green-palette,
+  ),
+));
+
+:root {
+  color-scheme: light;
+  @include mat.all-component-themes($light-theme);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    @include mat.all-component-themes($dark-theme);
+  }
+}

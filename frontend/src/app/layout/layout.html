@@ -1,0 +1,16 @@
+<div class="app-shell">
+  <app-sidebar [colapsado]="colapsado()" />
+  <div class="main">
+    <app-header
+      [colapsado]="colapsado()"
+      [titulo]="titulo"
+      [fecha]="fecha"
+      (toggle)="alternar()"
+      (salir)="salir()"
+    />
+    <div class="content">
+      <router-outlet />
+    </div>
+    <app-footer />
+  </div>
+</div>

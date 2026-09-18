@@ -1,0 +1,26 @@
+
+    <div class="login-page">
+      <div class="login-card">
+        <h1>CRM Dental</h1>
+        <div class="sub">Inicia sesión con tus credenciales</div>
+        @if (error) {
+          <div class="msg error">{{ error }}</div>
+        }
+        <form (ngSubmit)="entrar()">
+          <label class="label">Usuario</label>
+          <input class="input" type="text" [(ngModel)]="username" name="username" autocomplete="username" required />
+          <label class="label">Contraseña</label>
+          <input class="input" type="password" [(ngModel)]="password" name="password" autocomplete="current-password" required />
+          <div style="margin-top:18px">
+            <button class="btn primary" style="width:100%" [disabled]="cargando">
+              @if (cargando) {
+                <span class="spin"></span>
+              } @else {
+                Entrar
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  

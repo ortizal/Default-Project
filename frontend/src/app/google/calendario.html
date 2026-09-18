@@ -1,0 +1,124 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Google Calendar</h2>
+        @if (status?.conectada) {
+          <div class="flex gap">
+            <button class="btn primary" (click)="sync()">Sincronizar citas</button>
+            <button class="btn danger" (click)="disconnect()">Desconectar</button>
+          </div>
+        }
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      @if (status && !status.configurada && credenciales) {
+        <div class="msg warn">
+          La integración con Google no está configurada. Configura las credenciales OAuth
+          para habilitar Google Calendar.
+        </div>
+        <div class="grid2" style="margin-top:16px">
+          <div>
+            <label class="label">Client ID</label>
+            <input class="input" [(ngModel)]="credenciales.clientId" placeholder="google.client-id" />
+          </div>
+          <div>
+            <label class="label">Client Secret</label>
+            <input class="input" [(ngModel)]="credenciales.clientSecret" type="password" placeholder="google.client-secret" />
+          </div>
+          <div>
+            <label class="label">Redirect URI</label>
+            <input class="input" [(ngModel)]="credenciales.redirectUri" placeholder="http://localhost:8080/api/v1/google/callback" />
+          </div>
+          <div>
+            <label class="label">Auth Base URL</label>
+            <input class="input" [(ngModel)]="credenciales.authBaseUrl" />
+          </div>
+          <div>
+            <label class="label">OAuth Base URL</label>
+            <input class="input" [(ngModel)]="credenciales.oauthBaseUrl" />
+          </div>
+          <div>
+            <label class="label">API Base URL</label>
+            <input class="input" [(ngModel)]="credenciales.apiBaseUrl" />
+          </div>
+        </div>
+        <div class="flex gap" style="margin-top:16px">
+          <button class="btn primary" (click)="guardarCredenciales()" [disabled]="credGuardando">
+            {{ credGuardando ? 'Guardando...' : 'Guardar credenciales' }}
+          </button>
+          @if (credGuardado) {
+            <span class="msg ok" style="margin-top:8px">Credenciales guardadas correctamente</span>
+          }
+        </div>
+      }
+
+      @if (status && status.configurada) {
+        <div class="grid2">
+          <div class="stat">
+            <div class="stat-label">Conexión</div>
+            <div class="stat-value">
+              @if (status.conectada) {
+                <span class="badge ok">Conectada</span>
+              } @else {
+                <span class="badge dim">Sin conectar</span>
+              }
+            </div>
+            @if (status.email) {
+              <div class="muted">{{ status.email }}</div>
+            }
+          </div>
+          <div class="stat">
+            <div class="stat-label">Sincronización de citas</div>
+            <div class="flex gap">
+              <span class="badge ok" title="Sincronizadas">{{ status.citasSincronizadas }}</span>
+              <span class="badge warn" title="Pendientes">{{ status.citasPendientes }}</span>
+              <span class="badge bad" title="Con error">{{ status.citasConError }}</span>
+            </div>
+            <div class="muted">sincronizadas · pendientes · errores</div>
+          </div>
+        </div>
+
+        @if (!status.conectada) {
+          <div class="between" style="margin-top:16px">
+            <p class="muted">Conecta una cuenta de Google para que las citas se reflejen en tu calendario.</p>
+            <button class="btn primary" (click)="connect()">Conectar con Google</button>
+          </div>
+        }
+
+        @if (status.conectada) {
+          <h3 style="margin-top:20px">Calendarios de la cuenta</h3>
+          <table class="tbl">
+            <thead><tr><th>Calendario</th><th>Zona horaria</th><th></th></tr></thead>
+            <tbody>
+              @for (c of status.calendarios; track c.id) {
+                <tr>
+                  <td>
+                    {{ c.summary }}
+                    @if (c.seleccionado) {
+                      <span class="badge ok">Seleccionado</span>
+                    }
+                  </td>
+                  <td class="muted">{{ c.timeZone }}</td>
+                  <td>
+                    @if (!c.seleccionado) {
+                      <button class="btn small" (click)="seleccionar(c)">Usar</button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="empty">No se encontraron calendarios.</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+
+        @if (syncResult) {
+          <div class="msg ok">
+            Sincronización completa: {{ syncResult.creados }} creados, {{ syncResult.actualizados }} actualizados,
+            {{ syncResult.cancelados }} cancelados, {{ syncResult.errores }} errores,
+            {{ syncResult.sincronizadas }} citas sincronizadas.
+          </div>
+        }
+      }
+    </div>

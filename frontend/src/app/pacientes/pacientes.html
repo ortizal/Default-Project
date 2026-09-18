@@ -1,0 +1,98 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Pacientes</h2>
+        <button class="btn primary" (click)="nuevo()">+ Nuevo paciente</button>
+      </div>
+      <div class="toolbar">
+        <input class="input" style="width:260px" placeholder="Buscar por nombre, cédula o teléfono" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <select class="input" style="width:150px" [(ngModel)]="estado" (change)="cargar(0)">
+          <option value="">Todos los estados</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
+        <button class="btn" (click)="cargar(0)">Buscar</button>
+        <button class="btn" (click)="cargar(page)" [disabled]="cargando" title="Recargar lista">↻ Recargar</button>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead>
+          <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @if (cargando) {
+            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando pacientes…</td></tr>
+          }
+          @for (p of items; track p.id) {
+            <tr>
+              <td>{{ p.id }}</td>
+              <td>{{ p.cedula || '-' }}</td>
+              <td>{{ p.nombres }} {{ p.apellidos }}</td>
+              <td>{{ p.telefono || '-' }}</td>
+              <td>{{ p.email || '-' }}</td>
+              <td><span class="badge" [ngClass]="p.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ p.estado }}</span></td>
+              <td class="flex">
+                <button class="btn small" (click)="editar(p)">Editar</button>
+                <button class="btn small danger" (click)="desactivar(p)" [disabled]="p.estado !== 'ACTIVO'">Desactivar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty">Sin pacientes registrados.</td></tr>
+          }
+        </tbody>
+      </table>
+      <div class="between" style="margin-top:10px">
+        <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
+        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
+        <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
+      </div>
+    </div>
+
+    @if (showForm) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>{{ form.id ? 'Editar paciente' : 'Nuevo paciente' }}</h2>
+          <div class="sub">Los campos con * son obligatorios.</div>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <div class="form-row">
+            <div><label class="label">Cédula</label><input class="input" maxlength="20" [(ngModel)]="form.cedula" /></div>
+            <div><label class="label">Fecha nacimiento</label><app-date [(ngModel)]="form.fechaNacimiento" /></div>
+            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
+            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
+            <div><label class="label">Teléfono</label><input class="input" maxlength="30" [(ngModel)]="form.telefono" /></div>
+            <div><label class="label">Email</label><input class="input" type="email" [(ngModel)]="form.email" /></div>
+            <div class="full"><label class="label">Dirección</label><input class="input" [(ngModel)]="form.direccion" /></div>
+            @if (esMenor) {
+              <div class="full" style="border-top:1px solid var(--border);padding-top:10px">
+                <label class="label">Tutor(es) — obligatorio por ser menor de edad</label>
+                <div class="form-row">
+                  <div>
+                    <label class="label">Padre (PADRE)</label>
+                    <input class="input" placeholder="Nombres *" [(ngModel)]="tutorPadre.nombres" />
+                    <input class="input" style="margin-top:6px" placeholder="Apellidos" [(ngModel)]="tutorPadre.apellidos" />
+                    <input class="input" style="margin-top:6px" placeholder="Teléfono" [(ngModel)]="tutorPadre.telefono" />
+                  </div>
+                  <div>
+                    <label class="label">Madre (MADRE)</label>
+                    <input class="input" placeholder="Nombres *" [(ngModel)]="tutorMadre.nombres" />
+                    <input class="input" style="margin-top:6px" placeholder="Apellidos" [(ngModel)]="tutorMadre.apellidos" />
+                    <input class="input" style="margin-top:6px" placeholder="Teléfono" [(ngModel)]="tutorMadre.telefono" />
+                  </div>
+                </div>
+                <div class="sub" style="margin-top:6px">Registra al padre y/o la madre (al menos uno).</div>
+              </div>
+            }
+            <div class="full"><label class="label">Observaciones</label><textarea class="input" [(ngModel)]="form.observaciones"></textarea></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showForm = false">Cancelar</button>
+            <button class="btn primary" (click)="guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+  

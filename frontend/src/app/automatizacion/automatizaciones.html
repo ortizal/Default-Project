@@ -1,0 +1,77 @@
+
+    <div class="card">
+      <div class="between">
+        <h2>Automatizaciones de mensajes</h2>
+        <button class="btn primary" (click)="nueva()">+ Nueva automatización</button>
+      </div>
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Minutos antes</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th></th></tr></thead>
+        <tbody>
+          @for (a of items; track a.id) {
+            <tr>
+              <td>{{ a.id }}</td>
+              <td>{{ a.nombre }}</td>
+              <td><span class="badge info">{{ a.evento }}</span></td>
+              <td>{{ a.minutosAntes }}</td>
+              <td>{{ a.plantillaNombre }}</td>
+              <td>{{ a.condicion || '-' }}</td>
+              <td>
+                <button class="btn small" [ngClass]="a.activa ? 'primary' : ''" (click)="toggle(a)">
+                  {{ a.activa ? 'Activada' : 'Desactivada' }}
+                </button>
+              </td>
+              <td class="flex">
+                <button class="btn small" (click)="editar(a)">Editar</button>
+                <button class="btn small danger" (click)="eliminar(a)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="empty">Sin automatizaciones.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (showForm) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>{{ form.id ? 'Editar automatización' : 'Nueva automatización' }}</h2>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <label class="label">Nombre *</label>
+          <input class="input" [(ngModel)]="form.nombre" required />
+          <label class="label">Evento *</label>
+          <select class="input" [(ngModel)]="form.evento">
+            @for (ev of EVENTOS; track ev) {
+              <option [value]="ev">{{ ev }}</option>
+            }
+          </select>
+          <div class="form-row">
+            <div><label class="label">Minutos antes *</label><input class="input" type="number" min="0" [(ngModel)]="form.minutosAntes" /></div>
+            <div>
+              <label class="label">Plantilla *</label>
+              <select class="input" [(ngModel)]="form.plantillaId">
+                <option value="">—</option>
+                @for (p of plantillas; track p.id) {
+                  <option [value]="p.id">{{ p.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <label class="label">Condición</label>
+          <input class="input" [(ngModel)]="form.condicion" placeholder="ej. estado:cita" />
+          <label class="label" style="display:flex; align-items:center; gap:6px">
+            <input type="checkbox" [(ngModel)]="form.activa" /> Activa
+          </label>
+          <div class="modal-actions">
+            <button class="btn" (click)="showForm = false">Cancelar</button>
+            <button class="btn primary" (click)="guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+  
