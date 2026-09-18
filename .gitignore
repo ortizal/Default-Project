@@ -48,3 +48,4 @@ frontend/test-results/
 
 # Scripts locales
 scripts/*.sh.local
+.smoke/
