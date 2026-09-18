@@ -1,0 +1,50 @@
+# Java / Maven
+backend/target/
+backend/.mvn/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.playwright/
+frontend/test-results/
+frontend/coverage/
+*.log
+!frontend/e2e/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Entorno local
+.env
+.env.local
+!.env.example
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Base de datos / respaldos
+*.sql.gz
+*.bak
+backups/
+database/backups/
+
+# Docker
+docker-compose.override.yml
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+
+# Scripts locales
+scripts/*.sh.local
