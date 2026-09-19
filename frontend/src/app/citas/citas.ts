@@ -1,66 +1,45 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatPaginatorModule } from '@angular/material/paginator';
 import { Api } from '../core/api';
-import { Cita, Odontologo, Page } from '../core/models';
-import { AppDateComponent } from '../core/app-date.component';
+import { Cita, Odontologo, Servicio, Paciente, Page } from '../core/models';
 
 @Component({
   selector: 'app-citas',
   templateUrl: './citas.html',
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatDatepickerModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-    MatTableModule,
-    MatChipsModule,
-    MatTooltipModule,
-    MatToolbarModule,
-    MatPaginatorModule,
-    AppDateComponent,
-  ],
+  styleUrl: './citas.css',
+  imports: [CommonModule, FormsModule],
 })
 export class CitasComponent {
   items: Cita[] = [];
   odontologos: Odontologo[] = [];
+  servicios: Servicio[] = [];
+  pacientes: Paciente[] = [];
   cargando = false;
   desde = new Date().toISOString().slice(0, 10);
   hasta = '';
   estado = '';
   doctorId = '';
+  pacienteNombre = '';
   page = 0;
   size = 15;
   totalPages = 1;
   total = 0;
-  private reqSeq = 0;
-  readonly cols = ['fecha', 'hora', 'paciente', 'servicio', 'odontologo', 'estado', 'acciones'];
   error = '';
+  mostrarModal = false;
+  private reqSeq = 0;
+  nuevaCita = { pacienteId: 0, doctorId: 0, servicioId: 0, fecha: '', horaInicio: '', observaciones: '' };
+
+  totalPendientes = 0;
+  totalConfirmadas = 0;
+  totalAtendidas = 0;
+  totalCanceladas = 0;
 
   constructor(private readonly api: Api) {
     this.cargar(0);
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.odontologos = r));
+    this.api.get<Servicio[]>('/servicios/activos').subscribe((r) => (this.servicios = r));
+    this.api.get<Page<Paciente>>('/pacientes?page=0&size=100').subscribe((r) => (this.pacientes = r.content));
   }
 
   cargar(p: number): void {
@@ -70,6 +49,7 @@ export class CitasComponent {
     const params = new URLSearchParams({ page: String(p), size: String(this.size), desde: this.desde || '', hasta: this.hasta || '' });
     if (this.estado) params.set('estado', this.estado);
     if (this.doctorId) params.set('doctorId', this.doctorId);
+    if (this.pacienteNombre) params.set('paciente', this.pacienteNombre);
     this.api.get<Page<Cita>>(`/citas?${params.toString()}`).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
@@ -78,12 +58,51 @@ export class CitasComponent {
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.total = r.totalElements ?? this.items.length;
         this.page = Math.min(p, this.totalPages - 1);
+        this.calcularTotales();
       },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
         this.cargando = false;
       },
+    });
+  }
+
+  calcularTotales(): void {
+    this.totalPendientes = this.items.filter((c) => c.estado === 'PENDIENTE').length;
+    this.totalConfirmadas = this.items.filter((c) => c.estado === 'CONFIRMADA').length;
+    this.totalAtendidas = this.items.filter((c) => c.estado === 'ATENDIDA').length;
+    this.totalCanceladas = this.items.filter((c) => c.estado === 'CANCELADA').length;
+  }
+
+  abrirNueva(): void {
+    this.nuevaCita = { pacienteId: 0, doctorId: this.odontologos[0]?.id ?? 0, servicioId: this.servicios[0]?.id ?? 0, fecha: this.desde, horaInicio: '', observaciones: '' };
+    this.mostrarModal = true;
+  }
+
+  cerrarModal(): void {
+    this.mostrarModal = false;
+  }
+
+  crearCita(): void {
+    if (!this.nuevaCita.pacienteId || !this.nuevaCita.doctorId || !this.nuevaCita.servicioId || !this.nuevaCita.fecha) {
+      this.error = 'Completa todos los campos obligatorios';
+      return;
+    }
+    this.cargando = true;
+    this.api.post<Cita>('/citas', {
+      pacienteId: this.nuevaCita.pacienteId,
+      doctorId: this.nuevaCita.doctorId,
+      servicioId: this.nuevaCita.servicioId,
+      fecha: this.nuevaCita.fecha,
+      horaInicio: this.nuevaCita.horaInicio,
+      observaciones: this.nuevaCita.observaciones || '',
+    }).subscribe({
+      next: () => {
+        this.mostrarModal = false;
+        this.cargar(0);
+      },
+      error: (e) => { this.error = this.msg(e); this.cargando = false; },
     });
   }
 
@@ -120,16 +139,11 @@ export class CitasComponent {
 
   badge(estado: string): string {
     switch (estado) {
-      case 'CONFIRMADA':
-        return 'ok';
-      case 'ATENDIDA':
-        return 'info';
-      case 'CANCELADA':
-        return 'bad';
-      case 'NO_ASISTIO':
-        return 'warn';
-      default:
-        return 'dim';
+      case 'CONFIRMADA': return 'ok';
+      case 'ATENDIDA': return 'info';
+      case 'CANCELADA': return 'bad';
+      case 'NO_ASISTIO': return 'warn';
+      default: return 'dim';
     }
   }
 

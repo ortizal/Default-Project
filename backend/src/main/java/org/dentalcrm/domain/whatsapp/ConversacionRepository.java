@@ -11,6 +11,8 @@ public interface ConversacionRepository extends JpaRepository<Conversacion, Long
 
     Optional<Conversacion> findBySesionIdAndTelefono(Long sesionId, String telefono);
 
+    Optional<Conversacion> findByTelefono(String telefono);
+
     @Query("""
             SELECT c FROM Conversacion c
             WHERE (:q = '' OR lower(c.nombreContacto) LIKE lower(concat('%', :q, '%'))

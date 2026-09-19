@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.dentalcrm.web.agente.dto.ActivarAgenteRequest;
 import org.dentalcrm.web.agente.dto.AgenteConversacionResponse;
+import org.dentalcrm.web.agente.dto.ConversacionInicioResponse;
+import org.dentalcrm.web.agente.dto.MensajeRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
 import java.util.List;
 
 @RestController
@@ -25,6 +28,22 @@ public class AgenteController {
 
     public AgenteController(AgenteConversacionalService agenteService) {
         this.agenteService = agenteService;
+    }
+
+    @PostMapping("/conversacion/start")
+    @PreAuthorize("hasAuthority('PERMISO_AGENTE_IA')")
+    @Operation(summary = "Genera un enlace para iniciar una conversación con el chat")
+    public ResponseEntity<ConversacionInicioResponse> iniciarConversacion() {
+        String id = UUID.randomUUID().toString().substring(0, 8);
+        String link = "/chat/" + id;
+        return ResponseEntity.ok(new ConversacionInicioResponse(id, link, "Conversación iniciada. Usa el enlace para acceder al chat."));
+    }
+
+    @PostMapping("/conversacion/mensaje")
+    @PreAuthorize("hasAuthority('PERMISO_AGENTE_IA')")
+    @Operation(summary = "Envía un mensaje al chat por teléfono o palabra")
+    public ResponseEntity<String> enviarMensaje(@RequestBody MensajeRequest request) {
+        return ResponseEntity.ok(agenteService.procesarPorTelefono(request.telefono(), request.texto()).mensaje());
     }
 
     @GetMapping("/conversaciones")

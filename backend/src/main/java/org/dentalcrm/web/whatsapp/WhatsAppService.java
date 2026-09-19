@@ -173,6 +173,9 @@ public class WhatsAppService {
     public MensajeResponse enviarMensaje(Long conversacionId, EnviarMensajeRequest request) {
         Conversacion conversacion = conversacionOError(conversacionId);
         WhatsappSesion sesion = conversacion.getSesion();
+        if (sesion == null) {
+            throw new BusinessException("SIN_SESION", "Esta conversación no tiene sesión WhatsApp");
+        }
 
         Mensaje mensaje = new Mensaje();
         mensaje.setConversacion(conversacion);

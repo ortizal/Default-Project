@@ -27,8 +27,8 @@ public class Conversacion {
     @Column(name = "tenant_id")
     private Long tenantId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sesion_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sesion_id", nullable = true)
     private WhatsappSesion sesion;
 
     @ManyToOne(fetch = FetchType.LAZY)

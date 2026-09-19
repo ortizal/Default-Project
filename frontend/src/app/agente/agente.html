@@ -38,4 +38,33 @@
         </tbody>
       </table>
     </div>
-  
+
+    <div class="card" style="margin-top:20px">
+      <h3>Generar enlace / Enviar mensaje por teléfono o palabra</h3>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="label">Teléfono</label>
+          <input class="input sm" [(ngModel)]="msgTelefono" placeholder="Ej: 3001234567" />
+        </div>
+        <div class="form-field full">
+          <label class="label">Mensaje</label>
+          <input class="input sm" [(ngModel)]="msgTexto" placeholder="Ej: ver citas, mis datos, cita..." (keyup.enter)="enviarMensaje()" />
+        </div>
+      </div>
+      <div class="flex" style="gap:10px; margin-top:10px">
+        <button class="btn sm" (click)="iniciarConversacion()">Generar enlace</button>
+        <button class="btn sm primary" (click)="enviarMensaje()">Enviar mensaje</button>
+      </div>
+      @if (inicioResp) {
+        <div class="msg ok" style="margin-top:10px">
+          <strong>Enlace:</strong> {{ inicioResp.link }}<br>
+          {{ inicioResp.mensaje }}
+        </div>
+      }
+      @if (respuestaChat) {
+        <div class="msg info" style="margin-top:10px">
+          <strong>Respuesta del chat:</strong><br>
+          {{ respuestaChat }}
+        </div>
+      }
+    </div>

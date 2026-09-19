@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -69,7 +70,7 @@ public class AgenteConversacionalService {
     private static final Logger log = LoggerFactory.getLogger(AgenteConversacionalService.class);
     private static final String MODULO = "AGENTE_IA";
     private static final String MENSAJE_MENU = """
-            Puedes pedirme:\n1. Ver mis citas (digame "ver citas")\n2. Ver mi perfil (digame "mis datos")\n3. Conectar Google Calendar (digame "conectar google")\n4. Agendar una cita (ej: "cita para limpieza mañana")\n5. Ver servicios y precios\n6. Confirmar o cancelar tu próxima cita\n7. Consultar disponibilidad\n8. Hablar con una persona
+            Puedes pedirme:\n1. Ver mis citas\n2. Ver mi perfil\n3. Agendar una cita\n4. Ver servicios\n5. Confirmar o cancelar\n6. Disponibilidad\n7. Hablar con una persona\n\nTambién puedes escribir "citas", "perfil", "google", "agendar", "servicios", etc.\nO envía tu número de cédula para que te reconozca.
             """;
     private static final String MENSAJE_SIN_PACIENTE = """
             ¡Hola! 😊 Para ayudarte necesito encontrarte en nuestro sistema.\nEnvía tu número de cédula para localizarte, o escribe "registrarme" si eres nuevo.
@@ -138,6 +139,36 @@ public class AgenteConversacionalService {
             "cedula", "identificacion", "password");
     private static final Pattern P_PALABRA_AFIRM = Pattern.compile("(^|[^a-z])(si|sí|claro|seguro|ok|de acuerdo|confirmo|dale)([^a-z]|$)");
     private static final Pattern P_PALABRA_NEG = Pattern.compile("(^|[^a-z])(no|nop|nel|mejor no|no gracias)([^a-z]|$)");
+    private static final Pattern PATTERN_CEDULA = Pattern.compile("^\\d{6,13}$");
+
+    private static final Map<String, Intencion> MAPA_NUMEROS = Map.of(
+            "1", Intencion.VER_CITAS,
+            "2", Intencion.VER_PERFIL,
+            "3", Intencion.AGENDAR_CITA,
+            "4", Intencion.LISTAR_SERVICIOS,
+            "5", Intencion.CONFIRMAR_CITA,
+            "6", Intencion.PREGUNTAR_DISPONIBILIDAD,
+            "7", Intencion.TRANSFERIR_HUMANO
+    );
+
+    private static final Map<String, Intencion> MAPA_CORTAS = Map.ofEntries(
+            Map.entry("citas", Intencion.VER_CITAS),
+            Map.entry("ver citas", Intencion.VER_CITAS),
+            Map.entry("perfil", Intencion.VER_PERFIL),
+            Map.entry("datos", Intencion.VER_PERFIL),
+            Map.entry("google", Intencion.CONECTAR_GOOGLE),
+            Map.entry("agendar", Intencion.AGENDAR_CITA),
+            Map.entry("servicios", Intencion.LISTAR_SERVICIOS),
+            Map.entry("disponibilidad", Intencion.PREGUNTAR_DISPONIBILIDAD),
+            Map.entry("humano", Intencion.TRANSFERIR_HUMANO),
+            Map.entry("registrar", Intencion.REGISTRAR_PACIENTE),
+            Map.entry("cancelar", Intencion.CANCELAR_CITA),
+            Map.entry("confirmar", Intencion.CONFIRMAR_CITA),
+            Map.entry("atender", Intencion.CONFIRMAR_CITA),
+            Map.entry("menu", Intencion.SALUDO),
+            Map.entry("ayuda", Intencion.SALUDO),
+            Map.entry("horario", Intencion.PREGUNTAR_DISPONIBILIDAD)
+    );
 
     private final ConversacionRepository conversacionRepository;
     private final MensajeRepository mensajeRepository;
@@ -236,6 +267,9 @@ public class AgenteConversacionalService {
         }
 
         Intencion intencion = clasificar(t);
+        if (intencion == Intencion.VER_PERFIL && PATTERN_CEDULA.matcher(t).matches()) {
+            return buscarPorCedula(conversacion, t);
+        }
         return switch (intencion) {
             case TRANSFERIR_HUMANO -> transferirHumano(conversacion);
             case VER_PERFIL -> verPerfil(conversacion);
@@ -255,11 +289,36 @@ public class AgenteConversacionalService {
         };
     }
 
+    private RespuestaAgente buscarPorCedula(Conversacion conversacion, String cedula) {
+        Optional<Paciente> paciente = pacienteRepository.findByCedulaIgnoreCase(cedula);
+        if (paciente.isEmpty()) {
+            return respuesta("No encontré ningún paciente con cédula " + cedula + ".\n" + MENSAJE_PREGUNTA_CEDULA, Intencion.REGISTRAR_PACIENTE);
+        }
+        Paciente p = paciente.get();
+        conversacion.setPaciente(p);
+        guardar(conversacion, Intencion.VER_PERFIL, null);
+        return respuesta("¡Encontrado! 📋 Datos de " + p.getNombres() + " " + p.getApellidos() + ":\n"
+                + "📇 Cédula: " + p.getCedula() + "\n"
+                + "📱 Teléfono: " + (p.getTelefono() != null ? p.getTelefono() : "—") + "\n"
+                + "📅 Registrado: " + p.getCreatedAt() + "\n\n"
+                + "Responde:\n1. Ver mis citas\n2. Ver mi perfil\n3. Agendar una cita\n4. Ver servicios\n5. Confirmar o cancelar\n6. Disponibilidad\n7. Hablar con una persona",
+                Intencion.VER_PERFIL);
+    }
+
     // ------------------------------------------------------------------
     // Clasificación de la intención
     // ------------------------------------------------------------------
 
     private Intencion clasificar(String t) {
+        if (PATTERN_CEDULA.matcher(t).matches()) {
+            return Intencion.VER_PERFIL;
+        }
+        if (MAPA_NUMEROS.containsKey(t)) {
+            return MAPA_NUMEROS.get(t);
+        }
+        if (MAPA_CORTAS.containsKey(t)) {
+            return MAPA_CORTAS.get(t);
+        }
         if (contiene(t, PALABRAS_TRANSFERIR)) {
             return Intencion.TRANSFERIR_HUMANO;
         }
@@ -293,8 +352,7 @@ public class AgenteConversacionalService {
         List<Servicio> servicios = serviciosActivos();
         List<Odontologo> odontologos = odontologosActivos();
         EntradaAgendamiento entrada = ParserAgendamiento.parsear(t, hoy(), servicios, odontologos);
-        if (entrada.fecha() != null || entrada.horaInicio() != null
-                || entrada.servicioId() != null || entrada.doctorId() != null) {
+        if (entrada != null && entrada.servicioId() != null) {
             return Intencion.AGENDAR_CITA;
         }
         if (contiene(t, PALABRAS_SALUDO)) {
@@ -1194,5 +1252,74 @@ public class AgenteConversacionalService {
 
     private LocalDate hoy() {
         return LocalDate.now(zona);
+    }
+
+    // ------------------------------------------------------------------
+    // Interacción por teléfono/palabra (sin sesión WhatsApp)
+    // ------------------------------------------------------------------
+
+    @Transactional
+    public RespuestaAgente procesarPorTelefono(String telefono, String texto) {
+        String t = ParserAgendamiento.normalizar(texto);
+        if (t.isBlank()) {
+            return respuesta("Escribe algo para comenzar. Ej: \"ver citas\" o tu número de cédula.", Intencion.SALUDO);
+        }
+        Conversacion conversacion = conversacionRepository.findByTelefono(telefono)
+                .filter(c -> c.getEstado() != EstadoConversacion.CERRADA)
+                .orElseGet(() -> {
+                    Conversacion nueva = new Conversacion();
+                    nueva.setTelefono(telefono);
+                    nueva.setEstado(EstadoConversacion.BOT);
+                    nueva.setAgenteActivo(true);
+                    nueva.setCreatedAt(Instant.now());
+                    nueva.setUpdatedAt(Instant.now());
+                    return conversacionRepository.save(nueva);
+                });
+        conversacion.setUltimoMensajeAt(Instant.now());
+        conversacionRepository.save(conversacion);
+        if (!Boolean.TRUE.equals(conversacion.getAgenteActivo())
+                || conversacion.getEstado() == EstadoConversacion.ATENCION_HUMANA) {
+            return respuesta("La conversación no está activa. Habla con un administrador.", Intencion.DESCONOCIDO);
+        }
+        if (contiene(t, PALABRAS_REINICIAR)) {
+            return reiniciar(conversacion);
+        }
+        Map<String, Object> ctx = contexto(conversacion);
+        if (conversacion.getIntencion() == Intencion.REGISTRAR_PACIENTE) {
+            return gestionarRegistro(conversacion, ctx, t, texto);
+        }
+        if ("CREAR".equals(ctx.get("paso"))) {
+            if (esConfirmacion(t)) {
+                return crearCita(conversacion, ctx);
+            }
+            if (esRechazo(t)) {
+                limpiarContexto(conversacion, Intencion.DESCONOCIDO);
+                return respuesta("No reservé ninguna cita. ¿Puedo ayudarte con algo más?\n" + MENSAJE_MENU, Intencion.DESCONOCIDO);
+            }
+            return respuesta("¿Confirmas tu cita? Responde 'sí' para agendarla o 'no' para cancelarla.", Intencion.AGENDAR_CITA);
+        }
+        if (conversacion.getIntencion() == Intencion.AGENDAR_CITA && ctx.containsKey("paso")) {
+            return gestionarAgendamiento(conversacion, ctx, t);
+        }
+        Intencion intencion = clasificar(t);
+        if (intencion == Intencion.VER_PERFIL && PATTERN_CEDULA.matcher(t).matches()) {
+            return buscarPorCedula(conversacion, t);
+        }
+        return switch (intencion) {
+            case TRANSFERIR_HUMANO -> transferirHumano(conversacion);
+            case VER_PERFIL -> verPerfil(conversacion);
+            case VER_CITAS -> verCitas(conversacion);
+            case SALUDO -> saludar(conversacion);
+            case LISTAR_SERVICIOS -> listarServicios(conversacion);
+            case PREGUNTAR_DISPONIBILIDAD -> preguntarDisponibilidad(conversacion, ctx, t);
+            case CONFIRMAR_CITA -> confirmarCita(conversacion);
+            case CANCELAR_CITA -> cancelarCita(conversacion);
+            case AGENDAR_CITA -> gestionarAgendamiento(conversacion, ctx, t);
+            case REGISTRAR_PACIENTE -> gestionarRegistro(conversacion, ctx, t, texto);
+            default -> {
+                guardar(conversacion, Intencion.DESCONOCIDO, null);
+                yield respuesta("No logré entenderte 😅\n" + MENSAJE_MENU, Intencion.DESCONOCIDO);
+            }
+        };
     }
 }

@@ -243,6 +243,17 @@ export interface AgenteConversacion {
   ultimoMensajeAt?: string;
 }
 
+export interface ConversacionInicio {
+  conversacionId: string;
+  link: string;
+  mensaje: string;
+}
+
+export interface MensajeRequest {
+  telefono: string;
+  texto: string;
+}
+
 export interface Usuario {
   id: number;
   username: string;
