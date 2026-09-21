@@ -59,7 +59,7 @@ Las credenciales NO se generan automáticamente. Se crean en [Google Cloud Conso
 | Variable | Ejemplo | Obligatoria |
 |---|---|---|
 | `GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` | para la app (se puede configurar desde el admin) |
-| `GOOGLE_CLIENT_SECRET` | `GOCSPX-...` | idem |
+| `GOOGLE_CLIENT_SECRET` | `your-secret` | idem |
 | `GOOGLE_REDIRECT_URI` | `http://localhost:8080/api/v1/google/callback` | sí |
 
 > **Nota:** Las credenciales también se pueden gestionar desde la interfaz admin (ruta `/google`, sección "Credenciales OAuth"). Esto permite cambiarlas sin reiniciar el backend.
