@@ -140,4 +140,6 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
             ORDER BY c.fecha ASC
             """)
     List<Object[]> noAsistioPorDia(@Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
+
+    List<Cita> findByEstadoAndFechaBetween(EstadoCita estado, LocalDate desde, LocalDate hasta);
 }

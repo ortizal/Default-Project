@@ -27,9 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Service
 public class GoogleCalendarService {
@@ -251,6 +254,26 @@ public class GoogleCalendarService {
     @EventListener
     public void onCitaCancelada(CitaCanceladaEvent evento) {
         sincronizarPorEvento(evento.citaId(), false);
+    }
+
+    @EventListener
+    public void onCitaConfirmada(CitaConfirmadaEvent evento) {
+        sincronizarPorEvento(evento.citaId(), true);
+    }
+
+    @Scheduled(fixedDelay = 60000, initialDelay = 30000)
+    public void recordarCitasProximas() {
+        LocalDate hoy = LocalDate.now();
+        LocalDate fin = hoy.plusDays(2);
+        List<Cita> citas = citaRepository.findByEstadoAndFechaBetween(
+                Cita.EstadoCita.CONFIRMADA, hoy, fin);
+        citas.forEach(cita -> {
+            try {
+                sincronizarPorEvento(cita.getId(), true);
+            } catch (Exception e) {
+                log.warn("No se pudo recordar cita {}", cita.getId(), e);
+            }
+        });
     }
 
     private void sincronizarPorEvento(Long citaId, boolean yaTieneEvento) {
