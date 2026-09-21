@@ -16,11 +16,8 @@ export class Api {
 
   async init(): Promise<void> {
     try {
-      const r = await fetch('/assets/config.json', { cache: 'no-cache' });
-      if (r.ok) {
-        const json = (await r.json()) as Partial<ApiConfig>;
-        if (json.apiUrl) this.cfg = { ...DEFAULT, ...json };
-      }
+      const r = await this.http.get<Partial<ApiConfig>>('/assets/config.json').toPromise();
+      if (r?.apiUrl) this.cfg = { ...DEFAULT, ...r };
     } catch {
       this.cfg = { ...DEFAULT };
     }

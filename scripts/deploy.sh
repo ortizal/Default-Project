@@ -12,6 +12,8 @@ for v in DATABASE_PASSWORD JWT_SECRET OPENWA_API_KEY OPENWA_WEBHOOK_SECRET; do
 done
 
 export DOCKER_BUILDKIT=1
+echo "== docker compose down =="
+docker compose down || true
 echo "== docker compose up --build -d =="
 docker compose up --build -d
 
