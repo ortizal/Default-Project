@@ -12,6 +12,7 @@ export class LoginComponent {
   password = '';
   cargando = false;
   error = '';
+  mostrarContrasena = false;
 
   constructor(private readonly auth: AuthService) {}
 

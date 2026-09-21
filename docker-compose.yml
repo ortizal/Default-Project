@@ -8,6 +8,7 @@ name: dentalcrm
 services:
   postgres:
     image: postgres:17-alpine
+    command: postgres -c port=5433
     container_name: dentalcrm-postgres
     restart: unless-stopped
     environment:
@@ -15,11 +16,11 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME:-dentalcrm}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-dentalcrm}
     ports:
-      - "5432:5432"
+      - "5433:5433"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-dentalcrm} -d ${DATABASE_NAME:-dentalcrm}"]
+      test: ["CMD-SHELL", "pg_isready -p 5433 -U ${DATABASE_USERNAME:-dentalcrm} -d ${DATABASE_NAME:-dentalcrm}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +44,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
-      DATABASE_URL: jdbc:postgresql://postgres:5432/${DATABASE_NAME:-dentalcrm}
+      DATABASE_URL: jdbc:postgresql://postgres:5433/${DATABASE_NAME:-dentalcrm}
       DATABASE_USERNAME: ${DATABASE_USERNAME:-dentalcrm}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-dentalcrm}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET es obligatorio}

@@ -1,4 +1,4 @@
-# Estado en vivo — 2026-09-21 03:05 UTC
+# Estado en vivo — 2026-09-24 02:31 UTC
 
 > Snapshot automático generado por `scripts/estado-en-vivo.sh` (lo invoca `deploy.sh`).
 > El documento curado y por módulos es `docs/ESTADO.md`.
@@ -7,11 +7,11 @@
 
 | Contenedor | Estado | Imagen |
 |---|---|---|
-| dentalcrm-frontend | Up 8 hours | dentalcrm-frontend |
-| dentalcrm-backend | Up 8 hours | dentalcrm-backend |
-| dentalcrm-openwa | Up 8 hours (healthy) | rmyndharis/openwa:0.23.4 |
-| dentalcrm-postgres | Up 8 hours (healthy) | postgres:17-alpine |
-| dentalcrm-redis | Up 8 hours | redis:7-alpine |
+| dentalcrm-frontend | Up 29 seconds | dentalcrm-frontend |
+| dentalcrm-backend | Up 30 seconds | dentalcrm-backend |
+| dentalcrm-postgres | Up 40 seconds (healthy) | postgres:17-alpine |
+| dentalcrm-openwa | Up 40 seconds (healthy) | rmyndharis/openwa:0.23.4 |
+| dentalcrm-redis | Up 40 seconds | redis:7-alpine |
 
 ## Salud
 

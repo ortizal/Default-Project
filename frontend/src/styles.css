@@ -937,3 +937,281 @@ textarea.input {
     color: #e2e8f0;
   }
 }
+/* ---------------------------------------------------------------------
+   Mejoras generales de presentación
+   --------------------------------------------------------------------- */
+
+/* Animaciones suaves para cards */
+.card {
+  transition: box-shadow .2s ease, transform .15s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Stat cards con icono */
+.stat {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* Botones con mejor hover */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width .3s ease, height .3s ease;
+}
+
+.btn:hover::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* Inputs con animación */
+.input {
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+/* Tabla con hover más suave */
+.table-row-carga {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: .5; }
+  50% { opacity: 1; }
+}
+
+/* Badge con transición */
+.badge {
+  transition: transform .15s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Mejoras en el layout */
+.content {
+  animation: fadeIn .3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar personalizado */
+.content::-webkit-scrollbar,
+.sidebar nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content::-webkit-scrollbar-track,
+.sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb,
+.sidebar nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb:hover,
+.sidebar nav::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Mejoras en el topbar */
+.topbar {
+  transition: box-shadow .2s ease;
+}
+
+.topbar:hover {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+/* Mensajes con animación */
+.msg {
+  animation: slideDown .25s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mejoras en el footer */
+.app-footer {
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+/* Focus visible para accesibilidad */
+.btn:focus-visible,
+.input:focus-visible,
+.toggle-password:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Utilidad para texto degradado */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Utilidad para sombra flotante */
+.shadow-float {
+  box-shadow: var(--shadow-md), 0 8px 24px rgba(13, 148, 136, 0.1);
+}
+
+/* Utilidad para borde izquierdo */
+.border-left-accent {
+  border-left: 3px solid var(--primary);
+}
+
+/* Utilidad para transición */
+.transition-all {
+  transition: all .2s ease;
+}
+
+/* Mejora en el login page */
+.login-page {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 40%, #0f172a 100%);
+}
+
+/* Card con gradiente sutil */
+.card.gradient-hover:hover {
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(13, 148, 136, 0.08);
+}
+
+/* Mejoras en la tabla */
+.tbl {
+  border-spacing: 0;
+}
+
+.tbl th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Mejoras en los badges de estado */
+.badge.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge.bad {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.info {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+/* Utilidad para texto pequeño */
+.text-sm {
+  font-size: 12px;
+}
+
+.text-xs {
+  font-size: 11px;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gap-1 {
+  gap: 4px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-3 {
+  gap: 12px;
+}
+
+.mt-1 {
+  margin-top: 4px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
+
+.mb-1 {
+  margin-bottom: 4px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.p-2 {
+  padding: 8px;
+}
+
+.p-3 {
+  padding: 12px;
+}
