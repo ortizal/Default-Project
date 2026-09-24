@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -25,13 +25,17 @@ export class PacientesComponent {
   tutorMadre: Tutor = { parentesco: 'MADRE', nombres: '' };
   private reqSeq = 0;
 
-  constructor(private readonly api: Api) {
+  constructor(
+    private readonly api: Api,
+    private readonly cdr: ChangeDetectorRef,
+  ) {
     this.cargar(0);
   }
 
   cargar(p: number): void {
     this.error = '';
     this.cargando = true;
+    this.cdr.detectChanges();
     const seq = ++this.reqSeq;
     const params = new URLSearchParams({ page: String(p), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
@@ -43,11 +47,13 @@ export class PacientesComponent {
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
+        this.cdr.detectChanges();
       },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.cargando = false;
         this.error = this.msg(e);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -111,9 +117,13 @@ export class PacientesComponent {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.detectChanges();
         this.cargar(this.page);
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -127,7 +137,10 @@ export class PacientesComponent {
   desactivar(p: Paciente): void {
     this.api.del<void>(`/pacientes/${p.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.detectChanges();
+      },
     });
   }
 
