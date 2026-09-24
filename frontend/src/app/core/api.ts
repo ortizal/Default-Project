@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 
 export interface ApiConfig {
   apiUrl: string;
@@ -16,7 +16,7 @@ export class Api {
 
   async init(): Promise<void> {
     try {
-      const r = await this.http.get<Partial<ApiConfig>>('/assets/config.json').toPromise();
+      const r = await firstValueFrom(this.http.get<Partial<ApiConfig>>('/assets/config.json'));
       if (r?.apiUrl) this.cfg = { ...DEFAULT, ...r };
     } catch {
       this.cfg = { ...DEFAULT };

@@ -267,7 +267,7 @@ public class GoogleCalendarService {
         LocalDate hoy = LocalDate.now();
         LocalDate fin = hoy.plusDays(2);
         List<Cita> citas = citaRepository.findByEstadoAndFechaBetween(
-                Cita.EstadoCita.CONFIRMADA, hoy, fin);
+                EstadoCita.CONFIRMADA, hoy, fin);
         citas.forEach(cita -> {
             try {
                 sincronizarPorEvento(cita.getId(), true);
