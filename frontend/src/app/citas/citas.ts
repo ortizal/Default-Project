@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Cita, Odontologo, Servicio, Paciente, Page } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-citas',
@@ -10,7 +11,7 @@ import { Cita, Odontologo, Servicio, Paciente, Page } from '../core/models';
   styleUrl: './citas.css',
   imports: [CommonModule, FormsModule],
 })
-export class CitasComponent {
+export class CitasComponent implements OnInit {
   items: Cita[] = [];
   odontologos: Odontologo[] = [];
   servicios: Servicio[] = [];
@@ -35,7 +36,9 @@ export class CitasComponent {
   totalAtendidas = 0;
   totalCanceladas = 0;
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
     this.cargar(0);
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.odontologos = r));
     this.api.get<Servicio[]>('/servicios/activos').subscribe((r) => (this.servicios = r));
@@ -43,27 +46,24 @@ export class CitasComponent {
   }
 
   cargar(p: number): void {
-    this.cargando = true;
     this.error = '';
     const seq = ++this.reqSeq;
     const params = new URLSearchParams({ page: String(p), size: String(this.size), desde: this.desde || '', hasta: this.hasta || '' });
     if (this.estado) params.set('estado', this.estado);
     if (this.doctorId) params.set('doctorId', this.doctorId);
     if (this.pacienteNombre) params.set('paciente', this.pacienteNombre);
-    this.api.get<Page<Cita>>(`/citas?${params.toString()}`).subscribe({
+    withLoading(this, this.api.get<Page<Cita>>(`/citas?${params.toString()}`), () => seq === this.reqSeq, this.cdr).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
-        this.cargando = false;
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.total = r.totalElements ?? this.items.length;
         this.page = Math.min(p, this.totalPages - 1);
         this.calcularTotales();
-      },
+       this.cdr.markForCheck(); },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
-        this.cargando = false;
       },
     });
   }
@@ -102,7 +102,10 @@ export class CitasComponent {
         this.mostrarModal = false;
         this.cargar(0);
       },
-      error: (e) => { this.error = this.msg(e); this.cargando = false; },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cargando = false;
+      },
     });
   }
 

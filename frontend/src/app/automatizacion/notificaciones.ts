@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Api } from '../core/api';
 import { Notificacion } from '../core/models';
@@ -8,11 +8,13 @@ import { Notificacion } from '../core/models';
   templateUrl: './notificaciones.html',
   imports: [CommonModule],
 })
-export class NotificacionesComponent {
+export class NotificacionesComponent implements OnInit {
   items: Notificacion[] = [];
   error = '';
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
   }
 

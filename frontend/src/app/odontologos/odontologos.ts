@@ -1,15 +1,16 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Odontologo, Page, GoogleCalendario } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-odontologos',
   templateUrl: './odontologos.html',
   imports: [CommonModule, FormsModule],
 })
-export class OdontologosComponent {
+export class OdontologosComponent implements OnInit {
   items: Odontologo[] = [];
   activos: Odontologo[] = [];
   q = '';
@@ -23,42 +24,30 @@ export class OdontologosComponent {
   form: Partial<Odontologo> = {};
   calendarios: GoogleCalendario[] = [];
 
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
     this.cargar(0);
-    this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => {
-      this.activos = r;
-      this.cdr.detectChanges();
-    });
+    this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.activos = r));
     this.api.get<GoogleCalendario[]>('/google/calendars').subscribe({
-      next: (r) => {
-        this.calendarios = r;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.calendarios = [];
-        this.cdr.detectChanges();
-      },
+      next: (r) => { this.calendarios = r; this.cdr.markForCheck(); },
+      error: () => (this.calendarios = []),
     });
   }
 
   cargar(p: number): void {
-    this.cargando = true;
     this.error = '';
     const params = new URLSearchParams({ page: String(p), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
     if (this.estado) params.set('estado', this.estado);
-    this.api.get<Page<Odontologo>>(`/odontologos?${params.toString()}`).subscribe({
+    withLoading(this, this.api.get<Page<Odontologo>>(`/odontologos?${params.toString()}`), undefined, this.cdr).subscribe({
       next: (r) => {
-        this.cargando = false;
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
-        this.cdr.detectChanges();
-      },
+       this.cdr.markForCheck(); },
       error: (e) => {
         this.error = this.msg(e);
-        this.cargando = false;
-        this.cdr.detectChanges();
       },
     });
   }
@@ -88,7 +77,6 @@ editar(o: Odontologo): void {
         this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.activos = r));
       },
       error: (e) => {
-        this.cargando = false;
         this.error = this.msg(e);
       },
     });

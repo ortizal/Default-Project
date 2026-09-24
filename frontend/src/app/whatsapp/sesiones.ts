@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { WhatsappSesion } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-sesiones',
@@ -10,7 +11,7 @@ import { WhatsappSesion } from '../core/models';
   styleUrl: './sesiones.css',
   imports: [CommonModule, FormsModule],
 })
-export class SesionesComponent {
+export class SesionesComponent implements OnInit {
   items: WhatsappSesion[] = [];
   buscar = '';
   estadoF = '';
@@ -28,29 +29,28 @@ export class SesionesComponent {
   totalDesconectadas = 0;
   totalError = 0;
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
     this.cargar(0);
   }
 
   cargar(p: number): void {
-    this.cargando = true;
     this.error = '';
     const seq = ++this.reqSeq;
     const params = new URLSearchParams({ page: String(p), size: '20', busca: this.buscar || '', estado: this.estadoF || '' });
-    this.api.get<WhatsappSesion[]>('/whatsapp/sesiones?' + params.toString()).subscribe({
+    withLoading(this, this.api.get<WhatsappSesion[]>('/whatsapp/sesiones?' + params.toString()), () => seq === this.reqSeq, this.cdr).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
         this.items = r;
-        this.cargando = false;
         this.total = r.length;
         this.page = Math.min(p, this.totalPages - 1);
         this.totalPages = Math.max(Math.ceil(r.length / 20), 1);
         this.calcularTotales();
-      },
+       this.cdr.markForCheck(); },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
-        this.cargando = false;
       },
     });
   }
@@ -114,7 +114,10 @@ export class SesionesComponent {
         this.mostrarModal = false;
         this.cargar(0);
       },
-      error: (e) => { this.error = this.msg(e); this.cargando = false; },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cargando = false;
+      },
     });
   }
 

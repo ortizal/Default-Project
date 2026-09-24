@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,7 +9,7 @@ import { AgenteConversacion, ConversacionInicio, MensajeRequest } from '../core/
   templateUrl: './agente.html',
   imports: [FormsModule, CommonModule],
 })
-export class AgenteComponent {
+export class AgenteComponent implements OnInit {
   items: AgenteConversacion[] = [];
   q = '';
   error = '';
@@ -18,7 +18,9 @@ export class AgenteComponent {
   inicioResp: ConversacionInicio | null = null;
   respuestaChat = '';
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
   }
 

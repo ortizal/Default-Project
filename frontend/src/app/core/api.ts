@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { ApplicationRef, Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
 
@@ -12,7 +12,11 @@ const DEFAULT: ApiConfig = { apiUrl: '/api/v1' };
 export class Api {
   private cfg: ApiConfig = { ...DEFAULT };
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private zone: NgZone,
+    private appRef: ApplicationRef,
+  ) {}
 
   async init(): Promise<void> {
     try {
@@ -32,22 +36,58 @@ export class Api {
   }
 
   get<T>(path: string, params?: HttpParams): Observable<T> {
-    return this.http.get<T>(this.url(path), { params });
+    return this.inZone(this.http.get<T>(this.url(path), { params }));
   }
 
   post<T>(path: string, body: unknown): Observable<T> {
-    return this.http.post<T>(this.url(path), body);
+    return this.inZone(this.http.post<T>(this.url(path), body));
   }
 
   put<T>(path: string, body: unknown): Observable<T> {
-    return this.http.put<T>(this.url(path), body);
+    return this.inZone(this.http.put<T>(this.url(path), body));
   }
 
   patch<T>(path: string, body: unknown): Observable<T> {
-    return this.http.patch<T>(this.url(path), body);
+    return this.inZone(this.http.patch<T>(this.url(path), body));
   }
 
   del<T>(path: string): Observable<T> {
-    return this.http.delete<T>(this.url(path));
+    return this.inZone(this.http.delete<T>(this.url(path)));
+  }
+
+  private inZone<T>(source: Observable<T>): Observable<T> {
+    return new Observable<T>((subscriber) => {
+      const sub = source.subscribe({
+        next: (value) => this.zone.run(() => {
+          subscriber.next(value);
+          this.scheduleTick();
+        }),
+        error: (err) => this.zone.run(() => {
+          subscriber.error(err);
+          this.scheduleTick();
+        }),
+        complete: () => this.zone.run(() => {
+          subscriber.complete();
+          this.scheduleTick();
+        }),
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+
+  private scheduleTick(): void {
+    this.zone.run(() => {
+      queueMicrotask(() => {
+        try {
+          const app = this.appRef as unknown as { dirtyFlags?: number };
+          if (typeof app.dirtyFlags === 'number') {
+            app.dirtyFlags |= 1;
+          }
+          this.appRef.tick();
+        } catch {
+          // Ignore re-entrant tick during an ongoing CD cycle.
+        }
+      });
+    });
   }
 }

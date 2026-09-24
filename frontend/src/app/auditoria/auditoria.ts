@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -23,7 +23,7 @@ const MODULOS = [
   templateUrl: './auditoria.html',
   imports: [CommonModule, FormsModule],
 })
-export class AuditoriaComponent {
+export class AuditoriaComponent implements OnInit {
   readonly modulos = MODULOS;
   rows: Auditoria[] = [];
   q = '';
@@ -33,7 +33,9 @@ export class AuditoriaComponent {
   error = '';
   private abiertos = new Set<number>();
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
   }
 

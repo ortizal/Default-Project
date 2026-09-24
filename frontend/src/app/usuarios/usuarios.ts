@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,7 +9,7 @@ import { Page, Usuario } from '../core/models';
   templateUrl: './usuarios.html',
   imports: [CommonModule, FormsModule],
 })
-export class UsuariosComponent {
+export class UsuariosComponent implements OnInit {
   readonly ROLES = ['SUPER_ADMIN', 'ADMIN', 'RECEPCION', 'ODONTOLOGO'];
   items: Usuario[] = [];
   q = '';
@@ -21,7 +21,9 @@ export class UsuariosComponent {
   form: Partial<Usuario> & { password?: string } = {};
   rolesSel: string[] = [];
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar(0);
   }
 

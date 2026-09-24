@@ -1,16 +1,17 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Paciente, Page, Tutor, nombreEstado } from '../core/models';
 import { AppDateComponent } from '../core/app-date.component';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-pacientes',
   templateUrl: './pacientes.html',
   imports: [CommonModule, FormsModule, AppDateComponent],
 })
-export class PacientesComponent {
+export class PacientesComponent implements OnInit {
   items: Paciente[] = [];
   q = '';
   estado = 'ACTIVO';
@@ -25,35 +26,28 @@ export class PacientesComponent {
   tutorMadre: Tutor = { parentesco: 'MADRE', nombres: '' };
   private reqSeq = 0;
 
-  constructor(
-    private readonly api: Api,
-    private readonly cdr: ChangeDetectorRef,
-  ) {
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
     this.cargar(0);
   }
 
   cargar(p: number): void {
     this.error = '';
-    this.cargando = true;
-    this.cdr.detectChanges();
     const seq = ++this.reqSeq;
     const params = new URLSearchParams({ page: String(p), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
     if (this.estado) params.set('estado', this.estado);
-    this.api.get<Page<Paciente>>(`/pacientes?${params.toString()}`).subscribe({
+    withLoading(this, this.api.get<Page<Paciente>>(`/pacientes?${params.toString()}`), () => seq === this.reqSeq, this.cdr).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
-        this.cargando = false;
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
-        this.cdr.detectChanges();
-      },
+       this.cdr.markForCheck(); },
       error: (e) => {
         if (seq !== this.reqSeq) return;
-        this.cargando = false;
         this.error = this.msg(e);
-        this.cdr.detectChanges();
       },
     });
   }
@@ -117,12 +111,10 @@ export class PacientesComponent {
     req.subscribe({
       next: () => {
         this.showForm = false;
-        this.cdr.detectChanges();
         this.cargar(this.page);
       },
       error: (e) => {
         this.error = this.msg(e);
-        this.cdr.detectChanges();
       },
     });
   }
@@ -137,10 +129,7 @@ export class PacientesComponent {
   desactivar(p: Paciente): void {
     this.api.del<void>(`/pacientes/${p.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => {
-        this.error = this.msg(e);
-        this.cdr.detectChanges();
-      },
+      error: (e) => (this.error = this.msg(e)),
     });
   }
 

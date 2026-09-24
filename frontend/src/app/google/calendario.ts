@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,7 +9,7 @@ import { GoogleCalendario, GoogleConnect, GoogleCredential, GoogleStatus, Google
   templateUrl: './calendario.html',
   imports: [CommonModule, FormsModule],
 })
-export class CalendarioComponent {
+export class CalendarioComponent implements OnInit {
   status?: GoogleStatus;
   syncResult?: GoogleSyncResult;
   error = '';
@@ -17,7 +17,9 @@ export class CalendarioComponent {
   credGuardando = false;
   credGuardado = false;
 
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
   }
 
@@ -26,12 +28,11 @@ export class CalendarioComponent {
       next: (r) => {
         this.status = r;
         this.syncResult = undefined;
-        this.cdr.detectChanges();
       },
       error: (e) => (this.error = this.msg(e)),
     });
     this.api.get<GoogleCredential>('/google/credentials').subscribe({
-      next: (c) => { this.credenciales = c; this.cdr.detectChanges(); },
+      next: (c) => (this.credenciales = c),
       error: () => {},
     });
   }

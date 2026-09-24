@@ -19,8 +19,8 @@ public record ConversacionResponse(
         String pacienteNombres = c.getPaciente() == null ? null
                 : c.getPaciente().getNombres() + " " + c.getPaciente().getApellidos();
         return new ConversacionResponse(
-                c.getId(), c.getSesion().getSesionId(), c.getTelefono(),
-                c.getNombreContacto(), c.getEstado().name(),
+                c.getId(), c.getSesion() == null ? null : c.getSesion().getSesionId(), c.getTelefono(),
+                c.getNombreContacto(), c.getEstado() == null ? null : c.getEstado().name(),
                 c.getPaciente() == null ? null : c.getPaciente().getId(),
                 pacienteNombres, ultimoMensaje, c.getUltimoMensajeAt());
     }

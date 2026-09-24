@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,7 +9,7 @@ import { Conversacion, ConversacionDetalle, Mensaje } from '../core/models';
   templateUrl: './inbox.html',
   imports: [CommonModule, FormsModule],
 })
-export class InboxComponent implements OnDestroy {
+export class InboxComponent implements OnInit, OnDestroy {
   conversaciones: Conversacion[] = [];
   seleccion: Conversacion | null = null;
   detalle: ConversacionDetalle | null = null;
@@ -20,7 +20,9 @@ export class InboxComponent implements OnDestroy {
   error = '';
   private timer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargarLista();
     this.timer = setInterval(() => this.poll(), 6000);
   }

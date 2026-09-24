@@ -92,6 +92,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
               AND c.tenant_id = :tenantId
             GROUP BY s.id, s.nombre
             ORDER BY COUNT(c.id) DESC
+            LIMIT :limite
             """, nativeQuery = true)
     List<Object[]> serviciosMasSolicitados(@Param("desde") LocalDate desde,
                                            @Param("hasta") LocalDate hasta,

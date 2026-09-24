@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -11,7 +11,7 @@ const EVENTOS = ['CITA_CREADA', 'CITA_PROXIMA', 'CITA_CONFIRMADA', 'CITA_CANCELA
   templateUrl: './automatizaciones.html',
   imports: [CommonModule, FormsModule],
 })
-export class AutomatizacionesComponent {
+export class AutomatizacionesComponent implements OnInit {
   items: Automatizacion[] = [];
   plantillas: Plantilla[] = [];
   readonly EVENTOS = EVENTOS;
@@ -19,7 +19,9 @@ export class AutomatizacionesComponent {
   showForm = false;
   form: Partial<Automatizacion> = {};
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
     this.api.get<Plantilla[]>('/plantillas').subscribe((r) => (this.plantillas = r));
   }

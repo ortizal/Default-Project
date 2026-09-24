@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { AppDateComponent } from '../core/app-date.component';
   templateUrl: './agenda.html',
   imports: [CommonModule, FormsModule, RouterLink, CalendarioComponent, AppDateComponent],
 })
-export class AgendaComponent {
+export class AgendaComponent implements OnInit {
   vista: 'dia' | 'semana' | 'mes' = 'dia';
   odontologos: Odontologo[] = [];
   odontologoSeleccionado = '';
@@ -31,7 +31,9 @@ export class AgendaComponent {
   bloqueo: Partial<Bloqueo> = {};
   cita: Partial<Cita> = {};
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
       next: (r) => {
         this.odontologos = r;

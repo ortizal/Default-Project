@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,13 +9,15 @@ import { Plantilla } from '../core/models';
   templateUrl: './plantillas.html',
   imports: [CommonModule, FormsModule],
 })
-export class PlantillasComponent {
+export class PlantillasComponent implements OnInit {
   items: Plantilla[] = [];
   error = '';
   showForm = false;
   form: Partial<Plantilla> = {};
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.cargar();
   }
 

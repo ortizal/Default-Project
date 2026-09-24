@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Api } from '../core/api';
 import { EstadisticasData, ReporteSerie } from '../core/models';
 
@@ -6,11 +6,13 @@ import { EstadisticasData, ReporteSerie } from '../core/models';
   selector: 'app-reportes',
   templateUrl: './reportes.html',
 })
-export class ReportesComponent {
+export class ReportesComponent implements OnInit {
   e: EstadisticasData | null = null;
   error = '';
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.api.get<EstadisticasData>('/reportes/estadisticas').subscribe({
       next: (r) => (this.e = r),
       error: (e) => (this.error = this.msg(e)),

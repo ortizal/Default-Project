@@ -23,9 +23,9 @@ import org.dentalcrm.web.google.GoogleService.GoogleTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -239,25 +239,28 @@ public class GoogleCalendarService {
     }
 
     // ------------------------------------------------------------------
-    // Listeners: se ejecutan tras crear/mover/cancelar una cita
+    // Listeners: se ejecutan tras el COMMIT de crear/mover/cancelar una cita,
+    // para no llamar a la API de Google dentro de la transacción (que podría
+    // hacer rollback y dejar el evento externo sin compensación, o bloquear
+    // la conexión de BD durante la llamada HTTP).
     // ------------------------------------------------------------------
 
-    @EventListener
+    @TransactionalEventListener
     public void onCitaCreada(CitaCreadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), false);
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onCitaModificada(CitaModificadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), true);
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onCitaCancelada(CitaCanceladaEvent evento) {
         sincronizarPorEvento(evento.citaId(), false);
     }
 
-    @EventListener
+    @TransactionalEventListener
     public void onCitaConfirmada(CitaConfirmadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), true);
     }

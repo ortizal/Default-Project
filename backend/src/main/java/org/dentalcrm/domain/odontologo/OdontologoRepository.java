@@ -21,4 +21,6 @@ public interface OdontologoRepository extends JpaRepository<Odontologo, Long> {
     Page<Odontologo> buscar(@Param("q") String q, @Param("estado") String estado, Pageable pageable);
 
     List<Odontologo> findTop5ByEstadoOrderByNombresAsc(String estado);
+
+    List<Odontologo> findByEstadoOrderByNombresAsc(String estado);
 }

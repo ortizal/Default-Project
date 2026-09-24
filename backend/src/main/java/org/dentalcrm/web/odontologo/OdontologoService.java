@@ -42,7 +42,7 @@ public class OdontologoService {
 
     @Transactional(readOnly = true)
     public List<OdontologoResponse> activos() {
-        return odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO").stream()
+        return odontologoRepository.findByEstadoOrderByNombresAsc("ACTIVO").stream()
                 .map(OdontologoResponse::from)
                 .toList();
     }

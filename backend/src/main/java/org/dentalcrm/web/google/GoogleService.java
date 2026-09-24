@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.net.URLEncoder;
+import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -114,7 +115,7 @@ public class GoogleService {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
         return json == null ? null : json.path("email").asText(null);
     }
 
@@ -124,7 +125,7 @@ public class GoogleService {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
         List<CalendarioRemoto> resultado = new ArrayList<>();
         JsonNode items = json == null ? null : json.path("items");
         if (items != null && items.isArray()) {
@@ -146,7 +147,7 @@ public class GoogleService {
                 .bodyValue(payloadEvento(evento))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
         return json == null ? null : json.path("id").asText(null);
     }
 
@@ -158,7 +159,7 @@ public class GoogleService {
                 .bodyValue(payloadEvento(evento))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
     }
 
     public void eliminarEvento(String accessToken, String calendarId, String eventId) {
@@ -167,7 +168,7 @@ public class GoogleService {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
     }
 
     public JsonNode obtenerEvento(String accessToken, String calendarId, String eventId) {
@@ -176,7 +177,7 @@ public class GoogleService {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .block();
+                .block(Duration.ofSeconds(30));
     }
 
     public Object payloadEvento(EventoGoogle evento) {
@@ -199,7 +200,7 @@ public class GoogleService {
                     .body(BodyInserters.fromFormData(form))
                     .retrieve()
                     .bodyToMono(JsonNode.class)
-                    .block();
+                    .block(Duration.ofSeconds(30));
         } catch (WebClientResponseException e) {
             throw errorGoogle(e);
         }

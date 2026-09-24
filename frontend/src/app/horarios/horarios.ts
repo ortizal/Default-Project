@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -9,7 +9,7 @@ import { DIAS, Horario, nombreEstado, Odontologo } from '../core/models';
   templateUrl: './horarios.html',
   imports: [CommonModule, FormsModule],
 })
-export class HorariosComponent {
+export class HorariosComponent implements OnInit {
   readonly DIAS = DIAS;
   readonly nombreEstado = nombreEstado;
   odontologos: Odontologo[] = [];
@@ -19,7 +19,9 @@ export class HorariosComponent {
   showForm = false;
   form: Partial<Horario> = {};
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api) {}
+
+  ngOnInit(): void {
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
       next: (r) => {
         this.odontologos = r;

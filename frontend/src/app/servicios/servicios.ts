@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, Servicio } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-servicios',
   templateUrl: './servicios.html',
   imports: [CommonModule, FormsModule],
 })
-export class ServiciosComponent {
+export class ServiciosComponent implements OnInit {
   items: Servicio[] = [];
   q = '';
   estado = 'ACTIVO';
@@ -21,25 +22,24 @@ export class ServiciosComponent {
   showForm = false;
   form: Partial<Servicio> = {};
 
-  constructor(private readonly api: Api) {
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
     this.cargar(0);
   }
 
   cargar(p: number): void {
     this.error = '';
-    this.cargando = true;
     const params = new URLSearchParams({ page: String(p), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
     if (this.estado) params.set('estado', this.estado);
-    this.api.get<Page<Servicio>>(`/servicios?${params.toString()}`).subscribe({
+    withLoading(this, this.api.get<Page<Servicio>>(`/servicios?${params.toString()}`), undefined, this.cdr).subscribe({
       next: (r) => {
-        this.cargando = false;
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
-      },
+       this.cdr.markForCheck(); },
       error: (e) => {
-        this.cargando = false;
         this.error = this.msg(e);
       },
     });
