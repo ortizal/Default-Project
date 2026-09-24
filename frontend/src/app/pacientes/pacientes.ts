@@ -48,6 +48,7 @@ export class PacientesComponent implements OnInit {
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -57,6 +58,7 @@ export class PacientesComponent implements OnInit {
     this.tutorPadre = { parentesco: 'PADRE', nombres: '' };
     this.tutorMadre = { parentesco: 'MADRE', nombres: '' };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   editar(p: Paciente): void {
@@ -66,6 +68,7 @@ export class PacientesComponent implements OnInit {
     this.tutorPadre = padre ? { ...padre } : { parentesco: 'PADRE', nombres: '' };
     this.tutorMadre = madre ? { ...madre } : { parentesco: 'MADRE', nombres: '' };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   get esMenor(): boolean {
@@ -82,6 +85,7 @@ export class PacientesComponent implements OnInit {
   guardar(): void {
     if (!this.form.nombres || !this.form.apellidos) {
       this.error = 'Completa nombres y apellidos (campos obligatorios)';
+      this.cdr.markForCheck();
       return;
     }
     if (this.esMenor) {
@@ -89,6 +93,7 @@ export class PacientesComponent implements OnInit {
       const hayMadre = this.tutorMadre.nombres?.trim();
       if (!hayPadre && !hayMadre) {
         this.error = 'El paciente es menor de edad: debe registrar al padre y/o madre como tutor';
+        this.cdr.markForCheck();
         return;
       }
     }
@@ -111,10 +116,12 @@ export class PacientesComponent implements OnInit {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.markForCheck();
         this.cargar(this.page);
       },
       error: (e) => {
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -129,7 +136,7 @@ export class PacientesComponent implements OnInit {
   desactivar(p: Paciente): void {
     this.api.del<void>(`/pacientes/${p.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

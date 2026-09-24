@@ -45,7 +45,7 @@
       <div class="between" style="margin-top:10px">
         <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
         <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
-        <button class="btn small" (click)="cargar(page)" [disabled]="!cargando">Recargar</button>
+        <button class="btn small" (click)="cargar(page)" [disabled]="cargando">Recargar</button>
         <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
       </div>
     </div>

@@ -40,9 +40,18 @@ export class CitasComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar(0);
-    this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.odontologos = r));
-    this.api.get<Servicio[]>('/servicios/activos').subscribe((r) => (this.servicios = r));
-    this.api.get<Page<Paciente>>('/pacientes?page=0&size=100').subscribe((r) => (this.pacientes = r.content));
+    this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
+      next: (r) => { this.odontologos = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
+    this.api.get<Servicio[]>('/servicios/activos').subscribe({
+      next: (r) => { this.servicios = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
+    this.api.get<Page<Paciente>>('/pacientes?page=0&size=500').subscribe({
+      next: (r) => { this.pacientes = r.content; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
   }
 
   cargar(p: number): void {
@@ -87,9 +96,11 @@ export class CitasComponent implements OnInit {
   crearCita(): void {
     if (!this.nuevaCita.pacienteId || !this.nuevaCita.doctorId || !this.nuevaCita.servicioId || !this.nuevaCita.fecha) {
       this.error = 'Completa todos los campos obligatorios';
+      this.cdr.markForCheck();
       return;
     }
     this.cargando = true;
+    this.cdr.markForCheck();
     this.api.post<Cita>('/citas', {
       pacienteId: this.nuevaCita.pacienteId,
       doctorId: this.nuevaCita.doctorId,
@@ -100,11 +111,13 @@ export class CitasComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.mostrarModal = false;
+        this.cdr.markForCheck();
         this.cargar(0);
       },
       error: (e) => {
         this.error = this.msg(e);
         this.cargando = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -112,14 +125,14 @@ export class CitasComponent implements OnInit {
   confirmar(c: Cita): void {
     this.api.post<Cita>(`/citas/${c.id}/confirmar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   atender(c: Cita): void {
     this.api.post<Cita>(`/citas/${c.id}/atender`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -128,7 +141,7 @@ export class CitasComponent implements OnInit {
     if (motivo === null) return;
     this.api.post<Cita>(`/citas/${c.id}/cancelar`, { motivo }).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -136,7 +149,7 @@ export class CitasComponent implements OnInit {
     if (!confirm('¿Registrar como no asistió?')) return;
     this.api.post<Cita>(`/citas/${c.id}/no-asistio`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

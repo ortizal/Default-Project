@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { Api } from '../core/api';
 import { Bloqueo, Cita, Horario, Odontologo, Paciente, Page, Servicio, Slot } from '../core/models';
 import { CalendarioComponent } from './calendario';
 import { AppDateComponent } from '../core/app-date.component';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-agenda',
@@ -25,13 +26,14 @@ export class AgendaComponent implements OnInit {
   slots: Slot[] = [];
   fecha = new Date().toISOString().slice(0, 10);
   error = '';
+  cargando = false;
   showBloqueo = false;
   showCita = false;
   horaSugerida = '';
   bloqueo: Partial<Bloqueo> = {};
   cita: Partial<Cita> = {};
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
@@ -41,13 +43,17 @@ export class AgendaComponent implements OnInit {
           this.odontologoSeleccionado = String(r[0].id);
           this.cargarTodo();
         }
+        this.cdr.markForCheck();
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
-    this.api.get<Servicio[]>('/servicios/activos').subscribe((r) => (this.servicios = r));
+    this.api.get<Servicio[]>('/servicios/activos').subscribe({
+      next: (r) => { this.servicios = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
     this.api.get<Page<Paciente>>('/pacientes?estado=ACTIVO&page=0&size=500').subscribe({
-      next: (r) => (this.pacientes = r.content),
-      error: (e) => (this.error = this.msg(e)),
+      next: (r) => { this.pacientes = r.content; this.cdr.markForCheck(); },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -75,17 +81,25 @@ export class AgendaComponent implements OnInit {
     if (!this.odontologoSeleccionado) return;
     const o = this.odontologoSeleccionado;
     const f = this.fecha;
-    this.api.get<Cita[]>(`/agenda?odontologoId=${o}&fecha=${f}`).subscribe({
+    withLoading(this, this.api.get<Cita[]>(`/agenda?odontologoId=${o}&fecha=${f}`), undefined, this.cdr).subscribe({
       next: (r) => {
         this.citas = [...r].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+        this.cdr.markForCheck();
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
-    this.api.get<Bloqueo[]>(`/agenda/bloqueos?odontologoId=${o}&fecha=${f}`).subscribe((r) => (this.bloqueos = r));
-    this.api.get<Horario[]>(`/horarios?odontologoId=${o}`).subscribe((r) => {
-      const d = new Date(f + 'T00:00:00');
-      const dia = ((d.getDay() + 6) % 7) + 1;
-      this.horarios = r.filter((h) => h.diaSemana === dia && h.estado === 'ACTIVO');
+    this.api.get<Bloqueo[]>(`/agenda/bloqueos?odontologoId=${o}&fecha=${f}`).subscribe({
+      next: (r) => { this.bloqueos = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
+    this.api.get<Horario[]>(`/horarios?odontologoId=${o}`).subscribe({
+      next: (r) => {
+        const d = new Date(f + 'T00:00:00');
+        const dia = ((d.getDay() + 6) % 7) + 1;
+        this.horarios = r.filter((h) => h.diaSemana === dia && h.estado === 'ACTIVO');
+        this.cdr.markForCheck();
+      },
+      error: () => this.cdr.markForCheck(),
     });
     this.cargarSlots();
   }
@@ -93,6 +107,7 @@ export class AgendaComponent implements OnInit {
   cargarSlots(): void {
     if (!this.odontologoSeleccionado || !this.servicioSeleccionado) {
       this.slots = [];
+      this.cdr.markForCheck();
       return;
     }
     const svc = this.servicios.find((s) => s.id === Number(this.servicioSeleccionado));
@@ -101,14 +116,15 @@ export class AgendaComponent implements OnInit {
         `/agenda/disponibilidad?odontologoId=${this.odontologoSeleccionado}&fecha=${this.fecha}&servicioId=${this.servicioSeleccionado}&duracion=${svc?.duracionMinutos ?? ''}`,
       )
       .subscribe({
-        next: (r) => (this.slots = r),
-        error: (e) => (this.error = this.msg(e)),
+        next: (r) => { this.slots = r; this.cdr.markForCheck(); },
+        error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
       });
   }
 
   crearBloqueo(): void {
     this.bloqueo = { horaInicio: '08:00', horaFin: '12:00', motivo: '' };
     this.showBloqueo = true;
+    this.cdr.markForCheck();
   }
 
   guardarBloqueo(): void {
@@ -123,9 +139,10 @@ export class AgendaComponent implements OnInit {
       .subscribe({
         next: () => {
           this.showBloqueo = false;
+          this.cdr.markForCheck();
           this.cargarTodo();
         },
-        error: (e) => (this.error = this.msg(e)),
+        error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
       });
   }
 
@@ -133,13 +150,16 @@ export class AgendaComponent implements OnInit {
     if (!confirm('¿Quitar este bloqueo?')) return;
     this.api.del<void>(`/agenda/bloqueos/${b.id}`).subscribe({
       next: () => this.cargarTodo(),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   crearCitaEn(s: Slot): void {
     if (this.pacientes.length === 0) {
-      this.api.get<Page<Paciente>>('/pacientes?estado=ACTIVO&page=0&size=500').subscribe((r) => (this.pacientes = r.content));
+      this.api.get<Page<Paciente>>('/pacientes?estado=ACTIVO&page=0&size=500').subscribe({
+        next: (r) => { this.pacientes = r.content; this.cdr.markForCheck(); },
+        error: () => this.cdr.markForCheck(),
+      });
     }
     const svc = this.servicios.find((s2) => s2.id === Number(this.servicioSeleccionado));
     this.cita = {
@@ -150,6 +170,7 @@ export class AgendaComponent implements OnInit {
     };
     this.horaSugerida = s.horaInicio;
     this.showCita = true;
+    this.cdr.markForCheck();
   }
 
   onServicio(): void {
@@ -165,10 +186,12 @@ export class AgendaComponent implements OnInit {
   guardarCita(): void {
     if (!this.cita.pacienteId || !this.cita.servicioId) {
       this.error = 'Selecciona el paciente y el servicio antes de agendar';
+      this.cdr.markForCheck();
       return;
     }
     if (!this.cita.horaInicio) {
       this.error = 'Selecciona una hora para la cita';
+      this.cdr.markForCheck();
       return;
     }
     this.api
@@ -183,9 +206,10 @@ export class AgendaComponent implements OnInit {
       .subscribe({
         next: () => {
           this.showCita = false;
+          this.cdr.markForCheck();
           this.cargarTodo();
         },
-        error: (e) => (this.error = this.msg(e)),
+        error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
       });
   }
 
@@ -193,7 +217,7 @@ export class AgendaComponent implements OnInit {
     switch (estado) {
       case 'CONFIRMADA':
         return 'ok';
-      case 'REALIZADA':
+      case 'ATENDIDA':
         return 'info';
       case 'CANCELADA':
         return 'bad';

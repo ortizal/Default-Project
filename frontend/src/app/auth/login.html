@@ -23,13 +23,10 @@
         </button>
       </div>
       <div class="login-footer">
-        <label class="remember">
-          <input type="checkbox" /> Recordarme
-        </label>
-        <a class="forgot-link" href="#">¿Olvidaste tu contraseña?</a>
+        <span class="muted" style="font-size:12px">Acceso restringido al personal</span>
       </div>
       <div style="margin-top:20px">
-        <button class="btn primary" style="width:100%" [disabled]="cargando">
+        <button class="btn primary" style="width:100%" [disabled]="!puedeEntrar">
           @if (cargando) {
             <span class="spin"></span>
           } @else {

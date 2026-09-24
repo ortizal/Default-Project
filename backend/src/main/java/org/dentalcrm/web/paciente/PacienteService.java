@@ -36,7 +36,7 @@ public class PacienteService {
     @Transactional(readOnly = true)
     public Page<PacienteResponse> listar(String q, String estado, int page, int size) {
         String query = q == null ? "" : q.trim();
-        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 500));
         return pacienteRepository.buscar(query, estado, pageable).map(PacienteResponse::from);
     }
 

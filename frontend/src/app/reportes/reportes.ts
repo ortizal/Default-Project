@@ -1,21 +1,35 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { EstadisticasData, ReporteSerie } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-reportes',
   templateUrl: './reportes.html',
+  imports: [CommonModule, FormsModule],
 })
 export class ReportesComponent implements OnInit {
   e: EstadisticasData | null = null;
   error = '';
+  cargando = false;
+  desde = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+  hasta = new Date().toISOString().slice(0, 10);
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.api.get<EstadisticasData>('/reportes/estadisticas').subscribe({
-      next: (r) => (this.e = r),
-      error: (e) => (this.error = this.msg(e)),
+    this.cargar();
+  }
+
+  cargar(): void {
+    const params = new URLSearchParams();
+    if (this.desde) params.set('desde', this.desde);
+    if (this.hasta) params.set('hasta', this.hasta);
+    withLoading(this, this.api.get<EstadisticasData>(`/reportes/estadisticas?${params.toString()}`), undefined, this.cdr).subscribe({
+      next: (r) => { this.e = r; this.cdr.markForCheck(); },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

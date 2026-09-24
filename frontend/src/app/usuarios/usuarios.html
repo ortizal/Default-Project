@@ -14,6 +14,9 @@
       <table class="tbl">
         <thead><tr><th>ID</th><th>Usuario</th><th>Nombres</th><th>Email</th><th>Teléfono</th><th>Roles</th><th>Estado</th><th></th></tr></thead>
         <tbody>
+          @if (cargando) {
+          <tr><td colspan="8" class="empty"><span class="spinner"></span> Cargando usuarios…</td></tr>
+        }
           @for (u of items; track u.id) {
             <tr>
               <td>{{ u.id }}</td>
@@ -57,7 +60,9 @@
             <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
             <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
             @if (!form.id) {
-              <div class="full"><label class="label">Contraseña *</label><input class="input" type="password" [(ngModel)]="form.password" required /></div>
+              <div class="full"><label class="label">Contraseña *</label><input class="input" type="password" [(ngModel)]="form.password" required autocomplete="new-password" /></div>
+            } @else {
+              <div class="full"><label class="label">Nueva contraseña (opcional)</label><input class="input" type="password" [(ngModel)]="form.nuevaPassword" autocomplete="new-password" placeholder="Dejar vacío para no cambiar" /></div>
             }
             <div class="full"><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
             <div class="full">

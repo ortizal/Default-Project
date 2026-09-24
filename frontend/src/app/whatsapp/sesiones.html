@@ -33,12 +33,12 @@
     </div>
     <div class="form-field">
       <label class="label">Estado</label>
-      <select class="input sm" [(ngModel)]="estadoF" (ngModelChange)="cargar(0)">
+<select class="input sm" [(ngModel)]="estadoF" (ngModelChange)="cargar(0)">
         <option value="">Todos</option>
-        <option value="CONECTADO">Conectado</option>
-        <option value="ESPERANDO_QR">QR</option>
-        <option value="DESCONECTADO">Desconectado</option>
-        <option value="DESCONECTADO">Desconectado</option>
+        <option value="CONECTADA">Conectada</option>
+        <option value="CONECTANDO">QR / Conectando</option>
+        <option value="DESCONECTADA">Desconectada</option>
+        <option value="ERROR">Error</option>
       </select>
     </div>
     <div class="toolbar-actions">
@@ -99,10 +99,10 @@
                 </td>
                 <td>
                   <div class="acciones">
-                    @if (s.estado === 'DESCONECTADO' || s.estado === 'ESPERANDO_QR') {
+                    @if (s.estado === 'DESCONECTADA' || s.estado === 'CONECTANDO' || s.estado === 'ERROR') {
                       <button class="btn sm success" (click)="conectar(s)">▶ Conectar</button>
                     }
-                    @if (s.estado === 'CONECTADO') {
+                    @if (s.estado === 'CONECTADA') {
                       <button class="btn sm" (click)="desconectar(s)">⏹ Desconectar</button>
                     }
                     <button class="btn sm" (click)="probar(s)">↻ QR</button>

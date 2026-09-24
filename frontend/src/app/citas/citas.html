@@ -158,9 +158,9 @@
           <div class="form-field">
             <label class="label">Paciente</label>
             <select class="input sm" [(ngModel)]="nuevaCita.pacienteId">
-              <option [value]="0">Cargar por cédula...</option>
+              <option [value]="0" disabled>Selecciona un paciente…</option>
               @for (p of pacientes; track p.id) {
-                <option [value]="p.id">{{ p.nombres }} {{ p.apellidos }}</option>
+                <option [value]="p.id">{{ p.nombres }} {{ p.apellidos }}{{ p.cedula ? ' — ' + p.cedula : '' }}</option>
               }
             </select>
           </div>

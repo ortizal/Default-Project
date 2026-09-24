@@ -21,6 +21,9 @@
           <tr><th>ID</th><th>Día</th><th>Inicio</th><th>Fin</th><th>Intervalo</th><th>Estado</th><th></th></tr>
         </thead>
         <tbody>
+          @if (cargando) {
+            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando horarios…</td></tr>
+          }
           @for (h of items; track h.id) {
             <tr>
               <td>{{ h.id }}</td>

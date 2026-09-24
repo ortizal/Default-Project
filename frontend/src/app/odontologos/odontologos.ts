@@ -28,10 +28,13 @@ export class OdontologosComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar(0);
-    this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.activos = r));
+    this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
+      next: (r) => { this.activos = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
     this.api.get<GoogleCalendario[]>('/google/calendars').subscribe({
       next: (r) => { this.calendarios = r; this.cdr.markForCheck(); },
-      error: () => (this.calendarios = []),
+      error: () => { this.calendarios = []; this.cdr.markForCheck(); },
     });
   }
 
@@ -46,8 +49,9 @@ export class OdontologosComponent implements OnInit {
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
        this.cdr.markForCheck(); },
-      error: (e) => {
+error: (e) => {
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -55,15 +59,18 @@ export class OdontologosComponent implements OnInit {
   nuevo(): void {
     this.form = { estado: 'ACTIVO' };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
-editar(o: Odontologo): void {
+  editar(o: Odontologo): void {
     this.form = { ...o };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
   guardar(): void {
     if (!this.form.nombres || !this.form.apellidos) {
       this.error = 'Completa nombres y apellidos (campos obligatorios)';
+      this.cdr.markForCheck();
       return;
     }
     const body = { ...this.form, estado: this.form.estado || 'ACTIVO' };
@@ -73,11 +80,16 @@ editar(o: Odontologo): void {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.markForCheck();
         this.cargar(this.page);
-        this.api.get<Odontologo[]>('/odontologos/activos').subscribe((r) => (this.activos = r));
+        this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
+          next: (r) => { this.activos = r; this.cdr.markForCheck(); },
+          error: () => this.cdr.markForCheck(),
+        });
       },
       error: (e) => {
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -85,7 +97,7 @@ editar(o: Odontologo): void {
   desactivar(o: Odontologo): void {
     this.api.del<void>(`/odontologos/${o.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

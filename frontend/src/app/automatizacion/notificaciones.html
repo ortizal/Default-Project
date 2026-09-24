@@ -2,10 +2,31 @@
     <div class="card">
       <div class="between">
         <h2>Notificaciones programadas</h2>
-        <button class="btn" (click)="cargar()">⟳ Refrescar</button>
+        <div class="flex">
+          <select class="input sm" [(ngModel)]="estadoF" (ngModelChange)="cargar()">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="ENVIADA">Enviada</option>
+            <option value="ERROR">Error</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+          <select class="input sm" [(ngModel)]="eventoF" (ngModelChange)="cargar()">
+            <option value="">Todos los eventos</option>
+            <option value="CITA_CREADA">Cita creada</option>
+            <option value="CITA_PROXIMA">Cita próxima</option>
+            <option value="CITA_CONFIRMADA">Cita confirmada</option>
+            <option value="CITA_CANCELADA">Cita cancelada</option>
+            <option value="CITA_ATENDIDA">Cita atendida</option>
+            <option value="NO_ASISTIO">No asistió</option>
+          </select>
+          <button class="btn" (click)="cargar()" [disabled]="cargando">⟳ Refrescar</button>
+        </div>
       </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
+      }
+      @if (cargando) {
+        <div class="empty"><span class="spinner"></span> Cargando notificaciones…</div>
       }
       <table class="tbl">
         <thead><tr><th>ID</th><th>Paciente</th><th>Teléfono</th><th>Evento</th><th>Plantilla</th><th>Programada</th><th>Enviada</th><th>Estado</th><th>Errores</th></tr></thead>
@@ -13,7 +34,7 @@
           @for (n of items; track n.id) {
             <tr>
               <td>{{ n.id }}</td>
-              <td>{{ n.pacienteId }}</td>
+              <td>{{ n.pacienteNombre || n.pacienteId }}</td>
               <td>{{ n.telefono }}</td>
               <td><span class="badge info">{{ n.evento }}</span></td>
               <td>{{ n.plantilla }}</td>

@@ -80,7 +80,7 @@ public class CitaService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CitaResponse> listar(EstadoCita estado, Long doctorId, Long pacienteId,
+    public Page<CitaResponse> listar(EstadoCita estado, Long doctorId, Long pacienteId, String paciente,
                                      LocalDate fecha, LocalDate desde, LocalDate hasta, int page, int size) {
         Specification<Cita> spec = (root, query, cb) -> {
             if (Long.class != query.getResultType()) {
@@ -98,6 +98,14 @@ public class CitaService {
             if (pacienteId != null) {
                 predicates.add(cb.equal(root.get("paciente").get("id"), pacienteId));
             }
+            if (paciente != null && !paciente.isBlank()) {
+                String like = "%" + paciente.trim().toLowerCase() + "%";
+                var pac = root.join("paciente", jakarta.persistence.criteria.JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.like(cb.lower(pac.get("nombres")), like),
+                        cb.like(cb.lower(pac.get("apellidos")), like),
+                        cb.like(cb.concat(cb.lower(pac.get("nombres")), cb.concat(cb.literal(" "), cb.lower(pac.get("apellidos")))), like)));
+            }
             if (fecha != null) {
                 predicates.add(cb.equal(root.get("fecha"), fecha));
             }
@@ -110,7 +118,7 @@ public class CitaService {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
         Sort sort = Sort.by(Sort.Direction.ASC, "fecha").and(Sort.by(Sort.Direction.ASC, "horaInicio"));
-        PageRequest pageRequest = PageRequest.of(page, Math.min(size, 100), sort);
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 500), sort);
         return citaRepository.findAll(spec, pageRequest).map(CitaResponse::from);
     }
 

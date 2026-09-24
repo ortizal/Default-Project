@@ -77,9 +77,23 @@ public class AutomatizacionController {
     @PreAuthorize("hasAuthority('PERMISO_AUTOMATIZACIONES')")
     @Operation(summary = "Listar últimas notificaciones")
     public ResponseEntity<List<NotificacionResponse>> notificaciones(
-            @RequestParam(defaultValue = "50") int limite) {
+            @RequestParam(defaultValue = "50") int limite,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String evento) {
         int limiteSeguro = Math.min(Math.max(limite, 1), 200);
+        org.dentalcrm.domain.automatizacion.EstadoNotificacion estadoFiltro = null;
+        if (estado != null && !estado.isBlank()) {
+            estadoFiltro = org.dentalcrm.domain.automatizacion.EstadoNotificacion.valueOf(estado.trim().toUpperCase());
+        }
+        org.dentalcrm.domain.automatizacion.EventoAutomatizacion eventoFiltro = null;
+        if (evento != null && !evento.isBlank()) {
+            eventoFiltro = org.dentalcrm.domain.automatizacion.EventoAutomatizacion.valueOf(evento.trim().toUpperCase());
+        }
+        final org.dentalcrm.domain.automatizacion.EstadoNotificacion estadoFinal = estadoFiltro;
+        final org.dentalcrm.domain.automatizacion.EventoAutomatizacion eventoFinal = eventoFiltro;
         return ResponseEntity.ok(notificacionRepository.ultimas(PageRequest.of(0, limiteSeguro)).stream()
+                .filter(n -> estadoFinal == null || n.getEstado() == estadoFinal)
+                .filter(n -> eventoFinal == null || (n.getAutomatizacion() != null && n.getAutomatizacion().getEvento() == eventoFinal))
                 .map(NotificacionResponse::from).toList());
     }
 }

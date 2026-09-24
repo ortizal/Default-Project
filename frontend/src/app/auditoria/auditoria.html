@@ -19,6 +19,9 @@
       <table class="tbl">
         <thead><tr><th></th><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Entidad</th><th>IP</th></tr></thead>
         <tbody>
+          @if (cargando) {
+            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando auditoría…</td></tr>
+          }
           @for (a of rows; track a.id) {
             <tr>
               <td><button class="btn small" (click)="toggle(a.id)">{{ abierto(a.id) ? '−' : '+' }}</button></td>

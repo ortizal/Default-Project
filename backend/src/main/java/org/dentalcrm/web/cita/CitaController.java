@@ -34,12 +34,13 @@ public class CitaController {
             @RequestParam(required = false) EstadoCita estado,
             @RequestParam(required = false) Long doctorId,
             @RequestParam(required = false) Long pacienteId,
+            @RequestParam(required = false) String paciente,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(citaService.listar(estado, doctorId, pacienteId, fecha, desde, hasta, page, size));
+        return ResponseEntity.ok(citaService.listar(estado, doctorId, pacienteId, paciente, fecha, desde, hasta, page, size));
     }
 
     @GetMapping("/{id}")

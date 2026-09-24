@@ -13,5 +13,7 @@ public interface WhatsappSesionRepository extends JpaRepository<WhatsappSesion, 
 
     List<WhatsappSesion> findAllByTenantIdOrderByCreatedAtAsc(Long tenantId);
 
+    List<WhatsappSesion> findAllByTenantIdOrderByCreatedAtDesc(Long tenantId);
+
     List<WhatsappSesion> findByEstado(EstadoSesionWhatsapp estado);
 }

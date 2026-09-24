@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
-import { WhatsappSesion } from '../core/models';
+import { Page, WhatsappSesion } from '../core/models';
 import { withLoading } from '../core/loading';
 
 @Component({
@@ -20,6 +20,7 @@ export class SesionesComponent implements OnInit {
   page = 0;
   totalPages = 1;
   total = 0;
+  size = 20;
   mostrarModal = false;
   nuevaSesion = { sesionId: '', nombre: '' };
   private reqSeq = 0;
@@ -38,48 +39,50 @@ export class SesionesComponent implements OnInit {
   cargar(p: number): void {
     this.error = '';
     const seq = ++this.reqSeq;
-    const params = new URLSearchParams({ page: String(p), size: '20', busca: this.buscar || '', estado: this.estadoF || '' });
-    withLoading(this, this.api.get<WhatsappSesion[]>('/whatsapp/sesiones?' + params.toString()), () => seq === this.reqSeq, this.cdr).subscribe({
+    const params = new URLSearchParams({ page: String(p), size: String(this.size), busca: this.buscar || '', estado: this.estadoF || '' });
+    withLoading(this, this.api.get<Page<WhatsappSesion>>('/whatsapp/sesiones?' + params.toString()), () => seq === this.reqSeq, this.cdr).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
-        this.items = r;
-        this.total = r.length;
-        this.page = Math.min(p, this.totalPages - 1);
-        this.totalPages = Math.max(Math.ceil(r.length / 20), 1);
+        this.items = r.content ?? [];
+        this.total = r.totalElements ?? this.items.length;
+        this.totalPages = Math.max(r.totalPages ?? 1, 1);
+        this.page = Math.min(Math.max(p, 0), this.totalPages - 1);
         this.calcularTotales();
-       this.cdr.markForCheck(); },
+        this.cdr.markForCheck();
+      },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
 
   calcularTotales(): void {
-    this.totalConectadas = this.items.filter((s) => s.estado === 'CONECTADO').length;
-    this.totalQR = this.items.filter((s) => s.estado === 'ESPERANDO_QR').length;
-    this.totalDesconectadas = this.items.filter((s) => s.estado === 'DESCONECTADO').length;
-    this.totalError = this.items.filter((s) => s.lastError && s.lastError.length > 0).length;
+    this.totalConectadas = this.items.filter((s) => s.estado === 'CONECTADA').length;
+    this.totalQR = this.items.filter((s) => s.estado === 'CONECTANDO').length;
+    this.totalDesconectadas = this.items.filter((s) => s.estado === 'DESCONECTADA').length;
+    this.totalError = this.items.filter((s) => s.estado === 'ERROR' || (s.lastError && s.lastError.length > 0)).length;
   }
 
   probar(s: WhatsappSesion): void {
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/conectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   conectar(s: WhatsappSesion): void {
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/conectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   desconectar(s: WhatsappSesion): void {
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/desconectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -87,7 +90,7 @@ export class SesionesComponent implements OnInit {
     if (!confirm(`¿Eliminar la sesión ${s.sesionId}?`)) return;
     this.api.del<void>(`/whatsapp/sesiones/${s.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -106,6 +109,7 @@ export class SesionesComponent implements OnInit {
       return;
     }
     this.cargando = true;
+    this.cdr.markForCheck();
     this.api.post<WhatsappSesion>('/whatsapp/sesiones', {
       sesionId: this.nuevaSesion.sesionId.trim(),
       nombre: this.nuevaSesion.nombre.trim() || null,
@@ -117,15 +121,17 @@ export class SesionesComponent implements OnInit {
       error: (e) => {
         this.error = this.msg(e);
         this.cargando = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   badge(estado: string): string {
     switch (estado) {
-      case 'CONECTADO': return 'ok';
-      case 'ESPERANDO_QR': return 'warn';
-      case 'DESCONECTADO': return 'bad';
+      case 'CONECTADA': return 'ok';
+      case 'CONECTANDO': return 'warn';
+      case 'DESCONECTADA': return 'bad';
+      case 'ERROR': return 'bad';
       default: return 'dim';
     }
   }

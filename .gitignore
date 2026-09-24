@@ -12,6 +12,9 @@ frontend/.angular/
 frontend/.playwright/
 frontend/test-results/
 frontend/coverage/
+# Artefactos temporales de compilación/verificación
+frontend/src/**/*.js
+frontend/**/*.mjs
 *.log
 !frontend/e2e/
 

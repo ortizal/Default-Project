@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { DIAS, Horario, nombreEstado, Odontologo } from '../core/models';
+import { withLoading } from '../core/loading';
 
 @Component({
   selector: 'app-horarios',
@@ -16,10 +17,11 @@ export class HorariosComponent implements OnInit {
   odontologoSeleccionado = '';
   items: Horario[] = [];
   error = '';
+  cargando = false;
   showForm = false;
   form: Partial<Horario> = {};
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.api.get<Odontologo[]>('/odontologos/activos').subscribe({
@@ -29,31 +31,35 @@ export class HorariosComponent implements OnInit {
           this.odontologoSeleccionado = String(r[0].id);
           this.cargar();
         }
+        this.cdr.markForCheck();
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   cargar(): void {
     if (!this.odontologoSeleccionado) return;
-    this.api.get<Horario[]>(`/horarios?odontologoId=${this.odontologoSeleccionado}`).subscribe({
-      next: (r) => (this.items = r),
-      error: (e) => (this.error = this.msg(e)),
+    withLoading(this, this.api.get<Horario[]>(`/horarios?odontologoId=${this.odontologoSeleccionado}`), undefined, this.cdr).subscribe({
+      next: (r) => { this.items = r; this.cdr.markForCheck(); },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
-  nuevo(): void {
+nuevo(): void {
     this.form = { diaSemana: 1, horaInicio: '08:00', horaFin: '17:00', intervaloMinutos: 30, estado: 'ACTIVO' };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
-editar(h: Horario): void {
+  editar(h: Horario): void {
     this.form = { ...h };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
   guardar(): void {
     if (!this.form.diaSemana || !this.form.horaInicio || !this.form.horaFin) {
       this.error = 'Completa día, hora de inicio y hora de fin';
+      this.cdr.markForCheck();
       return;
     }
     const body = { ...this.form, odontologoId: Number(this.odontologoSeleccionado), estado: this.form.estado || 'ACTIVO' };
@@ -63,9 +69,10 @@ editar(h: Horario): void {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.markForCheck();
         this.cargar();
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -73,7 +80,7 @@ editar(h: Horario): void {
     if (!confirm('¿Eliminar este horario?')) return;
     this.api.del<void>(`/horarios/${h.id}`).subscribe({
       next: () => this.cargar(),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

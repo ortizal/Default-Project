@@ -63,10 +63,29 @@ public class WhatsAppService {
     // ------------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public List<WhatsAppSesionResponse> listarSesiones() {
-        return sesionRepository.findAllByTenantIdOrderByCreatedAtAsc(TenantContext.actualOrDefault()).stream()
+    public org.springframework.data.domain.Page<WhatsAppSesionResponse> listarSesiones(String busca, String estado,
+                                                                                      int page, int size) {
+        String q = busca == null ? "" : busca.trim().toLowerCase();
+        EstadoSesionWhatsapp estadoTmp = null;
+        if (estado != null && !estado.isBlank()) {
+            estadoTmp = EstadoSesionWhatsapp.valueOf(estado.trim().toUpperCase());
+        }
+        final EstadoSesionWhatsapp estadoEnum = estadoTmp;
+        Long tenant = TenantContext.actualOrDefault();
+        return sesionRepository.findAllByTenantIdOrderByCreatedAtDesc(tenant).stream()
+                .filter(s -> estadoEnum == null || s.getEstado() == estadoEnum)
+                .filter(s -> q.isEmpty()
+                        || (s.getSesionId() != null && s.getSesionId().toLowerCase().contains(q))
+                        || (s.getNombre() != null && s.getNombre().toLowerCase().contains(q)))
+                .skip((long) Math.max(page, 0) * Math.min(Math.max(size, 1), 100))
+                .limit(Math.min(Math.max(size, 1), 100))
                 .map(s -> WhatsAppSesionResponse.from(s, provider.nombre()))
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(
+                        java.util.stream.Collectors.toList(),
+                        list -> new org.springframework.data.domain.PageImpl<>(list,
+                                org.springframework.data.domain.PageRequest.of(Math.max(page, 0),
+                                        Math.min(Math.max(size, 1), 100)),
+                                list.size())));
     }
 
     @Transactional

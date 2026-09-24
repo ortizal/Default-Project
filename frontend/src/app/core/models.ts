@@ -217,6 +217,7 @@ export interface Notificacion {
   id: number;
   citaId: number;
   pacienteId: number;
+  pacienteNombre?: string;
   telefono: string;
   evento: string;
   plantilla: string;

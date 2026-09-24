@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Automatizacion, Plantilla } from '../core/models';
+import { withLoading } from '../core/loading';
 
 const EVENTOS = ['CITA_CREADA', 'CITA_PROXIMA', 'CITA_CONFIRMADA', 'CITA_CANCELADA', 'CITA_ATENDIDA', 'NO_ASISTIO'];
 
@@ -16,20 +17,24 @@ export class AutomatizacionesComponent implements OnInit {
   plantillas: Plantilla[] = [];
   readonly EVENTOS = EVENTOS;
   error = '';
+  cargando = false;
   showForm = false;
   form: Partial<Automatizacion> = {};
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
-    this.api.get<Plantilla[]>('/plantillas').subscribe((r) => (this.plantillas = r));
+    this.api.get<Plantilla[]>('/plantillas').subscribe({
+      next: (r) => { this.plantillas = r; this.cdr.markForCheck(); },
+      error: () => this.cdr.markForCheck(),
+    });
   }
 
   cargar(): void {
-    this.api.get<Automatizacion[]>('/automatizaciones').subscribe({
-      next: (r) => (this.items = r),
-      error: (e) => (this.error = this.msg(e)),
+    withLoading(this, this.api.get<Automatizacion[]>('/automatizaciones'), undefined, this.cdr).subscribe({
+      next: (r) => { this.items = r; this.cdr.markForCheck(); },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -49,13 +54,14 @@ export class AutomatizacionesComponent implements OnInit {
       : this.api.post<Automatizacion>(`/automatizaciones/${a.id}/activar`, {});
     r.subscribe({
       next: () => this.cargar(),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   guardar(): void {
     if (!this.form.nombre || !this.form.evento || !this.form.plantillaId) {
       this.error = 'Completa nombre, evento y plantilla';
+      this.cdr.markForCheck();
       return;
     }
     const body = {
@@ -72,9 +78,10 @@ export class AutomatizacionesComponent implements OnInit {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.markForCheck();
         this.cargar();
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
@@ -82,7 +89,7 @@ export class AutomatizacionesComponent implements OnInit {
     if (!confirm('¿Eliminar esta automatización?')) return;
     this.api.del<void>(`/automatizaciones/${a.id}`).subscribe({
       next: () => this.cargar(),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

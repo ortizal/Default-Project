@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/auth.service';
 
@@ -14,11 +14,17 @@ export class LoginComponent {
   error = '';
   mostrarContrasena = false;
 
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService, private readonly cdr: ChangeDetectorRef) {}
+
+  get puedeEntrar(): boolean {
+    return !!this.username.trim() && !!this.password && !this.cargando;
+  }
 
   entrar(): void {
+    if (!this.puedeEntrar) return;
     this.error = '';
     this.cargando = true;
+    this.cdr.markForCheck();
     this.auth
       .login(this.username, this.password)
       .catch((err) => {
@@ -27,6 +33,7 @@ export class LoginComponent {
       })
       .finally(() => {
         this.cargando = false;
+        this.cdr.markForCheck();
       });
   }
 }

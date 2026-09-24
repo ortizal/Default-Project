@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -17,10 +17,12 @@ export class InboxComponent implements OnInit, OnDestroy {
   texto = '';
   nuevoEstado = '';
   enviando = false;
+  cargando = false;
   error = '';
   private timer: ReturnType<typeof setInterval> | null = null;
+  private reqSeq = 0;
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarLista();
@@ -36,17 +38,22 @@ export class InboxComponent implements OnInit, OnDestroy {
   }
 
   cargarLista(silencioso = false): void {
+    const seq = ++this.reqSeq;
     this.api.get<Conversacion[]>(`/whatsapp/conversaciones?q=${encodeURIComponent(this.q)}`).subscribe({
       next: (r) => {
+        if (seq !== this.reqSeq) return;
         this.conversaciones = r;
         if (this.seleccion) {
           const a = r.find((c) => c.id === this.seleccion!.id);
           if (a) this.seleccion = a;
           this.abrir(this.seleccion);
         }
+        this.cdr.markForCheck();
       },
       error: (e) => {
+        if (seq !== this.reqSeq) return;
         if (!silencioso) this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -55,14 +62,15 @@ export class InboxComponent implements OnInit, OnDestroy {
     this.seleccion = c;
     this.nuevoEstado = '';
     this.api.get<ConversacionDetalle>(`/whatsapp/conversaciones/${c.id}`).subscribe({
-      next: (d) => (this.detalle = d),
-      error: (e) => (this.error = this.msg(e)),
+      next: (d) => { this.detalle = d; this.cdr.markForCheck(); },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   enviar(): void {
     if (!this.detalle || !this.texto.trim()) return;
     this.enviando = true;
+    this.cdr.markForCheck();
     this.api
       .post<Mensaje>(`/whatsapp/conversaciones/${this.detalle.conversacion.id}/mensajes`, { texto: this.texto.trim() })
       .subscribe({
@@ -70,10 +78,12 @@ export class InboxComponent implements OnInit, OnDestroy {
           this.texto = '';
           this.detalle!.mensajes = [...this.detalle!.mensajes, m];
           this.enviando = false;
+          this.cdr.markForCheck();
         },
         error: (e) => {
           this.error = this.msg(e);
           this.enviando = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -87,8 +97,9 @@ export class InboxComponent implements OnInit, OnDestroy {
           this.seleccion = c;
           this.cargarLista();
           this.nuevoEstado = '';
+          this.cdr.markForCheck();
         },
-        error: (e) => (this.error = this.msg(e)),
+        error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
       });
   }
 

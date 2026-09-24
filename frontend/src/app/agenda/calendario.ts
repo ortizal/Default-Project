@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Api } from '../core/api';
 import { Bloqueo, Cita } from '../core/models';
@@ -38,46 +38,65 @@ export class CalendarioComponent {
   titulo = '';
   hoy = new Date().toISOString().slice(0, 10);
   error = '';
+  cargando = false;
   private ancla = '';
   private odontologo = 0;
   private citas: Cita[] = [];
   private bloqueos: Bloqueo[] = [];
   private horariosDia?: Set<number>;
+  private reqSeq = 0;
 
-  constructor(private readonly api: Api) {}
+  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   cargar(): void {
     if (!this.ancla || !this.odontologo) {
       this.dias = [];
+      this.cdr.markForCheck();
       return;
     }
+    const seq = ++this.reqSeq;
+    this.cargando = true;
+    this.cdr.markForCheck();
     if (!this.horariosDia) {
       this.api.get<{ id: number; diaSemana: number; estado?: string }[]>(`/horarios?odontologoId=${this.odontologo}`).subscribe({
         next: (r) => {
           this.horariosDia = new Set(r.filter((h) => h.estado === 'ACTIVO').map((h) => h.diaSemana));
           this.construir();
+          this.cdr.markForCheck();
         },
-        error: () => this.construir(),
+        error: () => { this.construir(); this.cdr.markForCheck(); },
       });
     }
     const rango = this.rango();
     this.api
       .get<{ content: Cita[] }>(
-        `/citas?desde=${rango.desde}&hasta=${rango.hasta}&page=0&size=1000&doctorId=${this.odontologo}`,
+        `/citas?desde=${rango.desde}&hasta=${rango.hasta}&page=0&size=500&doctorId=${this.odontologo}`,
       )
       .subscribe({
         next: (r) => {
+          if (seq !== this.reqSeq) return;
           this.citas = r.content;
           this.construir();
+          this.cdr.markForCheck();
         },
-        error: (e) => (this.error = this.msg(e)),
+        error: (e) => {
+          if (seq !== this.reqSeq) return;
+          this.error = this.msg(e);
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          if (seq !== this.reqSeq) return;
+          this.cargando = false;
+          this.cdr.markForCheck();
+        },
       });
     this.api.get<Bloqueo[]>(`/agenda/bloqueos?odontologoId=${this.odontologo}&desde=${rango.desde}&hasta=${rango.hasta}`).subscribe({
       next: (r) => {
         this.bloqueos = r;
         this.construir();
+        this.cdr.markForCheck();
       },
-      error: () => undefined,
+      error: () => this.cdr.markForCheck(),
     });
   }
 
@@ -170,7 +189,7 @@ export class CalendarioComponent {
     switch (estado) {
       case 'CONFIRMADA':
         return 'ok';
-      case 'REALIZADA':
+      case 'ATENDIDA':
         return 'info';
       case 'CANCELADA':
         return 'bad';

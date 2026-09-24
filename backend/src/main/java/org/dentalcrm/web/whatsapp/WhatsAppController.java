@@ -24,9 +24,13 @@ public class WhatsAppController {
 
     @GetMapping("/sesiones")
     @PreAuthorize("hasAuthority('PERMISO_WHATSAPP_READ')")
-    @Operation(summary = "Listar sesiones de WhatsApp")
-    public ResponseEntity<List<WhatsAppSesionResponse>> listarSesiones() {
-        return ResponseEntity.ok(whatsAppService.listarSesiones());
+    @Operation(summary = "Listar sesiones de WhatsApp (paginado)")
+    public ResponseEntity<org.springframework.data.domain.Page<WhatsAppSesionResponse>> listarSesiones(
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) String estado,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(whatsAppService.listarSesiones(busca, estado, page, size));
     }
 
     @PostMapping("/sesiones")

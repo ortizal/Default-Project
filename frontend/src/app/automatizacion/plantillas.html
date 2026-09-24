@@ -10,6 +10,9 @@
       <table class="tbl">
         <thead><tr><th>ID</th><th>Nombre</th><th>Contenido</th><th>Activa</th><th></th></tr></thead>
         <tbody>
+          @if (cargando) {
+            <tr><td colspan="5" class="empty"><span class="spinner"></span> Cargando plantillas…</td></tr>
+          }
           @for (p of items; track p.id) {
             <tr>
               <td>{{ p.id }}</td>

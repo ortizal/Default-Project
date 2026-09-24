@@ -39,8 +39,9 @@ export class ServiciosComponent implements OnInit {
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
        this.cdr.markForCheck(); },
-      error: (e) => {
+error: (e) => {
         this.error = this.msg(e);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -48,15 +49,18 @@ export class ServiciosComponent implements OnInit {
   nuevo(): void {
     this.form = { duracionMinutos: 30, precio: 0, estado: 'ACTIVO' };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
-editar(s: Servicio): void {
+  editar(s: Servicio): void {
     this.form = { ...s };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
   guardar(): void {
     if (!this.form.nombre || !this.form.duracionMinutos || this.form.precio == null) {
       this.error = 'Completa nombre, duración y precio (campos obligatorios)';
+      this.cdr.markForCheck();
       return;
     }
     const body = { ...this.form, estado: this.form.estado || 'ACTIVO' };
@@ -66,16 +70,17 @@ editar(s: Servicio): void {
     req.subscribe({
       next: () => {
         this.showForm = false;
+        this.cdr.markForCheck();
         this.cargar(this.page);
       },
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 
   desactivar(s: Servicio): void {
     this.api.del<void>(`/servicios/${s.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => (this.error = this.msg(e)),
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
     });
   }
 

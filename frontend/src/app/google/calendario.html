@@ -12,6 +12,9 @@
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
+      @if (cargando && !status) {
+        <div class="empty"><span class="spinner"></span> Cargando estado de Google…</div>
+      }
       @if (status && !status.configurada && credenciales) {
         <div class="msg warn">
           La integración con Google no está configurada. Configura las credenciales OAuth

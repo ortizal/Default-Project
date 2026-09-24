@@ -8,6 +8,7 @@ public record NotificacionResponse(
         Long id,
         Long citaId,
         Long pacienteId,
+        String pacienteNombre,
         String telefono,
         String evento,
         String plantilla,
@@ -20,10 +21,19 @@ public record NotificacionResponse(
         Instant createdAt
 ) {
     public static NotificacionResponse from(Notificacion n) {
+        String nombrePaciente = null;
+        if (n.getPaciente() != null) {
+            nombrePaciente = ((n.getPaciente().getNombres() == null ? "" : n.getPaciente().getNombres()) + " "
+                    + (n.getPaciente().getApellidos() == null ? "" : n.getPaciente().getApellidos())).trim();
+            if (nombrePaciente.isEmpty()) {
+                nombrePaciente = null;
+            }
+        }
         return new NotificacionResponse(
                 n.getId(),
                 n.getCita() == null ? null : n.getCita().getId(),
                 n.getPaciente() == null ? null : n.getPaciente().getId(),
+                nombrePaciente,
                 n.getTelefono(),
                 n.getAutomatizacion() == null ? null : n.getAutomatizacion().getEvento().name(),
                 n.getPlantilla() == null ? null : n.getPlantilla().getNombre(),

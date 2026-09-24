@@ -14,6 +14,9 @@
       <table class="tbl">
         <thead><tr><th>Contacto</th><th>Paciente</th><th>Intención</th><th>Agente</th><th>Estado</th><th>Último mensaje</th><th></th></tr></thead>
         <tbody>
+          @if (cargando) {
+            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando conversaciones…</td></tr>
+          }
           @for (c of items; track c.id) {
             <tr>
               <td>{{ c.nombreContacto || c.telefono }}</td>
