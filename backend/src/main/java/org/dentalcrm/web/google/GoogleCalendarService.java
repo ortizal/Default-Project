@@ -2,6 +2,7 @@ package org.dentalcrm.web.google;
 
 import org.dentalcrm.domain.cita.Cita;
 import org.dentalcrm.domain.cita.CitaCanceladaEvent;
+import org.dentalcrm.domain.cita.CitaConfirmadaEvent;
 import org.dentalcrm.domain.cita.CitaCreadaEvent;
 import org.dentalcrm.domain.cita.CitaModificadaEvent;
 import org.dentalcrm.domain.cita.CitaRepository;
