@@ -19,6 +19,7 @@ export const routes: Routes = [
       { path: 'citas', loadComponent: () => import('./citas/citas').then((m) => m.CitasComponent) },
       { path: 'whatsapp/sesiones', loadComponent: () => import('./whatsapp/sesiones').then((m) => m.SesionesComponent) },
       { path: 'whatsapp/inbox', loadComponent: () => import('./whatsapp/inbox').then((m) => m.InboxComponent) },
+      { path: 'whatsapp/campana', loadComponent: () => import('./whatsapp/campana').then((m) => m.CampanaComponent) },
       { path: 'plantillas', loadComponent: () => import('./automatizacion/plantillas').then((m) => m.PlantillasComponent) },
       { path: 'automatizaciones', loadComponent: () => import('./automatizacion/automatizaciones').then((m) => m.AutomatizacionesComponent) },
       { path: 'notificaciones', loadComponent: () => import('./automatizacion/notificaciones').then((m) => m.NotificacionesComponent) },

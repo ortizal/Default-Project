@@ -42,6 +42,12 @@ public class BloqueoAgenda {
     @Column(length = 255)
     private String motivo;
 
+    @Column(name = "google_event_id", length = 255)
+    private String googleEventId;
+
+    @Column(name = "google_calendar_id", length = 255)
+    private String googleCalendarId;
+
     @Column(name = "created_by")
     private Long createdBy;
 

@@ -14,12 +14,14 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
 import java.net.URLEncoder;
 import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,8 @@ public class GoogleService {
     private static final String SCOPE_CALENDAR = "https://www.googleapis.com/auth/calendar.events";
     private static final String SCOPE_CALENDAR_READ = "https://www.googleapis.com/auth/calendar.readonly";
     private static final String SCOPE_USERINFO_EMAIL = "https://www.googleapis.com/auth/userinfo.email";
+        private static final java.time.format.DateTimeFormatter GOOGLE_DATE_TIME =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private final WebClient apiClient;
     private final WebClient oauthClient;
@@ -110,22 +114,20 @@ public class GoogleService {
     }
 
     public String obtenerEmail(String accessToken) {
-        JsonNode json = apiClient.get()
+        JsonNode json = ejecutarGoogle(apiClient.get()
                 .uri("/oauth2/v2/userinfo")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
         return json == null ? null : json.path("email").asText(null);
     }
 
     public List<CalendarioRemoto> listarCalendarios(String accessToken) {
-        JsonNode json = apiClient.get()
+        JsonNode json = ejecutarGoogle(apiClient.get()
                 .uri("/calendar/v3/users/me/calendarList")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
         List<CalendarioRemoto> resultado = new ArrayList<>();
         JsonNode items = json == null ? null : json.path("items");
         if (items != null && items.isArray()) {
@@ -140,44 +142,73 @@ public class GoogleService {
     }
 
     public String crearEvento(String accessToken, String calendarId, EventoGoogle evento) {
-        JsonNode json = apiClient.post()
+        JsonNode json = ejecutarGoogle(apiClient.post()
                 .uri("/calendar/v3/calendars/{calendarId}/events", calendarId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(payloadEvento(evento))
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
         return json == null ? null : json.path("id").asText(null);
     }
 
     public void actualizarEvento(String accessToken, String calendarId, String eventId, EventoGoogle evento) {
-        apiClient.put()
+        ejecutarGoogle(apiClient.put()
                 .uri("/calendar/v3/calendars/{calendarId}/events/{eventId}", calendarId, eventId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(payloadEvento(evento))
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
     }
 
     public void eliminarEvento(String accessToken, String calendarId, String eventId) {
-        apiClient.delete()
+        ejecutarGoogle(apiClient.delete()
                 .uri("/calendar/v3/calendars/{calendarId}/events/{eventId}", calendarId, eventId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
     }
 
     public JsonNode obtenerEvento(String accessToken, String calendarId, String eventId) {
-        return apiClient.get()
+        return ejecutarGoogle(apiClient.get()
                 .uri("/calendar/v3/calendars/{calendarId}/events/{eventId}", calendarId, eventId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block(Duration.ofSeconds(30));
+            .bodyToMono(JsonNode.class));
+    }
+
+    public List<EventoCalendario> listarEventos(String accessToken, String calendarId,
+                                                Instant desde, Instant hasta) {
+        JsonNode json = ejecutarGoogle(apiClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/calendar/v3/calendars/{calendarId}/events")
+                        .queryParam("timeMin", desde.toString())
+                        .queryParam("timeMax", hasta.toString())
+                        .queryParam("singleEvents", true)
+                        .queryParam("orderBy", "startTime")
+                        .queryParam("showDeleted", false)
+                        .build(calendarId))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .bodyToMono(JsonNode.class));
+        List<EventoCalendario> resultado = new ArrayList<>();
+        JsonNode items = json == null ? null : json.path("items");
+        if (items != null && items.isArray()) {
+            for (JsonNode item : items) {
+                JsonNode start = item.path("start");
+                JsonNode end = item.path("end");
+                resultado.add(new EventoCalendario(
+                        item.path("id").asText(null),
+                        item.path("status").asText("confirmed"),
+                        item.path("summary").asText("Google Calendar"),
+                        start.path("dateTime").asText(null),
+                        end.path("dateTime").asText(null),
+                        start.path("date").asText(null),
+                        end.path("date").asText(null)));
+            }
+        }
+        return resultado;
     }
 
     public Object payloadEvento(EventoGoogle evento) {
@@ -185,12 +216,16 @@ public class GoogleService {
                 "summary", evento.summary(),
                 "description", evento.description(),
                 "start", java.util.Map.of(
-                        "dateTime", evento.fecha() + "T" + evento.horaInicio(),
+                    "dateTime", formatearFechaHora(evento.fecha(), evento.horaInicio()),
                         "timeZone", evento.timeZone()),
                 "end", java.util.Map.of(
-                        "dateTime", evento.fecha() + "T" + evento.horaFin(),
+                    "dateTime", formatearFechaHora(evento.fecha(), evento.horaFin()),
                         "timeZone", evento.timeZone()));
     }
+
+            private String formatearFechaHora(LocalDate fecha, LocalTime hora) {
+            return java.time.LocalDateTime.of(fecha, hora).format(GOOGLE_DATE_TIME);
+            }
 
     private JsonNode postForm(String uri, MultiValueMap<String, String> form) {
         try {
@@ -206,10 +241,20 @@ public class GoogleService {
         }
     }
 
+    private JsonNode ejecutarGoogle(Mono<JsonNode> request) {
+        try {
+            return request.block(Duration.ofSeconds(30));
+        } catch (WebClientResponseException e) {
+            throw errorGoogle(e);
+        }
+    }
+
     private BusinessException errorGoogle(WebClientResponseException e) {
         String detalle = e.getResponseBodyAsString();
-        if (detalle != null && detalle.length() > 300) {
-            detalle = detalle.substring(0, 300);
+        if (detalle == null || detalle.isBlank()) {
+            detalle = e.getStatusText();
+        } else if (detalle.length() > 500) {
+            detalle = detalle.substring(0, 500);
         }
         return new BusinessException(HttpStatus.BAD_GATEWAY, "GOOGLE_API_ERROR",
                 "Error en la llamada a Google (" + e.getStatusCode().value() + "): " + detalle);
@@ -235,5 +280,10 @@ public class GoogleService {
 
     public record EventoGoogle(String summary, String description, LocalDate fecha,
                                LocalTime horaInicio, LocalTime horaFin, String timeZone) {
+    }
+
+    public record EventoCalendario(String id, String status, String summary,
+                                   String inicioDateTime, String finDateTime,
+                                   String inicioFecha, String finFecha) {
     }
 }

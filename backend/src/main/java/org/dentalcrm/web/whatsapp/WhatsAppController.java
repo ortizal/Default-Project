@@ -17,9 +17,11 @@ import java.util.List;
 public class WhatsAppController {
 
     private final WhatsAppService whatsAppService;
+    private final WhatsAppCampanaService campanaService;
 
-    public WhatsAppController(WhatsAppService whatsAppService) {
+    public WhatsAppController(WhatsAppService whatsAppService, WhatsAppCampanaService campanaService) {
         this.whatsAppService = whatsAppService;
+        this.campanaService = campanaService;
     }
 
     @GetMapping("/sesiones")
@@ -91,5 +93,15 @@ public class WhatsAppController {
     public ResponseEntity<ConversacionResponse> cambiarEstado(@PathVariable Long id,
                                                               @Valid @RequestBody CambiarEstadoConversacionRequest request) {
         return ResponseEntity.ok(whatsAppService.cambiarEstado(id, request));
+    }
+
+    @PostMapping(value = "/campanas", consumes = "multipart/form-data")
+    @PreAuthorize("hasAuthority('PERMISO_WHATSAPP_WRITE')")
+    @Operation(summary = "Enviar publicidad a pacientes activos por WhatsApp")
+    public ResponseEntity<CampanaResponse> enviarCampana(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) String enlace,
+            @RequestPart(required = false) org.springframework.web.multipart.MultipartFile archivo) {
+        return ResponseEntity.ok(campanaService.enviar(texto, enlace, archivo));
     }
 }

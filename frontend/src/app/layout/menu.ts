@@ -25,6 +25,7 @@ export const MENU: MenuSection[] = [
     section: 'Comunicación',
     items: [
       { path: '/whatsapp/inbox', label: 'WhatsApp Inbox' },
+      { path: '/whatsapp/campana', label: 'Publicidad WhatsApp' },
       { path: '/whatsapp/sesiones', label: 'Sesiones WhatsApp' },
       { path: '/plantillas', label: 'Plantillas' },
       { path: '/notificaciones', label: 'Notificaciones' },

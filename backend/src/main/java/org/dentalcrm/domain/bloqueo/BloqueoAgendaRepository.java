@@ -14,6 +14,13 @@ public interface BloqueoAgendaRepository extends JpaRepository<BloqueoAgenda, Lo
 
     List<BloqueoAgenda> findByOdontologoIdAndFechaBetween(Long odontologoId, LocalDate desde, LocalDate hasta);
 
+    List<BloqueoAgenda> findByGoogleCalendarIdAndFechaBetween(String googleCalendarId,
+                                   LocalDate desde,
+                                   LocalDate hasta);
+
+    java.util.Optional<BloqueoAgenda> findByGoogleCalendarIdAndGoogleEventId(String googleCalendarId,
+                                           String googleEventId);
+
     @Query("""
             SELECT b FROM BloqueoAgenda b
             WHERE b.odontologo.id = :doctorId

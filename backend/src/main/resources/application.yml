@@ -49,6 +49,7 @@ app:
   openwa:
     url: ${OPENWA_URL:http://localhost:2785}
     api-key: ${OPENWA_API_KEY:}
+    timeout-seconds: ${OPENWA_TIMEOUT_SECONDS:10}
     webhook-url: ${OPENWA_WEBHOOK_URL:http://localhost:8080/api/v1/webhooks/whatsapp}
     webhook-secret: ${OPENWA_WEBHOOK_SECRET:}
   google:

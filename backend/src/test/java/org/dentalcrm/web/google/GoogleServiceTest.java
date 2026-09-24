@@ -81,7 +81,7 @@ class GoogleServiceTest {
         assertEquals("Cita odontológica - Juan Pérez", map.get("summary"));
         @SuppressWarnings("unchecked")
         Map<String, Object> start = (Map<String, Object>) map.get("start");
-        assertEquals("2026-09-16T10:30", start.get("dateTime"));
+        assertEquals("2026-09-16T10:30:00", start.get("dateTime"));
         assertEquals("America/Guayaquil", start.get("timeZone"));
         @SuppressWarnings("unchecked")
         Map<String, Object> end = (Map<String, Object>) map.get("end");

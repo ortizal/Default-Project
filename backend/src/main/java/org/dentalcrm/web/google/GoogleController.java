@@ -75,6 +75,14 @@ public class GoogleController {
         return ResponseEntity.ok(googleCalendarService.sincronizar());
     }
 
+    @PostMapping("/sync/inbound")
+    @PreAuthorize("hasAuthority('PERMISO_INTEGRACIONES')")
+    @Operation(summary = "Importar eventos de Google como bloqueos de agenda")
+    public ResponseEntity<Void> sincronizarEntrante() {
+        googleCalendarService.sincronizarEntrante();
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/credentials")
     @PreAuthorize("hasAuthority('PERMISO_INTEGRACIONES')")
     @Operation(summary = "Obtener credenciales OAuth de Google")

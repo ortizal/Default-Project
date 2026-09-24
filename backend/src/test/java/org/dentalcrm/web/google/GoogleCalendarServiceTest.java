@@ -6,13 +6,17 @@ import org.dentalcrm.domain.cita.CitaCreadaEvent;
 import org.dentalcrm.domain.cita.CitaRepository;
 import org.dentalcrm.domain.cita.EstadoCita;
 import org.dentalcrm.domain.cita.SyncEstado;
+import org.dentalcrm.domain.bloqueo.BloqueoAgenda;
+import org.dentalcrm.domain.bloqueo.BloqueoAgendaRepository;
 import org.dentalcrm.domain.google.GoogleAccount;
 import org.dentalcrm.domain.google.GoogleAccountRepository;
 import org.dentalcrm.domain.google.GoogleCalendario;
 import org.dentalcrm.domain.google.GoogleCalendarioRepository;
+import org.dentalcrm.domain.odontologo.OdontologoRepository;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.web.google.GoogleService.CalendarioRemoto;
 import org.dentalcrm.web.google.GoogleService.GoogleTokenResponse;
+import org.dentalcrm.web.google.GoogleService.EventoCalendario;
 import org.dentalcrm.web.google.dto.GoogleStatusResponse;
 import org.dentalcrm.web.google.dto.GoogleSyncResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +44,8 @@ class GoogleCalendarServiceTest {
     private GoogleAccountRepository accountRepo;
     private GoogleCalendarioRepository calendarioRepo;
     private CitaRepository citaRepo;
+    private BloqueoAgendaRepository bloqueoRepo;
+    private OdontologoRepository odontologoRepo;
     private GoogleService googleService;
     private GoogleCalendarService servicio;
 
@@ -48,8 +54,11 @@ class GoogleCalendarServiceTest {
         accountRepo = mock(GoogleAccountRepository.class);
         calendarioRepo = mock(GoogleCalendarioRepository.class);
         citaRepo = mock(CitaRepository.class);
+        bloqueoRepo = mock(BloqueoAgendaRepository.class);
+        odontologoRepo = mock(OdontologoRepository.class);
         googleService = mock(GoogleService.class);
         servicio = new GoogleCalendarService(accountRepo, calendarioRepo, citaRepo,
+            bloqueoRepo, odontologoRepo,
                 googleService, mock(AuditService.class), "America/Guayaquil");
     }
 
@@ -126,7 +135,7 @@ class GoogleCalendarServiceTest {
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
         when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class)))
                 .thenReturn("evt-123");
-        when(citaRepo.findById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
+        when(citaRepo.findWithRelationsById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
         servicio.onCitaCreada(new CitaCreadaEvent(1L));
@@ -147,7 +156,7 @@ class GoogleCalendarServiceTest {
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
         when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class)))
                 .thenThrow(new org.dentalcrm.exception.BusinessException("GOOGLE_API_ERROR", "falla simulada"));
-        when(citaRepo.findById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
+        when(citaRepo.findWithRelationsById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
         servicio.onCitaCreada(new CitaCreadaEvent(1L));
@@ -167,7 +176,7 @@ class GoogleCalendarServiceTest {
         when(googleService.estaConfigurado()).thenReturn(true);
         when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
-        when(citaRepo.findById(1L)).thenReturn(Optional.of(cita));
+        when(citaRepo.findWithRelationsById(1L)).thenReturn(Optional.of(cita));
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
         servicio.onCitaCancelada(new CitaCanceladaEvent(1L));
@@ -177,6 +186,35 @@ class GoogleCalendarServiceTest {
         verify(citaRepo).save(captor.capture());
         assertNull(captor.getValue().getGoogleEventId());
         assertEquals(SyncEstado.NO_SYNC, captor.getValue().getSyncStatus());
+    }
+
+    @Test
+    void importaEventoGoogleComoBloqueo() {
+        GoogleAccount cuenta = cuentaCon(1L);
+        GoogleCalendario cal = calendario(1L, cuenta, "primary", true);
+        org.dentalcrm.domain.odontologo.Odontologo doctor = new org.dentalcrm.domain.odontologo.Odontologo();
+        doctor.setId(7L);
+        doctor.setNombres("María");
+        doctor.setApellidos("López");
+        when(googleService.estaConfigurado()).thenReturn(true);
+        when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
+        when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
+        when(odontologoRepo.findByGoogleCalendarId("primary")).thenReturn(Optional.of(doctor));
+        when(googleService.listarEventos(anyString(), anyString(), any(Instant.class), any(Instant.class)))
+                .thenReturn(List.of(new EventoCalendario("evt-bloqueo", "confirmed", "Dentista ocupado",
+                        "2026-09-24T10:30:00-05:00", "2026-09-24T11:30:00-05:00", null, null)));
+        when(bloqueoRepo.findByGoogleCalendarIdAndFechaBetween(anyString(), any(), any())).thenReturn(List.of());
+        when(bloqueoRepo.findByGoogleCalendarIdAndGoogleEventId("primary", "evt-bloqueo"))
+                .thenReturn(Optional.empty());
+        when(bloqueoRepo.save(any(BloqueoAgenda.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        servicio.sincronizarEntrante();
+
+        ArgumentCaptor<BloqueoAgenda> captor = ArgumentCaptor.forClass(BloqueoAgenda.class);
+        verify(bloqueoRepo).save(captor.capture());
+        assertEquals("evt-bloqueo", captor.getValue().getGoogleEventId());
+        assertEquals(doctor, captor.getValue().getOdontologo());
+        assertEquals(java.time.LocalTime.of(10, 30), captor.getValue().getHoraInicio());
     }
 
     @Test

@@ -1,42 +1,45 @@
 <div class="inbox-container">
-  <!-- Panel lateral: lista de conversaciones -->
   <div class="inbox-sidebar">
     <div class="sidebar-header">
-      <h2>💬 Conversaciones</h2>
-      <button class="btn sm" (click)="cargarLista()">⟳</button>
+      <div>
+        <span class="eyebrow">WhatsApp</span>
+        <h2>Conversaciones</h2>
+      </div>
+      <button class="icon-btn" type="button" title="Actualizar conversaciones" (click)="cargarLista()">&#8635;</button>
     </div>
     <div class="sidebar-search">
-      <input class="input sm" placeholder="Buscar por teléfono o nombre" [(ngModel)]="q" (keyup.enter)="cargarLista()" />
+      <input class="input sm" placeholder="Buscar por teléfono o nombre" [(ngModel)]="q" (keyup.enter)="cargarLista()" aria-label="Buscar conversaciones" />
     </div>
     <div class="sidebar-list">
       @for (c of conversaciones; track c.id) {
-        <div class="conv" [ngClass]="{ sel: seleccion?.id === c.id }" (click)="abrir(c)">
+        <button class="conv" type="button" [ngClass]="{ sel: seleccion?.id === c.id }" (click)="abrir(c)">
+          <span class="avatar">{{ iniciales(c) }}</span>
+          <span class="conv-content">
           <div class="conv-header">
             <strong>{{ c.nombreContacto || c.telefono }}</strong>
+            @if (c.ultimoMensajeAt) { <time>{{ c.ultimoMensajeAt | date:'HH:mm' }}</time> }
+          </div>
+          <div class="conv-subline">
+            <span>{{ c.pacienteNombres || 'Sin paciente asociado' }}</span>
             <span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span>
           </div>
-          <div class="conv-body">
-            {{ c.pacienteNombres || c.telefono }}
-            @if (c.ultimoMensajeAt) { · {{ c.ultimoMensajeAt | date:'HH:mm' }}; }
-          </div>
-          <div class="conv-body" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
-            {{ c.ultimoMensaje || 'Sin mensajes' }}
-          </div>
-        </div>
+          <div class="conv-preview">{{ c.ultimoMensaje || 'Sin mensajes' }}</div>
+          </span>
+        </button>
       } @empty {
         <div class="empty">Sin conversaciones.</div>
       }
     </div>
   </div>
 
-  <!-- Panel derecho: chat -->
   <div class="inbox-chat">
     @if (detalle && seleccion) {
       <div class="chat-header">
-        <div>
-          <h2 style="margin:0">{{ detalle.conversacion.nombreContacto || detalle.conversacion.telefono }}</h2>
-          <div class="chat-info">
-            Sesión {{ detalle.conversacion.sesionId }} · Paciente: {{ detalle.conversacion.pacienteNombres || 'no asociado' }}
+        <div class="chat-person">
+          <span class="avatar large">{{ iniciales(detalle.conversacion) }}</span>
+          <div>
+            <h2>{{ detalle.conversacion.nombreContacto || detalle.conversacion.telefono }}</h2>
+            <div class="chat-info">{{ detalle.conversacion.telefono }} · {{ detalle.conversacion.pacienteNombres || 'Sin paciente asociado' }}</div>
           </div>
         </div>
         <div class="chat-actions">
@@ -65,11 +68,15 @@
         }
       </div>
       <form class="chat-input" (ngSubmit)="enviar()">
-        <input class="input sm" [(ngModel)]="texto" name="texto" placeholder="Escribe un mensaje…" required />
-        <button class="btn sm primary" [disabled]="!texto.trim() || enviando">Enviar</button>
+        <textarea class="input" [(ngModel)]="texto" name="texto" placeholder="Escribe una respuesta…" rows="1" required></textarea>
+        <button class="btn primary" [disabled]="!texto.trim() || enviando">{{ enviando ? 'Enviando...' : 'Enviar' }}</button>
       </form>
     } @else {
-      <div class="empty">Selecciona una conversación del panel izquierdo.</div>
+      <div class="chat-placeholder">
+        <div class="placeholder-icon">&#9993;</div>
+        <h2>Selecciona una conversación</h2>
+        <p>Elige un chat de la bandeja para leer los mensajes y responder.</p>
+      </div>
     }
   </div>
 </div>

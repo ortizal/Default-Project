@@ -70,6 +70,16 @@ export class CalendarioComponent implements OnInit {
     });
   }
 
+  syncInbound(): void {
+    this.api.post<void>('/google/sync/inbound', {}).subscribe({
+      next: () => {
+        this.error = '';
+        this.cdr.markForCheck();
+      },
+      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+    });
+  }
+
   disconnect(): void {
     if (!confirm('¿Desconectar la cuenta de Google y borrar sus tokens?')) return;
     this.api.del<void>('/google/disconnect').subscribe({

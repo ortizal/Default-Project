@@ -24,17 +24,20 @@ public class OpenWAProvider implements MessagingProvider {
     private final String apiKey;
     private final String webhookUrl;
     private final String webhookSecret;
+    private final Duration timeout;
 
     public OpenWAProvider(WebClient.Builder builder,
                           @Value("${app.openwa.url}") String url,
                           @Value("${app.openwa.api-key}") String apiKey,
                           @Value("${app.openwa.webhook-url:}") String webhookUrl,
-                          @Value("${app.openwa.webhook-secret:}") String webhookSecret) {
+                          @Value("${app.openwa.webhook-secret:}") String webhookSecret,
+                          @Value("${app.openwa.timeout-seconds:10}") long timeoutSeconds) {
         this.client = builder.clone().baseUrl(url).build();
         this.url = url;
         this.apiKey = apiKey;
         this.webhookUrl = webhookUrl;
         this.webhookSecret = webhookSecret;
+        this.timeout = Duration.ofSeconds(timeoutSeconds);
     }
 
     @Override
@@ -240,7 +243,7 @@ public class OpenWAProvider implements MessagingProvider {
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
-                    .block(Duration.ofSeconds(30));
+                    .block(timeout);
         } catch (WebClientResponseException e) {
             throw error(e);
         }

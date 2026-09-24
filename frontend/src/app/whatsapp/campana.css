@@ -1,0 +1,166 @@
+:host {
+  display: block;
+}
+
+.campaign-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.campaign-head,
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.campaign-head h2,
+.campaign-head p,
+.result-head h3,
+.result-head p {
+  margin-top: 0;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.campaign-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, .6fr);
+  gap: 16px;
+}
+
+.campaign-form,
+.status-card,
+.result-card {
+  min-width: 0;
+}
+
+.campaign-form h3,
+.status-card h3,
+.result-card h3 {
+  margin-top: 0;
+}
+
+.label {
+  display: block;
+  margin: 14px 0 6px;
+}
+
+.file-input {
+  padding: 8px;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.icon-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.campaign-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 18px 0;
+  padding: 12px;
+  border-left: 3px solid var(--primary);
+  background: var(--primary-light);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.campaign-note span,
+.status-help {
+  color: var(--muted);
+}
+
+.publish-btn {
+  width: 100%;
+}
+
+.status-card {
+  align-self: start;
+}
+
+.status-card .btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.status-help {
+  margin-bottom: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.result-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.result-list {
+  max-height: 360px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.result-row > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-row .badge {
+  flex: 0 0 auto;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .campaign-head,
+  .result-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .campaign-grid {
+    grid-template-columns: 1fr;
+  }
+}

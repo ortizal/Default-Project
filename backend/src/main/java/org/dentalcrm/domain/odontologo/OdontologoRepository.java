@@ -23,4 +23,6 @@ public interface OdontologoRepository extends JpaRepository<Odontologo, Long> {
     List<Odontologo> findTop5ByEstadoOrderByNombresAsc(String estado);
 
     List<Odontologo> findByEstadoOrderByNombresAsc(String estado);
+
+    java.util.Optional<Odontologo> findByGoogleCalendarId(String googleCalendarId);
 }

@@ -5,6 +5,7 @@
         @if (status?.conectada) {
           <div class="flex gap">
             <button class="btn primary" (click)="sync()">Sincronizar citas</button>
+            <button class="btn" (click)="syncInbound()">Actualizar disponibilidad</button>
             <button class="btn danger" (click)="disconnect()">Desconectar</button>
           </div>
         }

@@ -1,0 +1,83 @@
+<div class="campaign-page">
+  <div class="campaign-head">
+    <div>
+      <span class="eyebrow">WhatsApp</span>
+      <h2>Publicidad masiva</h2>
+      <p class="muted">Envía una comunicación a tus pacientes activos con teléfono registrado.</p>
+    </div>
+    <a class="btn" routerLink="/whatsapp/inbox">Volver al inbox</a>
+  </div>
+
+  @if (error) {
+    <div class="msg error">{{ error }}</div>
+  }
+
+  <div class="campaign-grid">
+    <section class="card campaign-form">
+      <h3>Crear publicación</h3>
+      <label class="label" for="texto">Texto del mensaje</label>
+      <textarea id="texto" class="input" [(ngModel)]="texto" rows="6"
+        placeholder="Ej. Tenemos promociones especiales este mes..."></textarea>
+
+      <label class="label" for="enlace">Enlace opcional</label>
+      <input id="enlace" class="input" [(ngModel)]="enlace" type="url"
+        placeholder="https://tu-clinica.com/promocion" />
+
+      <label class="label" for="archivo">Imagen o video opcional</label>
+      <input id="archivo" class="input file-input" type="file" accept="image/*,video/*"
+        (change)="seleccionarArchivo($event)" />
+      @if (archivo) {
+        <div class="file-chip">
+          <span>{{ archivo.name }}</span>
+          <button type="button" class="icon-btn" title="Quitar archivo" (click)="quitarArchivo()">×</button>
+        </div>
+      }
+
+      <div class="campaign-note">
+        <strong>Destinatarios</strong>
+        <span>Pacientes activos con teléfono. Máximo 500 por campaña.</span>
+      </div>
+
+      <button class="btn primary publish-btn" type="button" (click)="enviar()"
+        [disabled]="enviando">
+        {{ enviando ? 'Enviando campaña...' : 'Enviar a todos los pacientes' }}
+      </button>
+    </section>
+
+    <section class="card status-card">
+      <h3>Publicar en Estado</h3>
+      <p class="muted">La versión actual de OpenWA no expone una ruta confirmada para publicar Estados.</p>
+      <button class="btn" type="button" disabled title="OpenWA no expone esta operación">
+        Publicar en Estado
+      </button>
+      <p class="status-help">El envío a contactos sí está disponible. La publicación en Estado se activará cuando el proveedor exponga esa API.</p>
+    </section>
+  </div>
+
+  @if (resultado) {
+    <section class="card result-card">
+      <div class="result-head">
+        <div>
+          <h3>Resultado de la campaña</h3>
+          <p class="muted">{{ resultado.total }} destinatarios procesados.</p>
+        </div>
+        <div class="result-stats">
+          <span class="badge ok">{{ resultado.enviados }} enviados</span>
+          <span class="badge bad">{{ resultado.fallidos }} fallidos</span>
+        </div>
+      </div>
+      <div class="result-list">
+        @for (item of resultado.resultados; track item.telefono) {
+          <div class="result-row">
+            <span>{{ item.nombre || item.telefono }}</span>
+            @if (item.enviado) {
+              <span class="badge ok">Enviado</span>
+            } @else {
+              <span class="badge bad" [title]="item.error">{{ item.error || 'Falló' }}</span>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

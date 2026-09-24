@@ -1,251 +1,378 @@
-/* ---------------------------------------------------------------------
-   Módulo WhatsApp — Inbox (Chat)
-   --------------------------------------------------------------------- */
+:host {
+  display: block;
+  height: 100%;
+}
 
 .inbox-container {
   display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 0;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   height: calc(100vh - 80px);
+  min-height: 520px;
   overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
-/* ---------------------------------------------------------------------
-   Panel izquierdo: lista de conversaciones
-   --------------------------------------------------------------------- */
+.inbox-sidebar,
+.inbox-chat {
+  min-width: 0;
+  min-height: 0;
+  background: var(--card);
+}
 
 .inbox-sidebar {
-  background: var(--card);
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-right: 1px solid var(--border);
 }
 
-.inbox-sidebar .sidebar-header {
+.sidebar-header,
+.chat-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header {
   display: flex;
-  gap: 8px;
   align-items: center;
-  padding: 14px;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+  padding: 18px 16px 14px;
 }
 
-.inbox-sidebar .sidebar-header h2 {
-  margin: 0;
-  font-size: 18px;
+.eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--primary);
+  font-size: 10px;
   font-weight: 700;
-  color: var(--text);
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
-.inbox-sidebar .sidebar-search {
-  padding: 10px 14px;
+.sidebar-header h2,
+.chat-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.icon-btn {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.icon-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.sidebar-search {
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
 }
 
-.inbox-sidebar .sidebar-search .input {
+.sidebar-search .input {
   width: 100%;
 }
 
-.inbox-sidebar .sidebar-list {
+.sidebar-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
 }
 
-.inbox-sidebar .conv {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background .1s ease;
-}
-
-.inbox-sidebar .conv:hover {
-  background: #f0f4ff;
-}
-
-.inbox-sidebar .conv.sel {
-  background: #e8f0fe;
-  border-left: 3px solid var(--primary);
-}
-
-.inbox-sidebar .conv .conv-header {
+.conv {
   display: flex;
-  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.conv:hover {
+  background: color-mix(in srgb, var(--primary-light) 35%, var(--card));
+}
+
+.conv.sel {
+  border-left-color: var(--primary);
+  background: color-mix(in srgb, var(--primary-light) 65%, var(--card));
+}
+
+.avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.avatar.large {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+
+.conv-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.conv-header,
+.conv-subline {
+  display: flex;
   align-items: center;
-  margin-bottom: 4px;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
 }
 
-.inbox-sidebar .conv .conv-header strong {
-  font-size: 13.5px;
-  color: var(--text);
-}
-
-.inbox-sidebar .conv .conv-body {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
+.conv-header strong,
+.conv-subline span:first-child,
+.conv-preview {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.inbox-sidebar .conv .conv-time {
-  font-size: 11px;
+.conv-header strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.conv-header time {
+  flex: 0 0 auto;
   color: var(--muted);
+  font-size: 11px;
 }
 
-/* ---------------------------------------------------------------------
-   Panel derecho: chat
-   --------------------------------------------------------------------- */
+.conv-subline {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.conv-subline .badge {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  font-size: 10px;
+}
+
+.conv-preview {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .inbox-chat {
-  background: var(--card);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.inbox-chat .chat-header {
+.chat-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
   background: var(--bg);
 }
 
-.inbox-chat .chat-header h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+.chat-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-person > div {
+  min-width: 0;
+}
+
+.chat-info {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-actions {
+  flex: 0 0 auto;
+}
+
+.chat-estado-select {
+  max-width: 170px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.chat-messages {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 9px;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--card);
+}
+
+.bubble {
+  max-width: min(72%, 620px);
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.bubble.in {
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  background: var(--bg);
   color: var(--text);
 }
 
-.inbox-chat .chat-header .chat-info {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.inbox-chat .chat-header .chat-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.inbox-chat .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: calc(100vh - 300px);
-}
-
-.inbox-chat .bubble {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 13.5px;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-.inbox-chat .bubble.in {
-  align-self: flex-start;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
-}
-
-.inbox-chat .bubble.out {
+.bubble.out {
   align-self: flex-end;
-  background: var(--primary);
-  color: white;
   border-bottom-right-radius: 4px;
+  background: var(--primary);
+  color: #fff;
 }
 
-.inbox-chat .bubble .bubble-meta {
-  font-size: 11px;
+.bubble-meta {
+  margin-top: 5px;
+  color: inherit;
+  font-size: 10px;
   opacity: .7;
-  margin-top: 4px;
   text-align: right;
 }
 
-.inbox-chat .bubble .bubble-error {
-  margin-top: 4px;
-}
-
-.inbox-chat .chat-empty {
-  flex: 1;
+.chat-input {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-/* ---------------------------------------------------------------------
-   Input de mensaje
-   --------------------------------------------------------------------- */
-
-.inbox-chat .chat-input {
-  display: flex;
+  flex-shrink: 0;
+  align-items: flex-end;
   gap: 8px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border);
   background: var(--bg);
 }
 
-.inbox-chat .chat-input .input {
+.chat-input .input {
+  min-height: 38px;
+  max-height: 120px;
   flex: 1;
+  resize: vertical;
 }
 
-.inbox-chat .chat-input .btn {
-  flex-shrink: 0;
+.chat-input .btn {
+  flex: 0 0 auto;
 }
 
-/* ---------------------------------------------------------------------
-   Estado cambio selector
-   --------------------------------------------------------------------- */
-
-.chat-estado-select {
-  padding: 6px 10px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-}
-
-/* ---------------------------------------------------------------------
-   Empty state
-   --------------------------------------------------------------------- */
-
-.inbox-chat .empty {
-  text-align: center;
-  padding: 40px;
+.chat-placeholder {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
   color: var(--muted);
-  font-size: 14px;
+  text-align: center;
 }
 
-/* ---------------------------------------------------------------------
-   Responsive
-   --------------------------------------------------------------------- */
+.placeholder-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 26px;
+}
+
+.chat-placeholder h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.chat-placeholder p {
+  max-width: 320px;
+  margin: 7px 0 0;
+  font-size: 13px;
+}
+
+.empty {
+  padding: 32px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
 
 @media (max-width: 768px) {
   .inbox-container {
     grid-template-columns: 1fr;
     height: auto;
+    min-height: calc(100vh - 100px);
   }
+
   .inbox-sidebar {
-    border-right: none;
+    max-height: 42vh;
+    border-right: 0;
     border-bottom: 1px solid var(--border);
-    max-height: 50vh;
   }
-  .inbox-sidebar .sidebar-list {
-    max-height: 25vh;
+
+  .inbox-chat {
+    min-height: 58vh;
   }
-  .inbox-chat .chat-messages {
-    max-height: 40vh;
+
+  .chat-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chat-actions,
+  .chat-estado-select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .bubble {
+    max-width: 88%;
   }
 }

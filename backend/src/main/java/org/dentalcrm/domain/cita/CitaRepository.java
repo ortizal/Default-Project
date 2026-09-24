@@ -32,6 +32,14 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
     @EntityGraph(attributePaths = {"paciente", "doctor", "servicio"})
     List<Cita> findByFechaAndDoctorIdOrderByHoraInicioAsc(LocalDate fecha, Long doctorId);
 
+        @EntityGraph(attributePaths = {"paciente", "doctor", "servicio"})
+        @Query("select c from Cita c where c.id = :id")
+        java.util.Optional<Cita> findWithRelationsById(@Param("id") Long id);
+
+        @Override
+        @EntityGraph(attributePaths = {"paciente", "doctor", "servicio"})
+        List<Cita> findAll();
+
     List<Cita> findTop10ByPacienteIdOrderByFechaDescHoraInicioDesc(Long pacienteId);
 
     long countBySyncStatus(SyncEstado syncStatus);
@@ -142,5 +150,6 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
             """)
     List<Object[]> noAsistioPorDia(@Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
 
-    List<Cita> findByEstadoAndFechaBetween(EstadoCita estado, LocalDate desde, LocalDate hasta);
+        @EntityGraph(attributePaths = {"paciente", "doctor", "servicio"})
+        List<Cita> findByEstadoAndFechaBetween(EstadoCita estado, LocalDate desde, LocalDate hasta);
 }

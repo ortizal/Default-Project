@@ -8,10 +8,14 @@ import org.dentalcrm.domain.cita.CitaModificadaEvent;
 import org.dentalcrm.domain.cita.CitaRepository;
 import org.dentalcrm.domain.cita.EstadoCita;
 import org.dentalcrm.domain.cita.SyncEstado;
+import org.dentalcrm.domain.bloqueo.BloqueoAgenda;
+import org.dentalcrm.domain.bloqueo.BloqueoAgendaRepository;
 import org.dentalcrm.domain.google.GoogleAccount;
 import org.dentalcrm.domain.google.GoogleAccountRepository;
 import org.dentalcrm.domain.google.GoogleCalendario;
 import org.dentalcrm.domain.google.GoogleCalendarioRepository;
+import org.dentalcrm.domain.odontologo.Odontologo;
+import org.dentalcrm.domain.odontologo.OdontologoRepository;
 import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.web.google.dto.GoogleCalendarioResponse;
@@ -20,6 +24,7 @@ import org.dentalcrm.web.google.dto.GoogleSyncResponse;
 import org.dentalcrm.web.google.GoogleService.CalendarioRemoto;
 import org.dentalcrm.web.google.GoogleService.EventoGoogle;
 import org.dentalcrm.web.google.GoogleService.GoogleTokenResponse;
+import org.dentalcrm.web.google.GoogleService.EventoCalendario;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,9 +34,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -41,10 +52,14 @@ public class GoogleCalendarService {
     private static final Logger log = LoggerFactory.getLogger(GoogleCalendarService.class);
     private static final String MODULO = "GOOGLE_CALENDAR";
     private static final int MARGEN_TOKEN_SEG = 300;
+    private static final int DIAS_IMPORTACION = 90;
+    private final ReentrantLock sincronizacionLock = new ReentrantLock();
 
     private final GoogleAccountRepository accountRepository;
     private final GoogleCalendarioRepository calendarioRepository;
     private final CitaRepository citaRepository;
+    private final BloqueoAgendaRepository bloqueoRepository;
+    private final OdontologoRepository odontologoRepository;
     private final GoogleService googleService;
     private final AuditService auditService;
     private final String timezone;
@@ -52,12 +67,16 @@ public class GoogleCalendarService {
     public GoogleCalendarService(GoogleAccountRepository accountRepository,
                                  GoogleCalendarioRepository calendarioRepository,
                                  CitaRepository citaRepository,
+                                 BloqueoAgendaRepository bloqueoRepository,
+                                 OdontologoRepository odontologoRepository,
                                  GoogleService googleService,
                                  AuditService auditService,
                                  @Value("${app.timezone}") String timezone) {
         this.accountRepository = accountRepository;
         this.calendarioRepository = calendarioRepository;
         this.citaRepository = citaRepository;
+        this.bloqueoRepository = bloqueoRepository;
+        this.odontologoRepository = odontologoRepository;
         this.googleService = googleService;
         this.auditService = auditService;
         this.timezone = timezone;
@@ -201,8 +220,19 @@ public class GoogleCalendarService {
         }
     }
 
-    @Transactional
     public GoogleSyncResponse sincronizar() {
+        if (!sincronizacionLock.tryLock()) {
+            log.info("Sincronización de Google omitida: ya hay otra ejecución en curso");
+            return new GoogleSyncResponse(0, 0, 0, 0, 0);
+        }
+        try {
+            return sincronizarInternamente();
+        } finally {
+            sincronizacionLock.unlock();
+        }
+    }
+
+    private GoogleSyncResponse sincronizarInternamente() {
         cuentaActivaOError();
         int creados = 0;
         int actualizados = 0;
@@ -280,11 +310,116 @@ public class GoogleCalendarService {
         });
     }
 
+    @Scheduled(fixedDelay = 300000, initialDelay = 60000)
+    public void importarEventosProximos() {
+        sincronizarEntrante();
+    }
+
+    public void sincronizarEntrante() {
+        if (!sincronizacionLock.tryLock()) {
+            log.info("Importación de Google omitida: ya hay otra sincronización en curso");
+            return;
+        }
+        try {
+            sincronizarEntranteInternamente();
+        } finally {
+            sincronizacionLock.unlock();
+        }
+    }
+
+    private void sincronizarEntranteInternamente() {
+        if (!googleService.estaConfigurado()) {
+            return;
+        }
+        GoogleAccount cuenta = cuentaActiva().orElse(null);
+        if (cuenta == null) {
+            return;
+        }
+        GoogleCalendario calendario = calendarioRepository
+                .findByCuentaIdAndSeleccionadoTrue(cuenta.getId()).orElse(null);
+        if (calendario == null) {
+            return;
+        }
+        Odontologo doctor = odontologoRepository.findByGoogleCalendarId(calendario.getCalendarId())
+                .orElseGet(() -> {
+                    List<Odontologo> activos = odontologoRepository.findByEstadoOrderByNombresAsc("ACTIVO");
+                    return activos.size() == 1 ? activos.get(0) : null;
+                });
+        if (doctor == null) {
+            log.warn("No se importan eventos de Google: el calendario {} no está asignado a un odontólogo",
+                    calendario.getCalendarId());
+            return;
+        }
+
+        Instant desde = LocalDate.now(ZoneId.of(timezone)).atStartOfDay(ZoneId.of(timezone)).toInstant();
+        Instant hasta = desde.plus(DIAS_IMPORTACION, ChronoUnit.DAYS);
+        String accessToken = accesoValido(cuenta);
+        List<EventoCalendario> eventos = googleService.listarEventos(
+                accessToken, calendario.getCalendarId(), desde, hasta);
+        Set<String> idsActuales = new HashSet<>();
+        for (EventoCalendario evento : eventos) {
+            if (evento.id() == null || "cancelled".equalsIgnoreCase(evento.status())) {
+                continue;
+            }
+            idsActuales.add(evento.id());
+            importarEvento(evento, calendario.getCalendarId(), doctor);
+        }
+        bloqueoRepository.findByGoogleCalendarIdAndFechaBetween(
+                        calendario.getCalendarId(), desde.atZone(ZoneId.of(timezone)).toLocalDate(),
+                        hasta.atZone(ZoneId.of(timezone)).toLocalDate())
+                .stream()
+                .filter(b -> !idsActuales.contains(b.getGoogleEventId()))
+                .forEach(bloqueoRepository::delete);
+    }
+
+    private void importarEvento(EventoCalendario evento, String calendarId, Odontologo doctor) {
+        ZoneId zona = ZoneId.of(timezone);
+        LocalDate fecha;
+        LocalTime inicio;
+        LocalTime fin;
+        if (evento.inicioFecha() != null) {
+            fecha = LocalDate.parse(evento.inicioFecha());
+            inicio = null;
+            fin = null;
+        } else if (evento.inicioDateTime() != null && evento.finDateTime() != null) {
+            var desde = OffsetDateTime.parse(evento.inicioDateTime()).atZoneSameInstant(zona);
+            var hasta = OffsetDateTime.parse(evento.finDateTime()).atZoneSameInstant(zona);
+            fecha = desde.toLocalDate();
+            inicio = desde.toLocalTime();
+            fin = hasta.toLocalDate().equals(fecha) ? hasta.toLocalTime() : LocalTime.MAX;
+        } else {
+            return;
+        }
+        BloqueoAgenda bloqueo = bloqueoRepository
+                .findByGoogleCalendarIdAndGoogleEventId(calendarId, evento.id())
+                .orElseGet(BloqueoAgenda::new);
+        bloqueo.setOdontologo(doctor);
+        bloqueo.setFecha(fecha);
+        bloqueo.setHoraInicio(inicio);
+        bloqueo.setHoraFin(fin);
+        bloqueo.setMotivo("Google Calendar: " + evento.summary());
+        bloqueo.setGoogleCalendarId(calendarId);
+        bloqueo.setGoogleEventId(evento.id());
+        bloqueoRepository.save(bloqueo);
+    }
+
     private void sincronizarPorEvento(Long citaId, boolean yaTieneEvento) {
+        if (!sincronizacionLock.tryLock()) {
+            log.info("Sincronización de cita {} omitida: ya hay otra ejecución en curso", citaId);
+            return;
+        }
+        try {
+            sincronizarPorEventoInternamente(citaId, yaTieneEvento);
+        } finally {
+            sincronizacionLock.unlock();
+        }
+    }
+
+    private void sincronizarPorEventoInternamente(Long citaId, boolean yaTieneEvento) {
         if (!googleService.estaConfigurado() || cuentaActiva().isEmpty()) {
             return;
         }
-        Cita cita = citaRepository.findById(citaId).orElse(null);
+        Cita cita = citaRepository.findWithRelationsById(citaId).orElse(null);
         if (cita == null) {
             return;
         }

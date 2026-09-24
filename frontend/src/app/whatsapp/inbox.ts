@@ -7,6 +7,7 @@ import { Conversacion, ConversacionDetalle, Mensaje } from '../core/models';
 @Component({
   selector: 'app-inbox',
   templateUrl: './inbox.html',
+  styleUrl: './inbox.css',
   imports: [CommonModule, FormsModule],
 })
 export class InboxComponent implements OnInit, OnDestroy {
@@ -116,6 +117,17 @@ export class InboxComponent implements OnInit, OnDestroy {
       default:
         return 'dim';
     }
+  }
+
+  iniciales(c: Conversacion): string {
+    const nombre = c.nombreContacto || c.pacienteNombres || c.telefono;
+    return nombre
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((parte) => parte[0])
+      .join('')
+      .toUpperCase();
   }
 
   private msg(e: unknown): string {
