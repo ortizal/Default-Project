@@ -1,18 +1,15 @@
 
+    <ui-page-header title="Automatizaciones de mensajes">
+      <button class="btn primary" (click)="nueva()">+ Nueva automatización</button>
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Automatizaciones de mensajes</h2>
-        <button class="btn primary" (click)="nueva()">+ Nueva automatización</button>
-      </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando automatizaciones…">
         <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Minutos antes</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th></th></tr></thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="8" class="empty"><span class="spinner"></span> Cargando automatizaciones…</td></tr>
-          }
           @for (a of items; track a.id) {
             <tr>
               <td>{{ a.id }}</td>
@@ -35,7 +32,7 @@
             <tr><td colspan="8" class="empty">Sin automatizaciones.</td></tr>
           }
         </tbody>
-      </table>
+      </ui-table>
     </div>
 
     @if (showForm) {
@@ -67,7 +64,7 @@
           </div>
           <label class="label">Condición</label>
           <input class="input" [(ngModel)]="form.condicion" placeholder="ej. estado:cita" />
-          <label class="label" style="display:flex; align-items:center; gap:6px">
+          <label class="label flex items-center gap-2">
             <input type="checkbox" [(ngModel)]="form.activa" /> Activa
           </label>
           <div class="modal-actions">

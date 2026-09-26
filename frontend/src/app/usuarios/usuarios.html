@@ -1,22 +1,19 @@
 
+    <ui-page-header title="Usuarios">
+      <ui-button variant="primary" (onClick)="nuevo()">+ Nuevo usuario</ui-button>
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Usuarios</h2>
-        <button class="btn primary" (click)="nuevo()">+ Nuevo usuario</button>
-      </div>
       <div class="toolbar">
-        <input class="input" style="width:260px" placeholder="Buscar por usuario, nombre o email" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <input class="input buscar" placeholder="Buscar por usuario, nombre o email" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
         <button class="btn" (click)="cargar(0)">Buscar</button>
       </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando usuarios…">
         <thead><tr><th>ID</th><th>Usuario</th><th>Nombres</th><th>Email</th><th>Teléfono</th><th>Roles</th><th>Estado</th><th></th></tr></thead>
         <tbody>
-          @if (cargando) {
-          <tr><td colspan="8" class="empty"><span class="spinner"></span> Cargando usuarios…</td></tr>
-        }
           @for (u of items; track u.id) {
             <tr>
               <td>{{ u.id }}</td>
@@ -26,10 +23,10 @@
               <td>{{ u.telefono || '-' }}</td>
               <td>
                 @for (r of u.roles; track r) {
-                  <span class="badge info" style="margin-right:3px">{{ r }}</span>
+                  <span class="badge info mr-1">{{ r }}</span>
                 }
               </td>
-              <td><span class="badge" [ngClass]="u.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ u.estado }}</span></td>
+              <td><ui-badge [tone]="u.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ u.estado }}</ui-badge></td>
               <td class="flex">
                 <button class="btn small" (click)="editar(u)">Editar</button>
                 <button class="btn small danger" (click)="cambiarEstado(u)">{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
@@ -39,12 +36,13 @@
             <tr><td colspan="8" class="empty">Sin usuarios.</td></tr>
           }
         </tbody>
-      </table>
-      <div class="between" style="margin-top:10px">
-        <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
-        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
-        <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
-      </div>
+      </ui-table>
+      <ui-pagination
+        [page]="page + 1"
+        [pages]="totalPages"
+        (prev)="cargar(page - 1)"
+        (next)="cargar(page + 1)"
+      />
     </div>
 
     @if (showForm) {
@@ -55,10 +53,10 @@
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
-            <div><label class="label">Usuario *</label><input class="input" [(ngModel)]="form.username" required [readonly]="!!form.id" /></div>
-            <div><label class="label">Email *</label><input class="input" type="email" [(ngModel)]="form.email" required /></div>
-            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
-            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
+            <div class="half"><label class="label">Usuario *</label><input class="input" [(ngModel)]="form.username" required [readonly]="!!form.id" /></div>
+            <div class="half"><label class="label">Email *</label><input class="input" type="email" [(ngModel)]="form.email" required /></div>
+            <div class="half"><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
+            <div class="half"><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
             @if (!form.id) {
               <div class="full"><label class="label">Contraseña *</label><input class="input" type="password" [(ngModel)]="form.password" required autocomplete="new-password" /></div>
             } @else {
@@ -67,9 +65,9 @@
             <div class="full"><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
             <div class="full">
               <label class="label">Roles *</label>
-              <div class="flex" style="flex-wrap:wrap">
+              <div class="flex wrap">
                 @for (r of ROLES; track r) {
-                  <label style="margin-right:10px; font-size:13px">
+                  <label class="mr-2 text-sm">
                     <input type="checkbox" [checked]="rolMarcado(r)" (change)="toggleRol(r)" /> {{ r }}
                   </label>
                 }

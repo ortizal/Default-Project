@@ -1,0 +1,118 @@
+// =====================================================================
+// Dark mode — se remapea la misma paleta LS, no un tema distinto.
+// Sólo cambian las variables de superficie/texto; el verde y el naranja
+// se mantienen idénticos en ambos temas.
+// =====================================================================
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ls-background: #0e1712;
+    --ls-surface: #16211c;
+    --ls-surface-2: #1d2a24;
+    --ls-border: #2b3a33;
+    --ls-border-strong: #3a4b43;
+    --ls-text: #e7ede9;
+    --ls-muted: #9aa8a1;
+
+    --ls-hero-a: #0b1310;
+    --ls-hero-b: #0a0f0d;
+    --ls-hero-c: #0c1218;
+
+    --ls-sidebar-bg: #101a16;
+    --ls-sidebar-fg: #cbd5d0;
+    --ls-sidebar-active: rgba(161, 203, 53, 0.14);
+
+    --ls-primary-soft: rgba(161, 203, 53, 0.16);
+    --ls-secondary-soft: rgba(248, 100, 1, 0.18);
+
+    --ls-success-soft: rgba(46, 125, 50, 0.22);
+    --ls-danger-soft: rgba(198, 40, 40, 0.22);
+    --ls-warning-soft: rgba(180, 83, 9, 0.24);
+    --ls-info-soft: rgba(3, 105, 161, 0.24);
+
+    --ls-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --ls-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+    --ls-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+    // Material hereda la superficie oscura
+    --mat-sys-surface: #16211c;
+    --mat-sys-surface-container: #1d2a24;
+    --mat-sys-surface-container-low: #16211c;
+    --mat-sys-surface-container-high: #212f28;
+    --mat-sys-on-surface: #e7ede9;
+    --mat-sys-on-surface-variant: #9aa8a1;
+    --mat-sys-outline: #3a4b43;
+    --mat-sys-outline-variant: #2b3a33;
+    --mat-toolbar-container-background: #16211c;
+    --mat-toolbar-container-color: #e7ede9;
+
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ls-background);
+    color: var(--ls-text);
+  }
+
+  .tbl th {
+    background: var(--ls-surface-2);
+    color: var(--ls-muted);
+  }
+
+  .tbl tbody tr:hover {
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  .seg-btn {
+    background: var(--ls-surface-2);
+    color: var(--ls-muted);
+  }
+
+  .bubble.in {
+    background: var(--ls-surface-2);
+  }
+
+  .conv:hover {
+    background: var(--ls-surface-2);
+  }
+
+  .conv.sel {
+    background: var(--ls-primary-soft);
+    border-color: rgba(161, 203, 53, 0.4);
+  }
+
+  .modal-backdrop {
+    background: rgba(4, 8, 6, 0.62);
+  }
+
+  .login-page {
+    background:
+      radial-gradient(1000px 520px at 12% -8%, rgba(161, 203, 53, 0.18), transparent 60%),
+      linear-gradient(150deg, var(--ls-hero-a) 0%, var(--ls-hero-b) 58%, var(--ls-hero-c) 100%);
+  }
+
+  // El verde primario debe pasar contraste sobre superficies oscuras
+  .btn.primary,
+  .badge.primary,
+  .seg-btn.active {
+    color: #16211c;
+  }
+
+  .btn.primary:hover:not(:disabled) {
+    color: #0e1712;
+  }
+
+  .btn.outline {
+    color: var(--ls-text);
+  }
+
+  .tbl td.cell-tooltip:hover::after {
+    background: #e7ede9;
+    color: #16211c;
+  }
+}
+
+// Clase explícita para sobreescribir al sistema (futuro toggle manual)
+html.dark {
+  color-scheme: dark;
+}

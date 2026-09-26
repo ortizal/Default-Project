@@ -1,5 +1,7 @@
 <div class="whatsapp-container">
-  <h2 style="margin:0 0 16px">📱 Sesiones WhatsApp</h2>
+  <ui-page-header title="Sesiones WhatsApp">
+    <button class="btn primary" (click)="nueva()">+ Nueva sesión</button>
+    </ui-page-header>
 
   <!-- Stats -->
   <div class="stats-row">
@@ -42,7 +44,6 @@
       </select>
     </div>
     <div class="toolbar-actions">
-      <button class="btn sm primary" (click)="nueva()">+ Nueva Sesión</button>
       <button class="btn sm" (click)="cargar(0)" [disabled]="cargando">↻ Refrescar</button>
     </div>
   </div>
@@ -80,7 +81,7 @@
             @for (s of items; track s.id) {
               <tr>
                 <td>{{ s.id }}</td>
-                <td><code style="font-size:11px">{{ s.sesionId }}</code></td>
+                <td><code class="text-xs">{{ s.sesionId }}</code></td>
                 <td>{{ s.nombre || '—' }}</td>
                 <td>
                   <span class="badge" [ngClass]="badge(s.estado)">{{ s.estado }}</span>
@@ -94,7 +95,7 @@
                     }
                   </div>
                 </td>
-                <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" [title]="s.lastError">
+                <td class="max-w-xs truncate" [title]="s.lastError">
                   {{ s.lastError || '—' }}
                 </td>
                 <td>
@@ -116,13 +117,12 @@
       }
 
       <!-- Paginación -->
-      @if (totalPages > 1) {
-        <div class="whatsapp-pagination">
-          <button class="btn sm" (click)="cargar(page - 1)" [disabled]="page <= 0">← Anterior</button>
-          <span class="muted">Pág {{ page + 1 }} de {{ totalPages }}</span>
-          <button class="btn sm" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente →</button>
-        </div>
-      }
+      <ui-pagination
+        [page]="page + 1"
+        [pages]="totalPages"
+        (prev)="cargar(page - 1)"
+        (next)="cargar(page + 1)"
+      />
     </div>
   }
 

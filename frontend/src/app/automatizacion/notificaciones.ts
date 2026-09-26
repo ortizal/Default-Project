@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Notificacion } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiTableComponent } from '../ui';
 
 @Component({
   selector: 'app-notificaciones',
   templateUrl: './notificaciones.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class NotificacionesComponent implements OnInit {
   items: Notificacion[] = [];

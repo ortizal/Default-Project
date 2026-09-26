@@ -34,6 +34,7 @@ import org.dentalcrm.web.paciente.PacienteService;
 import org.dentalcrm.web.paciente.dto.PacienteRequest;
 import org.dentalcrm.web.paciente.dto.PacienteResponse;
 import org.dentalcrm.web.paciente.dto.TutorRequest;
+import org.dentalcrm.util.TelefonoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,8 +73,8 @@ public class AgenteConversacionalService {
     private static final String MENSAJE_MENU = """
             Puedes pedirme:\n1. Ver mis citas\n2. Ver mi perfil\n3. Agendar una cita\n4. Ver servicios\n5. Confirmar o cancelar\n6. Disponibilidad\n7. Hablar con una persona\n\nTambién puedes escribir "citas", "perfil", "google", "agendar", "servicios", etc.\nO envía tu número de cédula para que te reconozca.
             """;
-    private static final String MENSAJE_SIN_PACIENTE = """
-            ¡Hola! 😊 Para ayudarte necesito encontrarte en nuestro sistema.\nEnvía tu número de cédula para localizarte, o escribe "registrarme" si eres nuevo.
+        private static final String MENSAJE_SIN_PACIENTE = """
+            ¡Hola! 😊 Soy el asistente de Little Smile CRM. Para ayudarte necesito encontrarte en nuestro sistema.\nEnvía tu número de cédula para localizarte, o escribe "registrarme" si eres nuevo.
             """;
     private static final String MENSAJE_PREGUNTA_CEDULA = """
             No te encuentro en nuestro sistema.\nEnvía tu número de cédula o escribe "registrarme" para crear tu ficha de paciente.
@@ -86,7 +87,7 @@ public class AgenteConversacionalService {
     private static final String MENSAJE_PREGUNTA_TUTOR = """
             Como eres menor de edad, necesito registrar a tu tutor legal (padre o madre).\n¿Quién será tu tutor? Responde "padre" o "madre".
             """;
-    private static final String MENSAJE_REINICIO = "¡Hola! 😊 Reinicié nuestra conversación para ayudarte mejor.\n" + MENSAJE_MENU;
+    private static final String MENSAJE_REINICIO = "¡Hola! 😊 Soy el asistente de Little Smile CRM y reinicié nuestra conversación para ayudarte mejor.\n" + MENSAJE_MENU;
     private static final long INACTIVIDAD_REINICIO_MS = 2 * 60 * 1000L;
     private static final Set<String> PALABRAS_REINICIAR = Set.of(
             "reiniciar", "reinicia", "reinicio", "reiniciame", "reiniciar chat",
@@ -114,6 +115,7 @@ public class AgenteConversacionalService {
     private static final Set<String> PALABRAS_DISPONIBILIDAD = Set.of(
             "disponibilidad", "cupo", "cupos", "hay a la", "hay campo", "que horario", "que horarios",
             "horario de atencion", "horarios de atencion",
+            "disponibilidad del doctor", "disponibilidad doctor", "horario del doctor", "horario doctor",
             "dias de atencion", "dias y horarios", "dias que atiende", "dias que atienden",
             "cuando atiende", "cuando atienden", "atiende", "atienden", "atender", "atencion",
             "horas de atencion", "turnos");
@@ -239,11 +241,18 @@ public class AgenteConversacionalService {
         if (t.isBlank()) {
             return RespuestaAgente.silenciosa();
         }
+        if (PATTERN_CEDULA.matcher(t).matches()) {
+            return buscarPorCedula(conversacion, t);
+        }
         if (inactiva(ultimoPrev)) {
             return reiniciar(conversacion);
         }
         if (contiene(t, PALABRAS_REINICIAR)) {
             return reiniciar(conversacion);
+        }
+        Intencion intencionDirecta = clasificar(t);
+        if (intencionDirecta == Intencion.PREGUNTAR_DISPONIBILIDAD) {
+            return preguntarDisponibilidad(conversacion, contexto(conversacion), t);
         }
         Map<String, Object> ctx = contexto(conversacion);
 
@@ -289,17 +298,171 @@ public class AgenteConversacionalService {
         };
     }
 
+    // ------------------------------------------------------------------
+    // Recuperación de chats: reproduce la pregunta pendiente
+    // ------------------------------------------------------------------
+
+    /**
+     * Texto con el que se retoma una conversación cuyo último mensaje fue una
+     * entrada del paciente que nunca se contestó (p. ej. el servicio se
+     * reinició a mitad de un paso).
+     *
+     * <p>Solo calcula el mensaje: no ejecuta acciones (no crea citas ni fichas)
+     * ni modifica el estado guardado, de modo que reintentarlo es inocuo. Si no
+     * hay paso en curso pide la cédula, salvo que el paciente ya esté
+     * vinculado a la conversación, en cuyo caso se limita a saludar.
+     */
+    @Transactional(readOnly = true)
+    public String mensajeDeReanudacion(Conversacion conversacion) {
+        if (conversacion.getPaciente() == null
+                && conversacion.getIntencion() != Intencion.REGISTRAR_PACIENTE) {
+            return MENSAJE_SIN_PACIENTE;
+        }
+        Map<String, Object> ctx = contexto(conversacion);
+        String paso = String.valueOf(ctx.getOrDefault("paso", ""));
+        if (conversacion.getIntencion() == Intencion.REGISTRAR_PACIENTE) {
+            return mensajePasoRegistro(paso, ctx);
+        }
+        if (conversacion.getIntencion() == Intencion.AGENDAR_CITA) {
+            String pendiente = mensajePasoAgendamiento(paso, ctx);
+            if (pendiente != null) {
+                return pendiente;
+            }
+        }
+        return conversacion.getPaciente() == null
+                ? MENSAJE_SIN_PACIENTE
+                : "¡Hola " + conversacion.getPaciente().getNombres()
+                        + "! 😊 ¿En qué puedo ayudarte?\n" + MENSAJE_MENU;
+    }
+
+    private String mensajePasoRegistro(String paso, Map<String, Object> ctx) {
+        return switch (paso) {
+            case "REG_CONFIRMAR" -> {
+                String cedula = valor(ctx, "cedula");
+                yield cedula.isEmpty()
+                        ? MENSAJE_SIN_PACIENTE
+                        : "No te encuentro registrado con la cédula " + cedula
+                                + ".\n¿Quieres que cree tu ficha de paciente? Responde 'sí'.";
+            }
+            case "REG_NOMBRES" -> MENSAJE_PREGUNTA_NOMBRE;
+            case "REG_APELLIDOS" -> MENSAJE_PREGUNTA_APELLIDOS;
+            case "REG_FECHA" -> MENSAJE_PREGUNTA_FECHA;
+            case "REG_TUTOR" -> MENSAJE_PREGUNTA_TUTOR;
+            case "REG_TUTOR_NOMBRE" -> {
+                String parentesco = valor(ctx, "tutorParentesco");
+                yield parentesco.isEmpty()
+                        ? "¿Cuál es el nombre del tutor?"
+                        : "Perfecto. ¿Cuál es el nombre del " + parentesco.toLowerCase() + "?";
+            }
+            case "REG_TUTOR_APELLIDO" -> "¿Y los apellidos del tutor?";
+            case "REG_CONFIRMAR_DATOS" -> valor(ctx, "nombres").isEmpty() || valor(ctx, "apellidos").isEmpty()
+                    ? MENSAJE_SIN_PACIENTE
+                    : resumenRegistro(ctx, null) + "\n¿Confirmas estos datos? Responde 'sí' para guardarlos.";
+            default -> MENSAJE_SIN_PACIENTE;
+        };
+    }
+
+    private String mensajePasoAgendamiento(String paso, Map<String, Object> ctx) {
+        return switch (paso) {
+            case "SERVICIO" -> {
+                List<Servicio> servicios = serviciosActivos();
+                yield servicios.isEmpty()
+                        ? "Aún no tenemos servicios activos. Escribe 'hablar con una persona' para más ayuda."
+                        : preguntaServicio(servicios, null);
+            }
+            case "DOCTOR" -> preguntaOdontologo(odontologosActivos(), null);
+            case "FECHA" -> preguntaFecha(null);
+            case "HORA" -> {
+                LocalDate fecha = fechaDeTexto(ctx.get("fecha"));
+                String horas = horasDeContexto(ctx);
+                int total = ctx.get("slots") instanceof List<?> s ? s.size() : 0;
+                yield fecha == null || horas.isEmpty()
+                        ? "¿A qué hora te conviene?\n\nResponde la hora con dos puntos (ej: 10:00)."
+                        : "¿A qué hora te conviene el " + formatearFecha(fecha) + "?\n\n" + horas
+                                + "\n\nResponde el número de la opción (1-" + total
+                                + ") o la hora con dos puntos (ej: 10:00).";
+            }
+            case "CREAR" -> {
+                Long servicioId = idDeContexto(ctx.get("servicioId"));
+                Long doctorId = idDeContexto(ctx.get("doctorId"));
+                LocalDate fecha = fechaDeTexto(ctx.get("fecha"));
+                Object hora = ctx.get("hora");
+                yield servicioId == null || doctorId == null || fecha == null || hora == null
+                        ? null
+                        : "Perfecto ✨ ¿Confirmo tu cita?\n• Servicio: " + nombreServicio(servicioId)
+                                + "\n• Odontólogo: " + nombreDoctor(doctorId)
+                                + "\n• Fecha: " + formatearFecha(fecha)
+                                + "\n• Hora: " + hora + "\nResponde 'sí' para confirmarla.";
+            }
+            default -> null;
+        };
+    }
+
+    private String valor(Map<String, Object> ctx, String clave) {
+        Object valor = ctx.get(clave);
+        if (valor == null) {
+            return "";
+        }
+        String texto = String.valueOf(valor);
+        return "null".equalsIgnoreCase(texto) ? "" : texto;
+    }
+
+    private Long idDeContexto(Object valor) {
+        if (valor == null) {
+            return null;
+        }
+        String texto = String.valueOf(valor);
+        if (texto.isBlank() || "null".equalsIgnoreCase(texto)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(texto);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private LocalDate fechaDeTexto(Object valor) {
+        if (valor == null) {
+            return null;
+        }
+        String texto = String.valueOf(valor);
+        if (texto.isBlank() || "null".equalsIgnoreCase(texto)) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(texto);
+        } catch (java.time.format.DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    private String horasDeContexto(Map<String, Object> ctx) {
+        if (!(ctx.get("slots") instanceof List<?> slots)) {
+            return "";
+        }
+        return formatearOpcionesEnDosColumnas(slots.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(String::valueOf)
+                .toList());
+    }
+
     private RespuestaAgente buscarPorCedula(Conversacion conversacion, String cedula) {
+        conversacion.setPaciente(null);
+        conversacion.setContextoAgente(null);
         Optional<Paciente> paciente = pacienteRepository.findByCedulaIgnoreCase(cedula);
         if (paciente.isEmpty()) {
-            return respuesta("No encontré ningún paciente con cédula " + cedula + ".\n" + MENSAJE_PREGUNTA_CEDULA, Intencion.REGISTRAR_PACIENTE);
+            guardar(conversacion, Intencion.REGISTRAR_PACIENTE,
+                    Map.of("paso", "REG_CONFIRMAR", "cedula", cedula));
+                return respuesta("No encontré ningún paciente con cédula " + cedula
+                    + ".\n¿Quieres que cree tu ficha de paciente? Responde 'sí'.", Intencion.REGISTRAR_PACIENTE);
         }
         Paciente p = paciente.get();
         conversacion.setPaciente(p);
         guardar(conversacion, Intencion.VER_PERFIL, null);
         return respuesta("¡Encontrado! 📋 Datos de " + p.getNombres() + " " + p.getApellidos() + ":\n"
                 + "📇 Cédula: " + p.getCedula() + "\n"
-                + "📱 Teléfono: " + (p.getTelefono() != null ? p.getTelefono() : "—") + "\n"
+                + "📱 Teléfono: " + telefonoLegible(p.getTelefono()) + "\n"
                 + "📅 Registrado: " + p.getCreatedAt() + "\n\n"
                 + "Responde:\n1. Ver mis citas\n2. Ver mi perfil\n3. Agendar una cita\n4. Ver servicios\n5. Confirmar o cancelar\n6. Disponibilidad\n7. Hablar con una persona",
                 Intencion.VER_PERFIL);
@@ -398,7 +561,7 @@ public class AgenteConversacionalService {
         return respuesta(
                 "Datos:\n📋 Nombre: " + paciente.getNombres() + " " + paciente.getApellidos()
                         + "\n📇 Cédula: " + paciente.getCedula()
-                        + "\n📱 Teléfono: " + (paciente.getTelefono() != null ? paciente.getTelefono() : "—")
+                        + "\n📱 Teléfono: " + telefonoLegible(paciente.getTelefono())
                         + "\n📅 Registrado: " + paciente.getCreatedAt()
                         + "\n\nResponde \"ver citas\" para ver tus citas o \"cita\" para agendar.",
                 Intencion.VER_PERFIL);
@@ -426,7 +589,7 @@ public class AgenteConversacionalService {
 
     private RespuestaAgente saludar(Conversacion conversacion) {
         guardar(conversacion, Intencion.SALUDO, null);
-        return respuesta("¡Hola! 😊 Soy el asistente virtual de la clínica y te ayudo con tus citas.\n" + MENSAJE_MENU, Intencion.SALUDO);
+        return respuesta("¡Hola! 😊 Soy el asistente virtual de Little Smile CRM y te ayudo con tus citas.\n" + MENSAJE_MENU, Intencion.SALUDO);
     }
 
     private RespuestaAgente listarServicios(Conversacion conversacion) {
@@ -496,18 +659,31 @@ public class AgenteConversacionalService {
     private RespuestaAgente preguntarDisponibilidad(Conversacion conversacion, Map<String, Object> ctx, String t) {
         List<Odontologo> odontologos = odontologosActivos();
         List<Servicio> servicios = serviciosActivos();
-        EntradaAgendamiento entrada = ParserAgendamiento.parsear(t, hoy(), servicios, odontologos);
+
+        // Si acabamos de mostrar la lista de odontólogos, la respuesta solo puede
+        // ser el nombre o el número de esa lista: sin acotarlo, un "2" se tomaría
+        // como fecha, servicio u hora de otro paso.
+        boolean preguntandoOdontologo = !ctx.containsKey("doctorId") && ctx.containsKey("desde");
+        EntradaAgendamiento entrada = preguntandoOdontologo
+                ? ParserAgendamiento.entradaParaPaso("DOCTOR", t, hoy(), servicios, odontologos)
+                : ParserAgendamiento.parsear(t, hoy(), servicios, odontologos);
 
         Long doctorId = numero(ctx, "doctorId", entrada.doctorId());
         if (doctorId == null) {
+            if (odontologos.isEmpty()) {
+                return respuesta("Aún no tenemos odontólogos activos. Escribe 'hablar con una persona' para más ayuda.",
+                        Intencion.PREGUNTAR_DISPONIBILIDAD);
+            }
             if (odontologos.size() == 1) {
                 doctorId = odontologos.get(0).getId();
             } else {
                 Map<String, Object> nuevo = new java.util.HashMap<>(ctx);
                 nuevo.put("desde", entrada.fecha() == null ? hoy().plusDays(1).toString() : entrada.fecha().toString());
                 guardar(conversacion, Intencion.PREGUNTAR_DISPONIBILIDAD, nuevo);
-                return respuesta("¿Con qué odontólogo te gustaría revisar?\n" + listarOdontologos(odontologos)
-                        + "\nResponde el nombre o el número.", Intencion.PREGUNTAR_DISPONIBILIDAD);
+                String error = preguntandoOdontologo
+                        ? "No entendí \"" + recortar(t) + "\" como un odontólogo.\n\n" : "";
+                return respuesta(error + preguntaOdontologo(odontologos, null),
+                        Intencion.PREGUNTAR_DISPONIBILIDAD);
             }
         }
         Long servicioId = numero(ctx, "servicioId", entrada.servicioId());
@@ -536,8 +712,8 @@ public class AgenteConversacionalService {
             return respuesta("No encuentro cupos disponibles el " + formatearFecha(fecha)
                     + " con " + doctorNombre + ". 😕\n¿Quieres probar con 'mañana' o con otro día?", Intencion.PREGUNTAR_DISPONIBILIDAD);
         }
-        return respuesta("Para el " + formatearFecha(fecha) + " con " + doctorNombre + " hay: "
-                + horasDeSlots(slots) + ". Si quieres agendar una cita ese día, escríbeme 'quiero una cita "
+        return respuesta("Para el " + formatearFecha(fecha) + " con " + doctorNombre + " hay estos cupos:\n\n"
+                + horasDeSlots(slots) + "\n\nSi quieres agendar una cita ese día, escríbeme 'quiero una cita "
                 + formatearFecha(fecha) + "' 😊", Intencion.PREGUNTAR_DISPONIBILIDAD);
     }
 
@@ -565,11 +741,12 @@ public class AgenteConversacionalService {
                 sb.append("• ").append(cupos.get(i)).append("\n");
             }
         }
-        sb.append("\nTe adjunto el horario completo en PDF 😊");
+        sb.append("\nTe adjunto el horario completo y la disponibilidad de los próximos 7 días en PDF 😊");
 
+        List<HorarioPdfService.DiaDisponibilidad> dias = disponibilidadPorDia(doctorId, servicioId);
         byte[] pdf = null;
         try {
-            pdf = horarioPdfService.generar(doctor, horarios, cupos);
+            pdf = horarioPdfService.generar(doctor, horarios, cupos, dias);
         } catch (Exception ex) {
             log.warn("Agente: no se pudo generar el PDF del horario del doctor {}: {}", doctorId, ex.getMessage());
         }
@@ -636,6 +813,28 @@ public class AgenteConversacionalService {
         return cupos;
     }
 
+    /**
+     * Las horas libres y ocupadas de los próximos 7 días, listas para imprimir
+     * en el PDF: así el paciente ve de un vistazo cuándo hay espacio sin tener
+     * que reconstruir la disponibilidad a partir del horario semanal.
+     */
+    private List<HorarioPdfService.DiaDisponibilidad> disponibilidadPorDia(Long doctorId, Long servicioId) {
+        List<HorarioPdfService.DiaDisponibilidad> dias = new ArrayList<>();
+        for (int offset = 1; offset <= 7; offset++) {
+            LocalDate fecha = hoy().plusDays(offset);
+            String libre = agendaService.disponibilidad(doctorId, fecha, servicioId, null).stream()
+                    .map(s -> s.horaInicio().toString())
+                    .collect(java.util.stream.Collectors.joining(", "));
+            String ocupado = agendaService.ocupados(doctorId, fecha).stream()
+                    .map(AgendaService.Ocupado::descripcion)
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            dias.add(new HorarioPdfService.DiaDisponibilidad(formatearFecha(fecha),
+                    libre.isEmpty() ? "—" : libre,
+                    ocupado.isEmpty() ? "—" : ocupado));
+        }
+        return dias;
+    }
+
     // ------------------------------------------------------------------
     // Tool: agendamiento de citas (flujo conversacional)
     // ------------------------------------------------------------------
@@ -647,9 +846,13 @@ public class AgenteConversacionalService {
         }
         List<Servicio> servicios = serviciosActivos();
         List<Odontologo> odontologos = odontologosActivos();
-        EntradaAgendamiento entrada = ParserAgendamiento.parsear(t, hoy(), servicios, odontologos);
-
         Map<String, Object> c = new LinkedHashMap<>(ctx);
+        String paso = String.valueOf(c.getOrDefault("paso", ""));
+
+        // Mientras hay una pregunta en pantalla solo se interpreta la respuesta
+        // de ese paso: así un "2" es la opción 2 de la lista mostrada y no se
+        // confunde con el servicio, el odontólogo o la fecha de otros pasos.
+        EntradaAgendamiento entrada = ParserAgendamiento.entradaParaPaso(paso, t, hoy(), servicios, odontologos);
         if (entrada.servicioId() != null) {
             c.put("servicioId", entrada.servicioId());
         }
@@ -669,25 +872,33 @@ public class AgenteConversacionalService {
             if (servicios.isEmpty()) {
                 return respuesta("Aún no tenemos servicios activos. Escribe 'hablar con una persona' para más ayuda.", Intencion.AGENDAR_CITA);
             }
-            return respuesta("¿Qué servicio te gustaría?\n" + listarServicios(servicios)
-                    + "\nEnvía el nombre o el número.", Intencion.AGENDAR_CITA);
+            return respuesta(preguntaServicio(servicios,
+                    "SERVICIO".equals(paso) ? "No entendí \"" + recortar(t) + "\" como un servicio." : null),
+                    Intencion.AGENDAR_CITA);
         }
 
         if (c.get("doctorId") == null) {
             c.put("paso", "DOCTOR");
+            if (odontologos.isEmpty()) {
+                guardar(conversacion, Intencion.AGENDAR_CITA, c);
+                return respuesta("Aún no tenemos odontólogos activos. Escribe 'hablar con una persona' para más ayuda.", Intencion.AGENDAR_CITA);
+            }
             if (odontologos.size() == 1) {
                 c.put("doctorId", odontologos.get(0).getId());
             } else {
                 guardar(conversacion, Intencion.AGENDAR_CITA, c);
-                return respuesta("¿Con qué odontólogo prefieres tu cita?\n" + listarOdontologos(odontologos)
-                        + "\nEnvía el nombre o el número.", Intencion.AGENDAR_CITA);
+                return respuesta(preguntaOdontologo(odontologos,
+                        "DOCTOR".equals(paso) ? "No entendí \"" + recortar(t) + "\" como un odontólogo." : null),
+                        Intencion.AGENDAR_CITA);
             }
         }
 
         if (c.get("fecha") == null) {
             c.put("paso", "FECHA");
             guardar(conversacion, Intencion.AGENDAR_CITA, c);
-            return respuesta("¿Para qué día te gustaría tu cita?\nPor ejemplo: 'mañana', 'viernes' o '20/09'.", Intencion.AGENDAR_CITA);
+            return respuesta(preguntaFecha(
+                    "FECHA".equals(paso) ? "No entendí \"" + recortar(t) + "\" como una fecha." : null),
+                    Intencion.AGENDAR_CITA);
         }
 
         LocalDate fecha = java.time.LocalDate.parse((String) c.get("fecha"));
@@ -695,13 +906,18 @@ public class AgenteConversacionalService {
         Long doctorId = Long.valueOf(String.valueOf(c.get("doctorId")));
 
         if (c.get("hora") == null) {
-            return pedirHora(conversacion, c, fecha, servicioId, doctorId);
+            RespuestaAgente pendiente = resolverOpedirHora(conversacion, c, fecha, servicioId, doctorId,
+                    "HORA".equals(paso) ? t : null, null);
+            if (pendiente != null) {
+                return pendiente;
+            }
         }
 
         LocalTime hora = java.time.LocalTime.parse((String) c.get("hora"));
         if (!agendaService.disponibilidad(doctorId, fecha, servicioId, null)
                 .stream().map(SlotResponse::horaInicio).anyMatch(hora::equals)) {
-            return pedirHora(conversacion, c, fecha, servicioId, doctorId);
+            return resolverOpedirHora(conversacion, c, fecha, servicioId, doctorId, null,
+                    "La hora " + hora + " no está disponible el " + formatearFecha(fecha) + ". Elige una de estas:");
         }
 
         c.put("paso", "CREAR");
@@ -712,18 +928,115 @@ public class AgenteConversacionalService {
                 + "\n• Hora: " + hora + "\nResponde 'sí' para confirmarla.", Intencion.AGENDAR_CITA);
     }
 
-    private RespuestaAgente pedirHora(Conversacion conversacion, Map<String, Object> c, LocalDate fecha, Long servicioId, Long doctorId) {
+    private record HoraResuelta(LocalTime hora, String error) {
+    }
+
+    /**
+     * Valida la hora contra los cupos reales del día y, si sigue sin resolverse,
+     * muestra la lista de opciones (una por línea) junto al error.
+     *
+     * @param texto respuesta del paciente; solo se interpreta si ya se preguntó
+     *              la hora ({@code null} para pedirla de nuevo sin error)
+     * @param error aviso previo a la lista; {@code null} si no lo hay
+     * @return {@code null} cuando la hora quedó guardada en el contexto
+     */
+    private RespuestaAgente resolverOpedirHora(Conversacion conversacion, Map<String, Object> c,
+                                               LocalDate fecha, Long servicioId, Long doctorId,
+                                               String texto, String error) {
         List<SlotResponse> slots = agendaService.disponibilidad(doctorId, fecha, servicioId, null);
         if (slots.isEmpty()) {
             limpiarContexto(conversacion, Intencion.DESCONOCIDO);
             return respuesta("No hay cupos disponibles el " + formatearFecha(fecha) + " con " + nombreDoctor(doctorId)
                     + ". 😕 Puedo probar con 'mañana' o 'pasado mañana'.", Intencion.AGENDAR_CITA);
         }
+        List<LocalTime> opciones = slots.stream().map(SlotResponse::horaInicio).toList();
+
+        if (error == null && texto != null) {
+            HoraResuelta resuelta = resolverHora(texto, opciones);
+            if (resuelta.hora() != null) {
+                c.put("hora", resuelta.hora().toString());
+                c.put("paso", "HORA");
+                guardar(conversacion, Intencion.AGENDAR_CITA, c);
+                return null;
+            }
+            error = resuelta.error();
+        }
+
+        c.remove("hora");
         c.put("paso", "HORA");
-        c.put("slots", slots.stream().map(s -> s.horaInicio().toString()).toList());
+        c.put("slots", opciones.stream().map(LocalTime::toString).toList());
         guardar(conversacion, Intencion.AGENDAR_CITA, c);
-        return respuesta("¿A qué hora te conviene el " + formatearFecha(fecha) + "?\nOpciones: " + horasDeSlots(slots)
-                + "\nResponde la hora (ej: 10:00) o el número de la opción.", Intencion.AGENDAR_CITA);
+        StringBuilder sb = new StringBuilder();
+        if (error != null) {
+            sb.append(error).append("\n\n");
+        }
+        sb.append("¿A qué hora te conviene el ").append(formatearFecha(fecha)).append("?")
+                .append("\n\n").append(horasDeSlots(slots))
+                .append("\nResponde el número de la opción (1-").append(slots.size())
+                .append(") o la hora con dos puntos (ej: 10:00).");
+        return respuesta(sb.toString(), Intencion.AGENDAR_CITA);
+    }
+
+    /**
+     * Un número suelto es el índice de la lista mostrada; si no, la hora escrita
+     * tiene que coincidir con un cupo real. En cualquier otro caso se explica qué
+     * se esperaba para que el paciente pueda reintentar.
+     */
+    private HoraResuelta resolverHora(String texto, List<LocalTime> opciones) {
+        String t = texto == null ? "" : ParserAgendamiento.normalizar(texto).trim();
+        java.util.Optional<LocalTime> escrita = ParserAgendamiento.horaDelTexto(t);
+        if (escrita.isPresent()) {
+            if (opciones.contains(escrita.get())) {
+                return new HoraResuelta(escrita.get(), null);
+            }
+            return new HoraResuelta(null, "La hora " + escrita.get() + " no está disponible ese día.");
+        }
+        if (t.matches("\\d{1,2}")) {
+            int hora = Integer.parseInt(t);
+            if (hora <= 23 && opciones.contains(LocalTime.of(hora, 0))) {
+                return new HoraResuelta(LocalTime.of(hora, 0), null);
+            }
+        }
+        if (t.matches("\\d{1,3}")) {
+            int indice = Integer.parseInt(t);
+            if (indice >= 1 && indice <= opciones.size()) {
+                return new HoraResuelta(opciones.get(indice - 1), null);
+            }
+            return new HoraResuelta(null, "La opción " + indice + " no existe: solo hay "
+                    + opciones.size() + " cupos (1-" + opciones.size() + ").");
+        }
+        Optional<Integer> indice = ParserAgendamiento.indiceDeTexto(t, opciones.size());
+        if (indice.isPresent()) {
+            return new HoraResuelta(opciones.get(indice.get() - 1), null);
+        }
+        return new HoraResuelta(null, "No entendí \"" + recortar(t) + "\" como una hora. Escribe el número "
+                + "de la opción (1-" + opciones.size() + ") o la hora (ej: 10, 10:00 o 10 am).");
+    }
+
+    private String preguntaServicio(List<Servicio> servicios, String error) {
+        return (error == null ? "" : error + "\n\n")
+                + "¿Qué servicio te gustaría?\n" + listarServicios(servicios)
+                + "Envía el número o el nombre del servicio.";
+    }
+
+    private String preguntaOdontologo(List<Odontologo> odontologos, String error) {
+        return (error == null ? "" : error + "\n\n")
+                + "¿Con qué odontólogo prefieres tu cita?\n" + listarOdontologos(odontologos)
+                + "Envía el número o el nombre del odontólogo.";
+    }
+
+    private String preguntaFecha(String error) {
+        return (error == null ? "" : error + "\n\n")
+                + "¿Para qué día te gustaría tu cita?\n"
+                + "Puede ser 'mañana', 'viernes' o '20/09' (a partir de hoy).";
+    }
+
+    private String recortar(String t) {
+        String texto = t == null ? "" : t.trim().replaceAll("\\s+", " ");
+        if (texto.isEmpty()) {
+            texto = "…";
+        }
+        return texto.length() > 40 ? texto.substring(0, 40) + "…" : texto;
     }
 
     /**
@@ -915,7 +1228,7 @@ public class AgenteConversacionalService {
         try {
             PacienteResponse creado = pacienteService.crear(new PacienteRequest(
                     cedula, nombres, apellidos,
-                    conversacion.getTelefono(), null, fechaNacimiento, null,
+                    conversacion.getTelefono(), null, fechaNacimiento, null, null,
                     "Registrado por WhatsApp", "ACTIVO", tutores));
             Paciente nuevo = pacienteRepository.findById(creado.id())
                     .orElseThrow(() -> new IllegalStateException("Paciente creado pero no recuperable"));
@@ -1092,6 +1405,12 @@ public class AgenteConversacionalService {
     // Helpers
     // ------------------------------------------------------------------
 
+    /** Teléfono del paciente en formato legible (+593 99 111 2233). */
+    private static String telefonoLegible(String telefono) {
+        String legible = TelefonoUtil.mostrar(telefono);
+        return legible == null || legible.isBlank() ? "—" : legible;
+    }
+
     private RespuestaAgente respuesta(String mensaje, Intencion intencion) {
         return new RespuestaAgente(mensaje, false, null);
     }
@@ -1204,12 +1523,23 @@ public class AgenteConversacionalService {
     }
 
     private String horasDeSlots(List<SlotResponse> slots) {
+        return formatearOpcionesEnDosColumnas(slots.stream()
+                .map(slot -> slot.horaInicio().toString())
+                .toList());
+    }
+
+    private String formatearOpcionesEnDosColumnas(List<String> opciones) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < slots.size(); i++) {
+        int anchoColumna = 18;
+        for (int i = 0; i < opciones.size(); i += 2) {
             if (i > 0) {
-                sb.append(", ");
+                sb.append("\n");
             }
-            sb.append(i + 1).append(". ").append(slots.get(i).horaInicio());
+            String izquierda = (i + 1) + ". " + opciones.get(i);
+            sb.append(String.format("%-" + anchoColumna + "s", izquierda));
+            if (i + 1 < opciones.size()) {
+                sb.append((i + 2) + ". ").append(opciones.get(i + 1));
+            }
         }
         return sb.toString();
     }

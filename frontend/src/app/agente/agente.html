@@ -1,22 +1,18 @@
 
+    <ui-page-header title="Supervisión del agente IA" />
+
     <div class="card">
-      <div class="between">
-        <h2>Supervisión del agente IA</h2>
-        <div class="flex">
-          <input class="input" style="width:220px" [(ngModel)]="q" (keyup.enter)="cargar()" placeholder="Buscar por teléfono o nombre" />
-          <button class="btn" (click)="cargar()">Buscar</button>
-          <button class="btn small" (click)="cargar()">⟳</button>
-        </div>
+      <div class="toolbar">
+        <input class="input buscar" [(ngModel)]="q" (keyup.enter)="cargar()" placeholder="Buscar por teléfono o nombre" />
+        <button class="btn" (click)="cargar()">Buscar</button>
+        <button class="btn small" (click)="cargar()" title="Refrescar">⟳</button>
       </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando sesiones…">
         <thead><tr><th>Contacto</th><th>Paciente</th><th>Intención</th><th>Agente</th><th>Estado</th><th>Último mensaje</th><th></th></tr></thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando conversaciones…</td></tr>
-          }
           @for (c of items; track c.id) {
             <tr>
               <td>{{ c.nombreContacto || c.telefono }}</td>
@@ -28,8 +24,8 @@
                 </button>
               </td>
               <td><span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span></td>
-              <td class="muted" style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
-                {{ c.ultimoMensaje || '—' }} <span style="font-size:11px">({{ c.ultimoMensajeAt | date:'HH:mm' }})</span>
+              <td class="muted max-w-sm truncate">
+                {{ c.ultimoMensaje || '—' }} <span class="text-xs">({{ c.ultimoMensajeAt | date:'HH:mm' }})</span>
               </td>
               <td>
                 <button class="btn small danger" (click)="transferir(c)">Transferir a humano</button>
@@ -39,10 +35,10 @@
             <tr><td colspan="7" class="empty">Sin conversaciones del agente.</td></tr>
           }
         </tbody>
-      </table>
+      </ui-table>
     </div>
 
-    <div class="card" style="margin-top:20px">
+    <div class="card mt-4">
       <h3>Generar enlace / Enviar mensaje por teléfono o palabra</h3>
       <div class="form-row">
         <div class="form-field">
@@ -54,18 +50,18 @@
           <input class="input sm" [(ngModel)]="msgTexto" placeholder="Ej: ver citas, mis datos, cita..." (keyup.enter)="enviarMensaje()" />
         </div>
       </div>
-      <div class="flex" style="gap:10px; margin-top:10px">
+      <div class="flex gap-3 mt-3">
         <button class="btn sm" (click)="iniciarConversacion()">Generar enlace</button>
         <button class="btn sm primary" (click)="enviarMensaje()">Enviar mensaje</button>
       </div>
       @if (inicioResp) {
-        <div class="msg ok" style="margin-top:10px">
+        <div class="msg ok mt-3">
           <strong>Enlace:</strong> {{ inicioResp.link }}<br>
           {{ inicioResp.mensaje }}
         </div>
       }
       @if (respuestaChat) {
-        <div class="msg info" style="margin-top:10px">
+        <div class="msg info mt-3">
           <strong>Respuesta del chat:</strong><br>
           {{ respuestaChat }}
         </div>

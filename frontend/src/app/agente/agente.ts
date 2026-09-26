@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { AgenteConversacion, ConversacionInicio, MensajeRequest } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiTableComponent } from '../ui';
 
 @Component({
   selector: 'app-agente',
   templateUrl: './agente.html',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class AgenteComponent implements OnInit {
   items: AgenteConversacion[] = [];

@@ -5,6 +5,7 @@ import org.dentalcrm.domain.paciente.PacienteRepository;
 import org.dentalcrm.domain.paciente.PacienteTutor;
 import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
+import org.dentalcrm.util.TelefonoUtil;
 import org.dentalcrm.web.paciente.dto.PacienteRequest;
 import org.dentalcrm.web.paciente.dto.PacienteResponse;
 import org.dentalcrm.web.paciente.dto.TutorRequest;
@@ -105,10 +106,11 @@ public class PacienteService {
         p.setCedula(r.cedula() == null ? null : r.cedula().trim());
         p.setNombres(r.nombres().trim());
         p.setApellidos(r.apellidos().trim());
-        p.setTelefono(r.telefono() == null ? null : r.telefono().trim());
+        p.setTelefono(TelefonoUtil.aE164(r.telefono()));
         p.setEmail(r.email() == null ? null : r.email().trim());
         p.setFechaNacimiento(r.fechaNacimiento());
         p.setDireccion(r.direccion());
+        p.setCiudad(r.ciudad() == null ? null : r.ciudad().trim());
         p.setObservaciones(r.observaciones());
         if (r.estado() != null) {
             p.setEstado(r.estado());
@@ -145,7 +147,7 @@ public class PacienteService {
             tutor.setParentesco(t.parentesco());
             tutor.setNombres(t.nombres().trim());
             tutor.setApellidos(t.apellidos() == null ? null : t.apellidos().trim());
-            tutor.setTelefono(t.telefono() == null ? null : t.telefono().trim());
+            tutor.setTelefono(TelefonoUtil.aE164(t.telefono()));
             p.getTutores().add(tutor);
         }
     }

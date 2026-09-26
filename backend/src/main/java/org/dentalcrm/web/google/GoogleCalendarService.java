@@ -276,26 +276,31 @@ public class GoogleCalendarService {
     // ------------------------------------------------------------------
 
     @TransactionalEventListener
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onCitaCreada(CitaCreadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), false);
     }
 
     @TransactionalEventListener
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onCitaModificada(CitaModificadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), true);
     }
 
     @TransactionalEventListener
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onCitaCancelada(CitaCanceladaEvent evento) {
         sincronizarPorEvento(evento.citaId(), false);
     }
 
     @TransactionalEventListener
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onCitaConfirmada(CitaConfirmadaEvent evento) {
         sincronizarPorEvento(evento.citaId(), true);
     }
 
     @Scheduled(fixedDelay = 60000, initialDelay = 30000)
+    @Transactional
     public void recordarCitasProximas() {
         LocalDate hoy = LocalDate.now();
         LocalDate fin = hoy.plusDays(2);
@@ -419,7 +424,9 @@ public class GoogleCalendarService {
         if (!googleService.estaConfigurado() || cuentaActiva().isEmpty()) {
             return;
         }
-        Cita cita = citaRepository.findWithRelationsById(citaId).orElse(null);
+        Cita cita = citaRepository.findWithRelationsByIdForUpdate(citaId)
+            .or(() -> citaRepository.findWithRelationsById(citaId))
+            .orElse(null);
         if (cita == null) {
             return;
         }
@@ -449,7 +456,8 @@ public class GoogleCalendarService {
         GoogleAccount cuenta = cuentaActivaOError();
         GoogleCalendario cal = calendarioSeleccionado(cuenta);
         String accessToken = accesoValido(cuenta);
-        String eventId = googleService.crearEvento(accessToken, cal.getCalendarId(), construirEvento(cita, cal));
+        String eventId = googleService.crearEvento(accessToken, cal.getCalendarId(), construirEvento(cita, cal),
+            "cita" + cita.getId());
         if (eventId == null || eventId.isBlank()) {
             throw new BusinessException("GOOGLE_API_ERROR", "Google no devolvió un id de evento");
         }
@@ -512,7 +520,8 @@ public class GoogleCalendarService {
             String accessToken = accesoValido(cuenta);
             EventoGoogle evento = construirEventoPersonal(cita);
             if (cita.getGoogleEventIdDoctor() == null) {
-                String eventId = googleService.crearEvento(accessToken, calId, evento);
+                String eventId = googleService.crearEvento(accessToken, calId, evento,
+                    "cita" + cita.getId() + "doctor");
                 if (eventId != null && !eventId.isBlank()) {
                     cita.setGoogleEventIdDoctor(eventId);
                     cita.setGoogleCalendarIdDoctor(calId);

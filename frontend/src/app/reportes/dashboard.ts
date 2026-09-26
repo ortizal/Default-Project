@@ -5,11 +5,12 @@ import { withLoading } from '../core/loading';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { UiPageHeaderComponent } from '../ui';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.html',
-  imports: [MatCardModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [MatCardModule, MatIconModule, MatProgressSpinnerModule, UiPageHeaderComponent],
 })
 export class DashboardComponent implements OnInit {
   d: DashboardData | null = null;

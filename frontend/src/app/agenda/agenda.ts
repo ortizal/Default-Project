@@ -7,11 +7,12 @@ import { Bloqueo, Cita, Horario, Odontologo, Paciente, Page, Servicio, Slot } fr
 import { CalendarioComponent } from './calendario';
 import { AppDateComponent } from '../core/app-date.component';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent } from '../ui';
 
 @Component({
   selector: 'app-agenda',
   templateUrl: './agenda.html',
-  imports: [CommonModule, FormsModule, RouterLink, CalendarioComponent, AppDateComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CalendarioComponent, AppDateComponent, UiPageHeaderComponent],
 })
 export class AgendaComponent implements OnInit {
   vista: 'dia' | 'semana' | 'mes' = 'dia';

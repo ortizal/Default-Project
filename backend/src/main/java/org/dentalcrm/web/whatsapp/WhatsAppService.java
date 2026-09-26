@@ -233,6 +233,64 @@ public class WhatsAppService {
     }
 
     // ------------------------------------------------------------------
+    // Recuperación de chats (arranque del servicio)
+    // ------------------------------------------------------------------
+
+    /**
+     * Reintenta el envío de un mensaje de salida que quedó en ERROR o
+     * PENDIENTE. Se reutiliza el mismo registro (sin duplicar la burbuja en el
+     * inbox) y se incrementa su contador de reintentos para que el barrido
+     * periódico no lo reenvíe en bucle. Devuelve {@code true} si salió
+     * correcto.
+     */
+    @Transactional
+    public boolean reenviarFallido(Long mensajeId) {
+        Mensaje mensaje = mensajeRepository.findById(mensajeId)
+                .orElseThrow(() -> new BusinessException("MENSAJE_NO_ENCONTRADO", "Mensaje no encontrado"));
+        if (mensaje.getDireccion() != DireccionMensaje.SALIDA) {
+            return false;
+        }
+        Conversacion conversacion = mensaje.getConversacion();
+        WhatsappSesion sesion = conversacion.getSesion();
+        if (sesion == null) {
+            return false;
+        }
+        mensaje.setReintentos(incremento(mensaje.getReintentos()));
+        if (!provider.estaConfigurado()) {
+            marcarFalloMensaje(mensaje, "OpenWA no está configurado (OPENWA_URL/OPENWA_API_KEY)");
+        } else {
+            try {
+                provider.enviarMensaje(sesion.getSesionId(), conversacion.getTelefono(), mensaje.getTexto());
+                mensaje.setEstado(EstadoMensaje.ENVIADO);
+                mensaje.setError(null);
+            } catch (Exception e) {
+                log.warn("No se pudo reenviar el mensaje {} (conversación {}): {}",
+                        mensajeId, conversacion.getId(), e.getMessage());
+                marcarFalloMensaje(mensaje, e.getMessage());
+            }
+        }
+        mensajeRepository.save(mensaje);
+        return mensaje.getEstado() == EstadoMensaje.ENVIADO;
+    }
+
+    /**
+     * Anota un intento de retoma sobre el último mensaje entrante de una
+     * conversación sin respuesta. Se guarda en su propia transacción para que
+     * el contador sobreviva aunque el envío posterior falle o se revierta.
+     */
+    @Transactional
+    public void registrarIntentoRetoma(Long mensajeId) {
+        mensajeRepository.findById(mensajeId).ifPresent(mensaje -> {
+            mensaje.setReintentos(incremento(mensaje.getReintentos()));
+            mensajeRepository.save(mensaje);
+        });
+    }
+
+    private int incremento(Integer reintentos) {
+        return (reintentos == null ? 0 : reintentos) + 1;
+    }
+
+    // ------------------------------------------------------------------
     // Webhook (mensajes entrantes desde OpenWA)
     // ------------------------------------------------------------------
 
@@ -301,9 +359,6 @@ public class WhatsAppService {
                     return conversacionRepository.save(nueva);
                 });
 
-        if (conversacion.getPaciente() == null) {
-            resolverPaciente(telefono).ifPresent(conversacion::setPaciente);
-        }
         if (conversacion.getEstado() == EstadoConversacion.CERRADA) {
             conversacion.setEstado(EstadoConversacion.BOT);
         }
@@ -336,11 +391,15 @@ public class WhatsAppService {
         }
         if (respuesta == null || respuesta.mensaje() == null || respuesta.mensaje().isBlank()) {
             // Fase 6: bot — confirmar/cancelar la próxima cita del paciente.
-            FlujoWhatsAppService.AccionFlujo accion = flujoWhatsApp.procesarEntrada(conversacion, texto);
-            if (accion != null && accion != FlujoWhatsAppService.AccionFlujo.IGNORADA) {
-                log.info("Acción del bot en conversación {}: {}", conversacion.getId(), accion);
+            FlujoWhatsAppService.ResultadoFlujo resultado = flujoWhatsApp.procesarEntrada(conversacion, texto);
+            if (resultado != null && resultado.accion() != FlujoWhatsAppService.AccionFlujo.IGNORADA) {
+                log.info("Acción del bot en conversación {}: {}", conversacion.getId(), resultado.accion());
+                if (resultado.mensaje() != null && !resultado.mensaje().isBlank()) {
+                    enviarMensaje(conversacion.getId(), new EnviarMensajeRequest(resultado.mensaje()));
+                }
             }
-            if (!conEstadoAgente && (accion == null || accion == FlujoWhatsAppService.AccionFlujo.IGNORADA)) {
+            if (!conEstadoAgente && (resultado == null
+                    || resultado.accion() == FlujoWhatsAppService.AccionFlujo.IGNORADA)) {
                 respuesta = agenteConversacionalService.procesar(conversacion, texto, ultimoPrev);
             }
         }

@@ -1,23 +1,20 @@
 
+    <ui-page-header title="Plantillas de mensajes">
+      <button class="btn primary" (click)="nueva()">+ Nueva plantilla</button>
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Plantillas de mensajes</h2>
-        <button class="btn primary" (click)="nueva()">+ Nueva plantilla</button>
-      </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando plantillas…">
         <thead><tr><th>ID</th><th>Nombre</th><th>Contenido</th><th>Activa</th><th></th></tr></thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="5" class="empty"><span class="spinner"></span> Cargando plantillas…</td></tr>
-          }
           @for (p of items; track p.id) {
             <tr>
               <td>{{ p.id }}</td>
               <td>{{ p.nombre }}</td>
-              <td style="max-width:420px"><div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ p.contenido }}</div></td>
+              <td class="max-w-md"><div class="truncate">{{ p.contenido }}</div></td>
               <td><span class="badge" [ngClass]="p.activa ? 'ok' : 'dim'">{{ p.activa ? 'Sí' : 'No' }}</span></td>
               <td class="flex">
                 <button class="btn small" (click)="editar(p)">Editar</button>
@@ -28,7 +25,7 @@
             <tr><td colspan="5" class="empty">Sin plantillas.</td></tr>
           }
         </tbody>
-      </table>
+      </ui-table>
     </div>
 
     @if (showForm) {
@@ -42,10 +39,10 @@
           <input class="input" [(ngModel)]="form.nombre" required />
           <label class="label">Contenido *</label>
           <textarea class="input" rows="5" [(ngModel)]="form.contenido" required></textarea>
-          <div class="muted" style="font-size:12px; margin-top:4px">
+          <div class="muted text-xs mt-1">
             Variables: <code>&#123;nombres&#125;</code>, <code>&#123;fecha&#125;</code>, <code>&#123;hora&#125;</code>, <code>&#123;servicio&#125;</code>, <code>&#123;doctor&#125;</code>
           </div>
-          <label class="label" style="display:flex; align-items:center; gap:6px">
+          <label class="label flex items-center gap-2">
             <input type="checkbox" [(ngModel)]="form.activa" /> Activa
           </label>
           <div class="modal-actions">

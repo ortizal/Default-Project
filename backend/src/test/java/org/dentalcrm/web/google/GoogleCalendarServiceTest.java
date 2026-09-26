@@ -133,7 +133,7 @@ class GoogleCalendarServiceTest {
         when(googleService.estaConfigurado()).thenReturn(true);
         when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
-        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class)))
+        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class), anyString()))
                 .thenReturn("evt-123");
         when(citaRepo.findWithRelationsById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -154,7 +154,7 @@ class GoogleCalendarServiceTest {
         when(googleService.estaConfigurado()).thenReturn(true);
         when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
-        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class)))
+        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class), anyString()))
                 .thenThrow(new org.dentalcrm.exception.BusinessException("GOOGLE_API_ERROR", "falla simulada"));
         when(citaRepo.findWithRelationsById(1L)).thenReturn(Optional.of(citaCompleta(1L, EstadoCita.PENDIENTE)));
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -223,7 +223,7 @@ class GoogleCalendarServiceTest {
         GoogleCalendario cal = calendario(1L, cuenta, "primary", true);
         when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
         when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
-        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class)))
+        when(googleService.crearEvento(anyString(), anyString(), any(GoogleService.EventoGoogle.class), anyString()))
                 .thenReturn("evt-nuevo");
 
         Cita pendienteSinEvento = citaCompleta(1L, EstadoCita.PENDIENTE);

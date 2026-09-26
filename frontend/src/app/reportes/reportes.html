@@ -1,5 +1,7 @@
 
-    <div class="toolbar" style="margin-bottom:12px">
+    <ui-page-header title="Reportes" />
+
+    <div class="toolbar">
       <div class="form-field">
         <label class="label">Desde</label>
         <input class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()" />
@@ -11,9 +13,9 @@
       <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
     </div>
     <div class="grid cols-3">
-      <div class="card stat" style="margin:0"><div class="num">{{ tot(e?.confirmaciones) }}</div><div class="lbl">Confirmaciones (mes)</div></div>
-      <div class="card stat" style="margin:0"><div class="num" style="color:var(--danger)">{{ tot(e?.cancelaciones) }}</div><div class="lbl">Cancelaciones (mes)</div></div>
-      <div class="card stat" style="margin:0"><div class="num" style="color:var(--warning)">{{ tot(e?.noAsistencia) }}</div><div class="lbl">No asistencia (mes)</div></div>
+      <div class="card stat m-0"><div class="num">{{ tot(e?.confirmaciones) }}</div><div class="lbl">Confirmaciones (mes)</div></div>
+      <div class="card stat m-0"><div class="num text-danger">{{ tot(e?.cancelaciones) }}</div><div class="lbl">Cancelaciones (mes)</div></div>
+      <div class="card stat m-0"><div class="num text-warning">{{ tot(e?.noAsistencia) }}</div><div class="lbl">No asistencia (mes)</div></div>
     </div>
     @if (error) {
       <div class="msg error">{{ error }}</div>
@@ -21,17 +23,17 @@
     @if (cargando) {
       <div class="empty"><span class="spinner"></span> Cargando reportes…</div>
     }
-    <div class="grid cols-2" style="margin-top:16px">
-      <div class="card" style="margin:0">
-        <h2>Citas por odontólogo</h2>
+    <div class="grid cols-2 mt-4">
+      <div class="card m-0">
+        <div class="card-header"><h3 class="card-title">Citas por odontólogo</h3></div>
         @if (e?.citasPorOdontologo) {
           <table class="tbl">
             <tbody>
               @for (r of e!.citasPorOdontologo; track r.nombre) {
                 <tr>
                   <td>{{ r.nombre }}</td>
-                  <td style="text-align:right"><strong>{{ r.total }}</strong></td>
-                  <td style="width:180px"><div style="height:8px; background:var(--primary-light); border-radius:4px"><div [style.width.%]="pct(r.total, maxOd)" style="height:8px; background:var(--primary); border-radius:4px"></div></div></td>
+                  <td class="text-right"><strong>{{ r.total }}</strong></td>
+                  <td class="bar-cell"><div class="bar-track"><div class="bar-fill" [style.width.%]="pct(r.total, maxOd)"></div></div></td>
                 </tr>
               }
             </tbody>
@@ -40,15 +42,15 @@
           <div class="empty">Sin datos.</div>
         }
       </div>
-      <div class="card" style="margin:0">
-        <h2>Servicios más solicitados</h2>
+      <div class="card m-0">
+        <div class="card-header"><h3 class="card-title">Servicios más solicitados</h3></div>
         @if (e?.serviciosMasSolicitados) {
           <table class="tbl">
             <tbody>
               @for (r of e!.serviciosMasSolicitados; track r.nombre) {
                 <tr>
                   <td>{{ r.nombre }}</td>
-                  <td style="text-align:right"><strong>{{ r.total }}</strong></td>
+                  <td class="text-right"><strong>{{ r.total }}</strong></td>
                 </tr>
               }
             </tbody>
@@ -57,13 +59,13 @@
           <div class="empty">Sin datos.</div>
         }
       </div>
-      <div class="card" style="margin:0">
-        <h2>Citas por estado</h2>
+      <div class="card m-0">
+        <div class="card-header"><h3 class="card-title">Citas por estado</h3></div>
         @if (e?.porEstado) {
           <table class="tbl">
             <tbody>
               @for (r of e!.porEstado; track r.nombre) {
-                <tr><td>{{ r.nombre }}</td><td style="text-align:right"><strong>{{ r.total }}</strong></td></tr>
+                <tr><td>{{ r.nombre }}</td><td class="text-right"><strong>{{ r.total }}</strong></td></tr>
               }
             </tbody>
           </table>
@@ -71,13 +73,13 @@
           <div class="empty">Sin datos.</div>
         }
       </div>
-      <div class="card" style="margin:0">
-        <h2>Confirmaciones por fuente</h2>
+      <div class="card m-0">
+        <div class="card-header"><h3 class="card-title">Confirmaciones por fuente</h3></div>
         @if (e?.confirmacionesPorFuente) {
           <table class="tbl">
             <tbody>
               @for (r of e!.confirmacionesPorFuente; track r.nombre) {
-                <tr><td>{{ r.nombre }}</td><td style="text-align:right"><strong>{{ r.total }}</strong></td></tr>
+                <tr><td>{{ r.nombre }}</td><td class="text-right"><strong>{{ r.total }}</strong></td></tr>
               }
             </tbody>
           </table>
@@ -86,15 +88,15 @@
         }
       </div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <h2>Citas por día (último mes)</h2>
+    <div class="card mt-4">
+      <div class="card-header"><h3 class="card-title">Citas por día (último mes)</h3></div>
       @if (e?.citasPorDia && e!.citasPorDia.length) {
-        <div class="flex" style="align-items:flex-end; gap:2px; min-height:120px">
+        <div class="flex chart-bars">
           @for (s of e!.citasPorDia; track s.fecha) {
-            <div style="flex:1; text-align:center">
-              <div style="font-size:11px" class="muted">{{ s.total }}</div>
-              <div [style.height.px]="bar(s.total, maxDia)" style="background:var(--primary); border-radius:3px 3px 0 0"></div>
-              <div style="font-size:10px" class="muted">{{ s.fecha }}</div>
+            <div class="chart-col text-center">
+              <div class="muted text-xs">{{ s.total }}</div>
+              <div class="bar-fill chart-bar" [style.height.px]="bar(s.total, maxDia)"></div>
+              <div class="muted text-xs">{{ s.fecha }}</div>
             </div>
           }
         </div>

@@ -49,7 +49,7 @@ class PacienteServiceTest {
 
     private static org.dentalcrm.web.paciente.dto.PacienteRequest pacienteConCedula(String cedula) {
         return new org.dentalcrm.web.paciente.dto.PacienteRequest(
-                cedula, "Juan", "Pérez", "0991234567", "juan@mail.com", null, null, null, null, List.of());
+                cedula, "Juan", "Pérez", "0991234567", "juan@mail.com", null, null, null, null, null, List.of());
     }
 
     @Test
@@ -60,6 +60,6 @@ class PacienteServiceTest {
 
     private static org.dentalcrm.web.paciente.dto.PacienteRequest pacienteConCedulaYFecha(java.time.LocalDate nacimiento) {
         return new org.dentalcrm.web.paciente.dto.PacienteRequest(
-                null, "Juan", "Pérez", null, null, nacimiento, null, null, null, List.of());
+                null, "Juan", "Pérez", null, null, nacimiento, null, null, null, null, List.of());
     }
 }

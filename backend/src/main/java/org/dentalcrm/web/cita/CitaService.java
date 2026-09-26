@@ -191,7 +191,9 @@ public class CitaService {
         try {
             Cita actualizada = citaRepository.save(cita);
             auditService.registrar("MODIFICAR_CITA", MODULO, "CITA", id, anterior, CitaResponse.from(actualizada));
-            eventPublisher.publishEvent(new CitaModificadaEvent(id));
+            eventPublisher.publishEvent(new CitaModificadaEvent(id,
+                    anterior.fecha(), anterior.horaInicio(),
+                    actualizada.getFecha(), actualizada.getHoraInicio()));
             return CitaResponse.from(actualizada);
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new BusinessException("CITA_CAMBIO_CONCURRENTE", "La cita fue modificada por otra persona, reintente");
@@ -296,6 +298,12 @@ public class CitaService {
     }
 
     private boolean existeHorario(Long doctorId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        // Un día con excepción manda sobre el horario semanal: si está cerrado no
+        // se admite nada y, si tiene horario especial, la cita debe caber entera.
+        var excepcion = agendaService.excepcion(doctorId, fecha);
+        if (excepcion.isPresent()) {
+            return excepcion.get().admite(horaInicio, horaFin);
+        }
         return horarioRepository.findByOdontologoIdAndDiaSemanaAndEstado(doctorId, fecha.getDayOfWeek().getValue(), "ACTIVO")
                 .stream()
                 .anyMatch(h -> !h.getHoraInicio().isAfter(horaInicio) && !h.getHoraFin().isBefore(horaFin));

@@ -20,6 +20,7 @@ public record PacienteRequest(
         @Size(max = 190) String email,
         LocalDate fechaNacimiento,
         @Size(max = 255) String direccion,
+        @Size(max = 120) String ciudad,
         String observaciones,
         @Pattern(regexp = "^(ACTIVO|INACTIVO)$", message = "Estado debe ser ACTIVO o INACTIVO")
         String estado,

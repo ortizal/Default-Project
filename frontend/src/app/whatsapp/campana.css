@@ -6,25 +6,8 @@
   max-width: 1180px;
   margin: 0 auto;
 }
-
-.campaign-head,
-.result-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.campaign-head h2,
-.campaign-head p,
-.result-head h3,
-.result-head p {
-  margin-top: 0;
-}
-
 .eyebrow {
-  color: var(--primary);
+  color: var(--ls-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .12em;
@@ -65,9 +48,9 @@
   gap: 8px;
   margin-top: 8px;
   padding: 7px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ls-border);
   border-radius: 6px;
-  color: var(--text);
+  color: var(--ls-text);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -75,7 +58,7 @@
 .icon-btn {
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: var(--ls-muted);
   cursor: pointer;
   font-size: 20px;
 }
@@ -86,15 +69,15 @@
   gap: 2px;
   margin: 18px 0;
   padding: 12px;
-  border-left: 3px solid var(--primary);
-  background: var(--primary-light);
-  color: var(--text);
+  border-left: 3px solid var(--ls-primary);
+  background: var(--ls-primary-soft);
+  color: var(--ls-text);
   font-size: 12px;
 }
 
 .campaign-note span,
 .status-help {
-  color: var(--muted);
+  color: var(--ls-muted);
 }
 
 .publish-btn {
@@ -125,7 +108,7 @@
 .result-list {
   max-height: 360px;
   overflow-y: auto;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--ls-border);
 }
 
 .result-row {
@@ -134,7 +117,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 9px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ls-border);
   font-size: 13px;
 }
 
@@ -154,12 +137,6 @@
 }
 
 @media (max-width: 760px) {
-  .campaign-head,
-  .result-head {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .campaign-grid {
     grid-template-columns: 1fr;
   }

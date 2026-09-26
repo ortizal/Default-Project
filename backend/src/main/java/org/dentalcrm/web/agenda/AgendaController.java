@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.dentalcrm.web.agenda.dto.BloqueoRequest;
 import org.dentalcrm.web.agenda.dto.BloqueoResponse;
+import org.dentalcrm.web.agenda.dto.ExcepcionHorarioRequest;
+import org.dentalcrm.web.agenda.dto.ExcepcionHorarioResponse;
 import org.dentalcrm.web.agenda.dto.SlotResponse;
 import org.dentalcrm.web.cita.dto.CitaResponse;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,15 +20,18 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/agenda")
-@Tag(name = "Agenda", description = "Agenda del día, disponibilidad y bloqueos")
+@Tag(name = "Agenda", description = "Agenda del día, disponibilidad, bloqueos y excepciones de atención")
 public class AgendaController {
 
     private final AgendaService agendaService;
     private final BloqueoService bloqueoService;
+    private final ExcepcionHorarioService excepcionHorarioService;
 
-    public AgendaController(AgendaService agendaService, BloqueoService bloqueoService) {
+    public AgendaController(AgendaService agendaService, BloqueoService bloqueoService,
+                            ExcepcionHorarioService excepcionHorarioService) {
         this.agendaService = agendaService;
         this.bloqueoService = bloqueoService;
+        this.excepcionHorarioService = excepcionHorarioService;
     }
 
     @GetMapping
@@ -77,6 +82,35 @@ public class AgendaController {
     @Operation(summary = "Eliminar bloqueo de agenda")
     public ResponseEntity<Void> eliminarBloqueo(@PathVariable Long id) {
         bloqueoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ------------------------------------------------------------------
+    // Excepciones de atención (día cerrado o con horario especial)
+    // ------------------------------------------------------------------
+
+    @GetMapping("/excepciones")
+    @PreAuthorize("hasAuthority('PERMISO_AGENDA_READ')")
+    @Operation(summary = "Excepciones de atención de un odontólogo en un rango")
+    public ResponseEntity<List<ExcepcionHorarioResponse>> excepciones(
+            @RequestParam Long odontologoId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(excepcionHorarioService.listar(odontologoId, desde, hasta));
+    }
+
+    @PostMapping("/excepciones")
+    @PreAuthorize("hasAuthority('PERMISO_AGENDA_WRITE')")
+    @Operation(summary = "Crear excepción de atención; cancela y notifica las citas que no quepan")
+    public ResponseEntity<ExcepcionHorarioResponse> crearExcepcion(@Valid @RequestBody ExcepcionHorarioRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(excepcionHorarioService.crear(request));
+    }
+
+    @DeleteMapping("/excepciones/{id}")
+    @PreAuthorize("hasAuthority('PERMISO_AGENDA_WRITE')")
+    @Operation(summary = "Eliminar excepción de atención")
+    public ResponseEntity<Void> eliminarExcepcion(@PathVariable Long id) {
+        excepcionHorarioService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
 }

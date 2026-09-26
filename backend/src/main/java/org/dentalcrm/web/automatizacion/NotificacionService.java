@@ -20,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class NotificacionService {
@@ -29,23 +31,28 @@ public class NotificacionService {
     private static final int MAX_INTENTOS = 3;
     private static final int LOTE = 10;
     private static final Duration COLGADA = Duration.ofMinutes(10);
+    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
 
     private final NotificacionRepository notificacionRepository;
     private final AutomatizacionService automatizacionService;
     private final CitaRepository citaRepository;
     private final MessagingProvider messagingProvider;
     private final WhatsappSesionRepository sesionRepository;
+    private final CorreoService correoService;
 
     public NotificacionService(NotificacionRepository notificacionRepository,
                                AutomatizacionService automatizacionService,
                                CitaRepository citaRepository,
                                MessagingProvider messagingProvider,
-                               WhatsappSesionRepository sesionRepository) {
+                               WhatsappSesionRepository sesionRepository,
+                               CorreoService correoService) {
         this.notificacionRepository = notificacionRepository;
         this.automatizacionService = automatizacionService;
         this.citaRepository = citaRepository;
         this.messagingProvider = messagingProvider;
         this.sesionRepository = sesionRepository;
+        this.correoService = correoService;
     }
 
     // ------------------------------------------------------------------
@@ -63,8 +70,27 @@ public class NotificacionService {
     public void onCitaModificada(CitaModificadaEvent e) {
         Cita cita = citaOError(e.citaId());
         cancelarActivasDeCita(e.citaId(), "Cita modificada");
+        if (e.cambioHorario()) {
+            // El paciente cambió de día u hora: hay que decirle el horario nuevo
+            // y el anterior. La automatización va con minutos_antes=0, así que se
+            // agenda ya mismo y sale en el siguiente lote (≤ 60 s).
+            int n = automatizacionService.generar(cita, horarioAnterior(e),
+                    EventoAutomatizacion.CITA_MODIFICADA,
+                    EventoAutomatizacion.CITA_CREADA,
+                    EventoAutomatizacion.CITA_PROXIMA);
+            log.info("Cita {} reprogramada de {} {} a {} {}: {} notificaciones",
+                    e.citaId(), e.fechaAnterior(), e.horaAnterior(), e.fechaNueva(), e.horaNueva(), n);
+            return;
+        }
         int n = automatizacionService.generar(cita, EventoAutomatizacion.CITA_CREADA, EventoAutomatizacion.CITA_PROXIMA);
         log.info("Cita {} modificada: regeneradas {} notificaciones", e.citaId(), n);
+    }
+
+    private Map<String, String> horarioAnterior(CitaModificadaEvent e) {
+        Map<String, String> extra = new java.util.HashMap<>();
+        extra.put("fecha_anterior", e.fechaAnterior() == null ? "—" : e.fechaAnterior().format(FECHA));
+        extra.put("hora_anterior", e.horaAnterior() == null ? "—" : e.horaAnterior().format(HORA));
+        return extra;
     }
 
     @EventListener
@@ -142,6 +168,10 @@ public class NotificacionService {
         notificacionRepository.save(n);
         try {
             messagingProvider.enviarMensaje(sesion.get().getSesionId(), n.getTelefono(), n.getMensajeGenerado());
+            // El correo es el canal secundario del aviso de cambio de hora: se
+            // envía sólo cuando el WhatsApp salió bien, para no duplicarlo en
+            // los reintentos del canal principal.
+            enviarCorreoSiAplica(n);
             n.setEstado(EstadoNotificacion.ENVIADA);
             n.setEnviadaAt(Instant.now());
             n.setError(null);
@@ -151,6 +181,37 @@ public class NotificacionService {
             log.warn("Fallo al enviar notificación {}: {}", n.getId(), ex.getMessage());
             n.setEstado(EstadoNotificacion.PENDIENTE);
             reintentar(n, truncar(ex.getMessage()));
+        }
+    }
+
+    /**
+     * El aviso de que una cita cambió de día u hora también llega por correo al
+     * paciente, si tiene email y el SMTP está configurado. Si no, se omite sin
+     * tumbar el envío por WhatsApp.
+     */
+    private void enviarCorreoSiAplica(Notificacion n) {
+        if (n.getAutomatizacion() == null
+                || n.getAutomatizacion().getEvento() != EventoAutomatizacion.CITA_MODIFICADA) {
+            return;
+        }
+        var paciente = n.getPaciente() != null
+                ? n.getPaciente()
+                : (n.getCita() == null ? null : n.getCita().getPaciente());
+        String email = paciente == null ? null : paciente.getEmail();
+        if (email == null || email.isBlank()) {
+            log.debug("Notificación {}: el paciente no tiene correo, se omite el aviso por email", n.getId());
+            return;
+        }
+        if (!correoService.configurado()) {
+            log.debug("Notificación {}: SMTP no configurado, se omite el aviso por email", n.getId());
+            return;
+        }
+        try {
+            correoService.enviar(email, "Cita reprogramada", n.getMensajeGenerado());
+            log.info("Notificación {}: aviso enviado por correo a {}", n.getId(), email);
+        } catch (Exception ex) {
+            // El WhatsApp ya llegó: el fallo de correo sólo queda en el log.
+            log.warn("Notificación {}: no se pudo enviar el correo a {}: {}", n.getId(), email, ex.getMessage());
         }
     }
 

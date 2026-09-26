@@ -1,0 +1,111 @@
+// =====================================================================
+// Little Smile — tokens (custom properties). Única fuente de verdad de
+// los colores y medidas. Ningún componente debe repetir un hex.
+// =====================================================================
+
+:root {
+  color-scheme: light;
+
+  // Identidad
+  --ls-primary: #a1cb35;
+  --ls-primary-dark: #7fa524;
+  --ls-primary-soft: #eef6da;
+  --ls-secondary: #f86401;
+  --ls-secondary-dark: #d15501;
+  --ls-secondary-soft: #fdeadb;
+  --ls-on-primary: #263238;
+  --ls-on-secondary: #ffffff;
+
+  // Superficies y texto
+  --ls-surface: #ffffff;
+  --ls-surface-2: #fafbf8;
+  --ls-background: #f6f8f4;
+  --ls-text: #263238;
+  --ls-muted: #6b7280;
+  --ls-border: #e5e7eb;
+  --ls-border-strong: #c9cdd4;
+
+  // Texto sobre fondos sólidos saturados (botones de estado) o muy
+  // oscuros (sidebar, hero). Nunca se usa sobre superficies claras.
+  --ls-on-state: #ffffff;
+  --ls-on-dark: #ffffff;
+
+  // Hero de login (degradado oscuro con acentos LS)
+  --ls-hero-a: #17301b;
+  --ls-hero-b: #0e1712;
+  --ls-hero-c: #101820;
+
+  // Estados
+  --ls-success: #2e7d32;
+  --ls-success-soft: #e4f3e5;
+  --ls-info: #0369a1;
+  --ls-info-soft: #e0f2fe;
+  --ls-warning: #b45309;
+  --ls-warning-soft: #fef3c7;
+  --ls-danger: #c62828;
+  --ls-danger-soft: #fdeaea;
+
+  // Sidebar
+  --ls-sidebar-bg: #1d2a17;
+  --ls-sidebar-fg: #cfd9c4;
+  --ls-sidebar-active: #2a3d1d;
+
+  // Radio
+  --ls-radius-sm: 6px;
+  --ls-radius-md: 8px;
+  --ls-radius-lg: 12px;
+
+  // Espaciado (escala 4px)
+  --ls-space-1: 4px;
+  --ls-space-2: 8px;
+  --ls-space-3: 12px;
+  --ls-space-4: 16px;
+  --ls-space-6: 24px;
+  --ls-space-8: 32px;
+
+  // Controles
+  --ls-control-h: 36px;
+  --ls-control-h-sm: 32px;
+
+  // Tipografía
+  --ls-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ls-text-xs: 12px;
+  --ls-text-sm: 13px;
+  --ls-text-base: 14px;
+  --ls-text-lg: 16px;
+  --ls-text-xl: 18px;
+  --ls-text-page: 24px;
+
+  // Sombras
+  --ls-shadow-sm: 0 1px 2px rgba(38, 50, 56, 0.06);
+  --ls-shadow-md: 0 4px 12px rgba(38, 50, 56, 0.08);
+  --ls-shadow-lg: 0 12px 32px rgba(38, 50, 56, 0.14);
+
+  // Foco
+  --ls-focus-ring: 0 0 0 3px rgba(161, 203, 53, 0.38);
+
+}
+
+// Angular Material M3 — tokens expuestos por mat.all-component-themes.
+// Se sobreescriben para que los pocos componentes Material usados
+// (toolbar, icon, spinner, tooltip) hereden la identidad Little Smile.
+:root {
+  --mat-sys-primary: #a1cb35;
+  --mat-sys-on-primary: #263238;
+  --mat-sys-primary-container: #eef6da;
+  --mat-sys-on-primary-container: #263238;
+  --mat-sys-secondary: #f86401;
+  --mat-sys-on-secondary: #ffffff;
+  --mat-sys-secondary-container: #fdeadb;
+  --mat-sys-on-secondary-container: #7a2e00;
+  --mat-sys-background: #f6f8f4;
+  --mat-sys-surface: #ffffff;
+  --mat-sys-surface-container: #ffffff;
+  --mat-sys-surface-container-high: #f7f8f5;
+  --mat-sys-on-surface: #263238;
+  --mat-sys-on-surface-variant: #6b7280;
+  --mat-sys-outline: #e5e7eb;
+  --mat-sys-outline-variant: #e5e7eb;
+  --mat-sys-error: #c62828;
+  --mat-sys-on-error: #ffffff;
+}

@@ -1,0 +1,106 @@
+// =====================================================================
+// Tipografía — una sola familia, jerarquía compacta y consistente
+// =====================================================================
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ls-text);
+
+}
+h1 {
+  font-size: var(--ls-text-page);
+
+}
+h2 {
+  font-size: 20px;
+
+}
+h3 {
+  font-size: var(--ls-text-xl);
+
+}
+h4 {
+  font-size: var(--ls-text-lg);
+
+}
+h5,
+h6 {
+  font-size: var(--ls-text-base);
+
+}
+p {
+  margin: 0 0 var(--ls-space-3);
+
+}
+small {
+  font-size: var(--ls-text-xs);
+
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+
+}
+// --- Roles tipográficos --------------------------------------------
+.page-title {
+  font-size: var(--ls-text-page);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+
+}
+.page-subtitle {
+  margin: var(--ls-space-1) 0 0;
+  font-size: var(--ls-text-base);
+  color: var(--ls-muted);
+
+
+}
+.muted {
+  color: var(--ls-muted);
+
+}
+.text-xs {
+  font-size: var(--ls-text-xs);
+
+}
+.text-sm {
+  font-size: var(--ls-text-sm);
+
+
+
+
+}
+.text-center {
+  text-align: center;
+
+}
+.text-right {
+  text-align: right;
+
+
+}
+.truncate {
+  @include truncate;
+
+}
+// Claves / celdas de datos
+.k {
+  color: var(--ls-muted);
+  font-size: var(--ls-text-sm);
+
+}
+.v {
+  font-weight: 500;
+
+}

@@ -60,7 +60,7 @@
               {{ m.receivedAt | date:'dd/MM HH:mm' }} @if (m.direccion === 'OUTBOUND') { · {{ m.estado }} }
             </div>
             @if (m.error) {
-              <div class="msg error" style="margin:4px 0 0">{{ m.error }}</div>
+              <div class="msg error mt-1">{{ m.error }}</div>
             }
           </div>
         } @empty {

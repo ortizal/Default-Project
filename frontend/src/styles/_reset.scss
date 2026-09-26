@@ -1,0 +1,79 @@
+// =====================================================================
+// Reset / base
+// =====================================================================
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--ls-font);
+  font-size: var(--ls-text-base);
+  line-height: 1.5;
+  color: var(--ls-text);
+  background: var(--ls-background);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+// Sin scroll horizontal a nivel de documento: el scroll vive en .content
+body {
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ls-primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--ls-primary-soft);
+  color: var(--ls-text);
+}
+
+// Scrollbar discreta acorde a la identidad
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ls-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--ls-border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ls-muted);
+  background-clip: padding-box;
+}

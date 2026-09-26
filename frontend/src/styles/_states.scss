@@ -1,0 +1,240 @@
+// =====================================================================
+// Estados visuales — mensajes, badges y estados de dominio
+// Regla: nunca sólo color; siempre color + texto (icono cuando aporta).
+// =====================================================================
+
+// ---------------------------------------------------------- mensajes
+.msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ls-space-2);
+  padding: 10px 14px;
+  border-radius: $ls-radius-sm;
+  border: 1px solid transparent;
+  font-size: var(--ls-text-sm);
+  line-height: 1.45;
+  margin: var(--ls-space-3) 0;
+
+  &::before {
+    flex: 0 0 auto;
+    font-weight: 700;
+  }
+
+}
+.msg.ok,
+.msg.success {
+  background: var(--ls-success-soft);
+  border-color: rgba(46, 125, 50, 0.28);
+  color: var(--ls-success);
+
+  &::before {
+    content: "✓";
+  }
+
+}
+.msg.info {
+  background: var(--ls-info-soft);
+  border-color: rgba(3, 105, 161, 0.28);
+  color: var(--ls-info);
+
+  &::before {
+    content: "i";
+    font-family: Georgia, serif;
+    font-style: italic;
+  }
+
+}
+.msg.warn,
+.msg.warning {
+  background: var(--ls-warning-soft);
+  border-color: rgba(180, 83, 9, 0.28);
+  color: var(--ls-warning);
+
+  &::before {
+    content: "!";
+  }
+
+}
+.msg.error {
+  background: var(--ls-danger-soft);
+  border-color: rgba(198, 40, 40, 0.28);
+  color: var(--ls-danger);
+
+  &::before {
+    content: "×";
+  }
+
+}
+// ------------------------------------------------------------- badges
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: var(--ls-text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
+
+}
+// Semánticos
+.badge.ok,
+.badge.success,
+.badge.activo,
+.badge.confirmada,
+.badge.conectada,
+.badge.activa {
+  background: var(--ls-success-soft);
+  color: var(--ls-success);
+  border-color: rgba(46, 125, 50, 0.25);
+
+}
+.badge.bad,
+.badge.danger,
+.badge.error,
+.badge.inactivo,
+.badge.cancelada,
+.badge.desconectada,
+.badge.inactiva {
+  background: var(--ls-danger-soft);
+  color: var(--ls-danger);
+  border-color: rgba(198, 40, 40, 0.25);
+
+}
+.badge.warn,
+.badge.warning,
+.badge.pendiente {
+  background: var(--ls-warning-soft);
+  color: var(--ls-warning);
+  border-color: rgba(180, 83, 9, 0.25);
+
+}
+.badge.info,
+.badge.atendida {
+  background: var(--ls-info-soft);
+  color: var(--ls-info);
+  border-color: rgba(3, 105, 161, 0.25);
+
+}
+.badge.dim,
+.badge.muted {
+  background: var(--ls-surface-2);
+  color: var(--ls-muted);
+  border-color: var(--ls-border);
+
+}
+.badge.primary {
+  background: var(--ls-primary-soft);
+  color: var(--ls-primary-dark);
+  border-color: rgba(161, 203, 53, 0.4);
+
+}
+.badge.accent {
+  background: var(--ls-secondary-soft);
+  color: var(--ls-secondary-dark);
+  border-color: rgba(248, 100, 1, 0.35);
+
+}
+// ------------------------------------------------------ estados vacíos
+.empty {
+  text-align: center;
+  padding: var(--ls-space-6) var(--ls-space-4);
+  color: var(--ls-muted);
+  font-size: var(--ls-text-sm);
+  font-style: italic;
+
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-8) var(--ls-space-4);
+  text-align: center;
+  color: var(--ls-muted);
+
+  mat-icon,
+  .empty-icon {
+    font-size: 34px;
+    width: 34px;
+    height: 34px;
+    opacity: 0.55;
+  }
+
+  .empty-title {
+    font-size: var(--ls-text-base);
+    font-weight: 600;
+    color: var(--ls-text);
+  }
+
+  .empty-desc {
+    font-size: var(--ls-text-sm);
+    max-width: 42ch;
+  }
+
+
+}
+// ---------------------------------------------------------- cargando
+.spin,
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ls-border);
+  border-top-color: var(--ls-primary);
+  border-radius: 50%;
+  animation: ls-rot 0.7s linear infinite;
+  vertical-align: middle;
+  flex: 0 0 auto;
+
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 3px;
+  border-color: rgba(161, 203, 53, 0.25);
+  border-top-color: var(--ls-primary);
+
+}
+.loading-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-6);
+  color: var(--ls-muted);
+  font-size: var(--ls-text-sm);
+
+}
+// Skeleton para procesos asíncronos
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ls-surface-2) 25%,
+    rgba(229, 231, 235, 0.65) 37%,
+    var(--ls-surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: ls-shimmer 1.3s ease infinite;
+  border-radius: $ls-radius-sm;
+  height: 14px;
+
+}
+@keyframes ls-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@keyframes ls-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}

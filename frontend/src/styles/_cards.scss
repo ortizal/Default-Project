@@ -1,0 +1,168 @@
+// =====================================================================
+// Cards, métricas y rejillas de dashboard
+// =====================================================================
+
+.card {
+  // Bootstrap también define `.card` con $body-color en valor fijo:
+  // declaramos el color con token para que el modo oscuro lo herede bien.
+  color: var(--ls-text);
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-md;
+  padding: $ls-space-4;
+  box-shadow: var(--ls-shadow-sm);
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  h2 {
+    margin: 0 0 $ls-space-3;
+    font-size: var(--ls-text-lg);
+    font-weight: 600;
+  }
+
+  h3 {
+    margin: 0 0 $ls-space-2;
+    font-size: var(--ls-text-base);
+    font-weight: 600;
+  }
+
+}
+// Título de card con acciones alineadas
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $ls-space-3;
+  margin-bottom: $ls-space-3;
+  flex-wrap: wrap;
+
+}
+.card-title {
+  margin: 0;
+  font-size: var(--ls-text-base);
+  font-weight: 600;
+  color: var(--ls-text);
+
+}
+// Variante usada por reportes / paneles
+.contenido {
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-md;
+  padding: $ls-space-4;
+  box-shadow: var(--ls-shadow-sm);
+
+}
+// ------------------------------------------------------------- rejillas
+.grid {
+  display: grid;
+  gap: $ls-space-4;
+
+}
+.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+}
+.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $ls-space-4;
+
+
+}
+@include down($bp-xl) {
+  .dashboard-grid,
+  .cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@include down($bp-md) {
+  .dashboard-grid,
+  .cols-2,
+  .cols-3,
+  .cols-4,
+  .grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// ------------------------------------------------------------- métricas
+.stat,
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-md;
+  padding: $ls-space-4;
+  box-shadow: var(--ls-shadow-sm);
+  min-width: 0;
+
+}
+.stat .num,
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ls-primary-dark);
+  font-variant-numeric: tabular-nums;
+
+}
+.stat .lbl,
+.stat-label {
+  font-size: var(--ls-text-xs);
+  font-weight: 600;
+  color: var(--ls-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+
+}
+// Accentos de métrica (secundario para atención requerida)
+.stat.accent .num {
+  color: var(--ls-secondary);
+
+}
+// Elevación sutil al pasar el cursor
+.card,
+.contenido {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+}
+.card:hover,
+.contenido:hover {
+  box-shadow: var(--ls-shadow-md);
+
+}
+// Filete de acento superior en métricas
+.stat,
+.stat-card {
+  position: relative;
+  overflow: hidden;
+
+}
+.stat::before,
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ls-primary), var(--ls-secondary));
+  border-radius: $ls-radius-md $ls-radius-md 0 0;
+
+}

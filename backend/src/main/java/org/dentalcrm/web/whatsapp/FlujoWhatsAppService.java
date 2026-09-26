@@ -36,10 +36,10 @@ public class FlujoWhatsAppService {
         this.citaService = citaService;
     }
 
-    public AccionFlujo procesarEntrada(Conversacion conversacion, String texto) {
+    public ResultadoFlujo procesarEntrada(Conversacion conversacion, String texto) {
         Paciente paciente = conversacion.getPaciente();
         if (paciente == null) {
-            return AccionFlujo.IGNORADA;
+            return ResultadoFlujo.ignorada();
         }
         String normalizado = normalizar(texto);
         if (esConfirmar(normalizado)) {
@@ -48,39 +48,48 @@ public class FlujoWhatsAppService {
         if (esCancelar(normalizado)) {
             return cancelarProxima(paciente);
         }
-        return AccionFlujo.IGNORADA;
+        return ResultadoFlujo.ignorada();
     }
 
-    private AccionFlujo confirmarProxima(Paciente paciente) {
+    private ResultadoFlujo confirmarProxima(Paciente paciente) {
         Cita proxima = proximaCita(paciente);
         if (proxima == null) {
             log.info("Paciente {} pidió confirmar pero no tiene cita próxima", paciente.getId());
-            return AccionFlujo.IGNORADA;
+            return ResultadoFlujo.ignorada();
         }
         try {
             citaService.confirmar(proxima.getId(), "WHATSAPP");
             log.info("Paciente {} confirmó la cita {} por WhatsApp", paciente.getId(), proxima.getId());
-            return AccionFlujo.CONFIRMADA;
+            return new ResultadoFlujo(AccionFlujo.CONFIRMADA,
+                    "¡Listo! ✅ Confirmé tu cita del " + cuando(proxima) + ".\n"
+                            + "Te esperamos 😊 Si no puedes asistir, avísanos por este chat.");
         } catch (Exception ex) {
             log.warn("No se pudo confirmar la cita {} por WhatsApp: {}", proxima.getId(), ex.getMessage());
-            return AccionFlujo.IGNORADA;
+            return ResultadoFlujo.ignorada();
         }
     }
 
-    private AccionFlujo cancelarProxima(Paciente paciente) {
+    private ResultadoFlujo cancelarProxima(Paciente paciente) {
         Cita proxima = proximaCita(paciente);
         if (proxima == null) {
             log.info("Paciente {} pidió cancelar pero no tiene cita próxima", paciente.getId());
-            return AccionFlujo.IGNORADA;
+            return ResultadoFlujo.ignorada();
         }
         try {
             citaService.cancelar(proxima.getId(), new CancelarRequest("Cancelada por el paciente (WhatsApp)"));
             log.info("Paciente {} canceló la cita {} por WhatsApp", paciente.getId(), proxima.getId());
-            return AccionFlujo.CANCELADA;
+            return new ResultadoFlujo(AccionFlujo.CANCELADA,
+                    "Listo ✔ Cancelé tu cita del " + cuando(proxima) + ".\n"
+                            + "Si cambias de opinión, escríbeme y te ayudo a agendar otra.");
         } catch (Exception ex) {
             log.warn("No se pudo cancelar la cita {} por WhatsApp: {}", proxima.getId(), ex.getMessage());
-            return AccionFlujo.IGNORADA;
+            return ResultadoFlujo.ignorada();
         }
+    }
+
+    private String cuando(Cita cita) {
+        return String.format("%02d/%02d a las %s",
+                cita.getFecha().getDayOfMonth(), cita.getFecha().getMonthValue(), cita.getHoraInicio());
     }
 
     @Transactional(readOnly = true)
@@ -114,5 +123,17 @@ public class FlujoWhatsAppService {
 
     public enum AccionFlujo {
         IGNORADA, CONFIRMADA, CANCELADA
+    }
+
+    /**
+     * Resultado del bot: la acción detectada y la respuesta que hay que enviar
+     * al paciente. Devolver la acción sin texto dejaba al paciente sin
+     * respuesta cuando solo el bot simple (sin agente) gestionaba el chat.
+     */
+    public record ResultadoFlujo(AccionFlujo accion, String mensaje) {
+
+        public static ResultadoFlujo ignorada() {
+            return new ResultadoFlujo(AccionFlujo.IGNORADA, null);
+        }
     }
 }

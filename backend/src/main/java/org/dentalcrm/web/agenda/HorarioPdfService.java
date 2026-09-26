@@ -52,7 +52,7 @@ public class HorarioPdfService {
     }
 
     public byte[] generar(Odontologo doctor, List<HorarioOdontologo> horarios) {
-        return generar(doctor, horarios, null);
+        return generar(doctor, horarios, null, null);
     }
 
     /**
@@ -60,6 +60,16 @@ public class HorarioPdfService {
      * ("• jueves 18/09 a las 09:00") que se imprime al final del documento.
      */
     public byte[] generar(Odontologo doctor, List<HorarioOdontologo> horarios, List<String> proximosCupos) {
+        return generar(doctor, horarios, proximosCupos, null);
+    }
+
+    /**
+     * {@code dias} detalla, día por día, qué horas quedan libres y qué hay
+     * ocupado (citas y bloqueos), para que el paciente vea de un vistazo dónde
+     * encaja su cita y no tenga que interpretar el horario semanal.
+     */
+    public byte[] generar(Odontologo doctor, List<HorarioOdontologo> horarios,
+                          List<String> proximosCupos, List<DiaDisponibilidad> dias) {
         Document doc = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
@@ -68,6 +78,9 @@ public class HorarioPdfService {
             encabezado(doc);
             titulo(doc, doctor);
             tablaHorarios(doc, horarios);
+            if (dias != null && !dias.isEmpty()) {
+                tablaDisponibilidad(doc, dias);
+            }
             if (proximosCupos != null && !proximosCupos.isEmpty()) {
                 proximosCupos(doc, proximosCupos);
             }
@@ -76,6 +89,46 @@ public class HorarioPdfService {
             throw new IllegalStateException("No se pudo generar el PDF del horario: " + e.getMessage(), e);
         }
         return out.toByteArray();
+    }
+
+    /** Disponibilidad de un día concreto para la tabla "Libre / Ocupado". */
+    public record DiaDisponibilidad(String dia, String libre, String ocupado) {
+    }
+
+    private void tablaDisponibilidad(Document doc, List<DiaDisponibilidad> dias) {
+        doc.add(new Paragraph("Disponibilidad — próximos " + dias.size() + " días",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, new Color(20, 90, 160))));
+
+        PdfPTable tabla = new PdfPTable(new float[]{3, 4.5f, 4.5f});
+        tabla.setWidthPercentage(100);
+        tabla.setSpacingBefore(6);
+        tabla.setSpacingAfter(10);
+
+        for (String encabezado : List.of("Día", "Horas libres", "Horas ocupadas")) {
+            PdfPCell c = new PdfPCell(new Phrase(encabezado, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.WHITE)));
+            c.setBackgroundColor(new Color(20, 90, 160));
+            c.setPadding(6);
+            tabla.addCell(c);
+        }
+
+        boolean marcado = false;
+        Font fuente = FontFactory.getFont(FontFactory.HELVETICA, 9);
+        for (DiaDisponibilidad d : dias) {
+            PdfPCell dCell = new PdfPCell(new Phrase(d.dia(), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9)));
+            PdfPCell libreCell = new PdfPCell(new Phrase(d.libre(), fuente));
+            PdfPCell ocupadaCell = new PdfPCell(new Phrase(d.ocupado(), fuente));
+            for (PdfPCell celda : List.of(dCell, libreCell, ocupadaCell)) {
+                celda.setPadding(5);
+                if (marcado) {
+                    celda.setGrayFill(0.94f);
+                }
+            }
+            tabla.addCell(dCell);
+            tabla.addCell(libreCell);
+            tabla.addCell(ocupadaCell);
+            marcado = !marcado;
+        }
+        doc.add(tabla);
     }
 
     private void encabezado(Document doc) {

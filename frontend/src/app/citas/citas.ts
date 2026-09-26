@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Cita, Odontologo, Servicio, Paciente, Page } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiPaginationComponent } from '../ui';
 
 @Component({
   selector: 'app-citas',
   templateUrl: './citas.html',
   styleUrl: './citas.css',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
 })
 export class CitasComponent implements OnInit {
   items: Cita[] = [];

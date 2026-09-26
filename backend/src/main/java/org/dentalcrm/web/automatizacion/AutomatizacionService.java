@@ -120,10 +120,23 @@ public class AutomatizacionService {
 
     @Transactional
     public int generar(Cita cita, EventoAutomatizacion... eventos) {
+        return generar(cita, null, eventos);
+    }
+
+    /**
+     * Igual que {@link #generar(Cita, EventoAutomatizacion...)} pero permite
+     * añadir variables propias del mensaje, p. ej. el horario anterior de una
+     * cita reprogramada.
+     */
+    @Transactional
+    public int generar(Cita cita, Map<String, String> extra, EventoAutomatizacion... eventos) {
         if (eventos == null || eventos.length == 0) {
             return 0;
         }
         var variables = variableResolver.variables(cita);
+        if (extra != null) {
+            variables.putAll(extra);
+        }
         int generadas = 0;
         for (EventoAutomatizacion evento : eventos) {
             generadas += generarPara(cita, evento, variables);

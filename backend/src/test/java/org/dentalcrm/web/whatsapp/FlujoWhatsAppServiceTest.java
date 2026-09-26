@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -50,6 +52,7 @@ class FlujoWhatsAppServiceTest {
         c.setId(100L);
         c.setEstado(EstadoCita.PENDIENTE);
         c.setFecha(LocalDate.now().plusDays(1));
+        c.setHoraInicio(java.time.LocalTime.of(10, 0));
         return c;
     }
 
@@ -58,12 +61,18 @@ class FlujoWhatsAppServiceTest {
                 .thenReturn(List.of(citaProxima()));
     }
 
+    private FlujoWhatsAppService.AccionFlujo accion(Conversacion c, String texto) {
+        FlujoWhatsAppService.ResultadoFlujo resultado = servicio.procesarEntrada(c, texto);
+        assertNotNull(resultado);
+        return resultado.accion();
+    }
+
     @Test
     void haySinPacienteQuedaIgnorada() {
         Conversacion c = new Conversacion();
         c.setId(1L);
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, servicio.procesarEntrada(c, "1"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, accion(c, "1"));
         verifyNoInteractions(citaRepository);
     }
 
@@ -72,7 +81,7 @@ class FlujoWhatsAppServiceTest {
         stubProxima();
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.CONFIRMADA, servicio.procesarEntrada(c, "1"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.CONFIRMADA, accion(c, "1"));
         verify(citaService).confirmar(100L, "WHATSAPP");
     }
 
@@ -81,7 +90,7 @@ class FlujoWhatsAppServiceTest {
         stubProxima();
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.CONFIRMADA, servicio.procesarEntrada(c, "Sí, confirmo"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.CONFIRMADA, accion(c, "Sí, confirmo"));
         verify(citaService).confirmar(100L, "WHATSAPP");
     }
 
@@ -90,7 +99,7 @@ class FlujoWhatsAppServiceTest {
         stubProxima();
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.CANCELADA, servicio.procesarEntrada(c, "3"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.CANCELADA, accion(c, "3"));
         verify(citaService).cancelar(eq(100L), any(CancelarRequest.class));
     }
 
@@ -99,7 +108,7 @@ class FlujoWhatsAppServiceTest {
         stubProxima();
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.CANCELADA, servicio.procesarEntrada(c, "Quiero cancelar"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.CANCELADA, accion(c, "Quiero cancelar"));
         verify(citaService).cancelar(eq(100L), any(CancelarRequest.class));
     }
 
@@ -107,7 +116,7 @@ class FlujoWhatsAppServiceTest {
     void mensajeIrrelevanteQuedaIgnorado() {
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, servicio.procesarEntrada(c, "Hola buenas tardes"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, accion(c, "Hola buenas tardes"));
         verifyNoInteractions(citaService);
     }
 
@@ -116,7 +125,7 @@ class FlujoWhatsAppServiceTest {
         when(citaRepository.proximasDelPaciente(eq(1L), any(LocalDate.class))).thenReturn(List.of());
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, servicio.procesarEntrada(c, "1"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, accion(c, "1"));
         verifyNoInteractions(citaService);
     }
 
@@ -126,6 +135,18 @@ class FlujoWhatsAppServiceTest {
         doThrow(new RuntimeException("Cita no confirmable")).when(citaService).confirmar(100L, "WHATSAPP");
         Conversacion c = conversacionConPaciente();
 
-        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, servicio.procesarEntrada(c, "1"));
+        assertEquals(FlujoWhatsAppService.AccionFlujo.IGNORADA, accion(c, "1"));
+    }
+
+    @Test
+    void confirmarIncluyeFechaYHoraEnLaRespuesta() {
+        stubProxima();
+        Conversacion c = conversacionConPaciente();
+
+        FlujoWhatsAppService.ResultadoFlujo resultado = servicio.procesarEntrada(c, "1");
+
+        assertEquals(FlujoWhatsAppService.AccionFlujo.CONFIRMADA, resultado.accion());
+        assertNotNull(resultado.mensaje());
+        assertTrue(resultado.mensaje().contains("10:00"));
     }
 }

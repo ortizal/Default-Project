@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, WhatsappSesion } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiPaginationComponent } from '../ui';
 
 @Component({
   selector: 'app-sesiones',
   templateUrl: './sesiones.html',
   styleUrl: './sesiones.css',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
 })
 export class SesionesComponent implements OnInit {
   items: WhatsappSesion[] = [];
@@ -80,6 +81,7 @@ export class SesionesComponent implements OnInit {
   }
 
   desconectar(s: WhatsappSesion): void {
+    if (!confirm('¿Desconectar la sesión?')) return;
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/desconectar`, {}).subscribe({
       next: () => this.cargar(this.page),
       error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },

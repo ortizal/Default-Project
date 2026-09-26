@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, Usuario } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
 
 @Component({
   selector: 'app-usuarios',
   templateUrl: './usuarios.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
 })
 export class UsuariosComponent implements OnInit {
   readonly ROLES = ['SUPER_ADMIN', 'ADMIN', 'RECEPCION', 'ODONTOLOGO'];

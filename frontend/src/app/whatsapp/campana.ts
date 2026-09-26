@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { UiPageHeaderComponent } from '../ui';
 import { Api } from '../core/api';
 
 interface ResultadoDestinatario {
@@ -22,7 +23,7 @@ interface CampanaResponse {
   selector: 'app-whatsapp-campana',
   templateUrl: './campana.html',
   styleUrl: './campana.css',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, UiPageHeaderComponent],
 })
 export class CampanaComponent {
   texto = '';

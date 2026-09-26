@@ -1,0 +1,296 @@
+// =====================================================================
+// Páginas específicas — login y mensajería / WhatsApp
+// =====================================================================
+
+// --------------------------------------------------------------- login
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: $ls-space-6;
+  background:
+    radial-gradient(1000px 520px at 12% -8%, rgba(161, 203, 53, 0.3), transparent 60%),
+    radial-gradient(760px 460px at 92% 106%, rgba(248, 100, 1, 0.26), transparent 62%),
+    linear-gradient(150deg, var(--ls-hero-a) 0%, var(--ls-hero-b) 58%, var(--ls-hero-c) 100%);
+
+}
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: $ls-space-8 $ls-space-6;
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-lg;
+  box-shadow: var(--ls-shadow-lg);
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ls-primary-dark);
+  }
+
+  .sub {
+    margin: 0 0 $ls-space-6;
+    font-size: var(--ls-text-sm);
+    color: var(--ls-muted);
+  }
+
+  .form-field {
+    margin-bottom: $ls-space-4;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+}
+// Ojo de mostrar/ocultar contraseña
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ls-muted);
+  cursor: pointer;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--ls-text);
+    background: var(--ls-surface-2);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ls-focus-ring);
+  }
+
+}
+// ------------------------------------------------- chat / WhatsApp
+
+.conv {
+  position: relative;
+  padding: 10px 12px;
+  border-radius: $ls-radius-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    background: var(--ls-surface-2);
+  }
+
+  &.sel {
+    background: var(--ls-primary-soft);
+    border-color: rgba(161, 203, 53, 0.45);
+  }
+
+}
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+}
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: var(--ls-text-sm);
+  line-height: 1.45;
+  color: var(--ls-text);
+  background: var(--ls-surface-2);
+  overflow-wrap: anywhere;
+
+  &.in {
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  &.out {
+    background: var(--ls-primary);
+    color: var(--ls-on-primary);
+    border-bottom-right-radius: 4px;
+
+    .muted {
+      color: rgba(38, 50, 56, 0.72);
+    }
+  }
+
+}
+// Segmentado (chips de filtro / marcos horarios)
+.seg {
+  display: inline-flex;
+  border-radius: $ls-radius-sm;
+  overflow: hidden;
+  border: 1px solid var(--ls-border);
+  background: var(--ls-surface);
+
+}
+.seg-btn {
+  padding: 7px 14px;
+  font-size: var(--ls-text-xs);
+  font-family: inherit;
+  background: var(--ls-surface);
+  border: none;
+  cursor: pointer;
+  color: var(--ls-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+
+  + .seg-btn {
+    border-left: 1px solid var(--ls-border);
+  }
+
+  &:hover:not(.active) {
+    background: var(--ls-surface-2);
+    color: var(--ls-text);
+  }
+
+  &.active {
+    background: var(--ls-primary);
+    color: var(--ls-on-primary);
+    font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset var(--ls-focus-ring);
+  }
+
+}
+// ---------------------------------------------------------- escalas
+.sm {
+  .btn.sm,
+  .btn.small {
+    min-height: 28px;
+    padding: 3px 8px;
+  }
+
+  .badge {
+    padding: 2px 7px;
+    font-size: 10.5px;
+  }
+
+  .bubble {
+    padding: 7px 11px;
+    font-size: var(--ls-text-xs);
+  }
+
+}
+// ------------------------------------------------- piezas del login
+.login-logo {
+  text-align: center;
+  margin-bottom: 10px;
+
+}
+.logo-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--ls-primary-soft);
+  border: 1px solid rgba(161, 203, 53, 0.35);
+  font-size: 28px;
+
+}
+.login-card h1 {
+  text-align: center;
+
+}
+.login-card .sub {
+  text-align: center;
+
+}
+.login-card form {
+  display: flex;
+  flex-direction: column;
+
+}
+.password-wrapper {
+  position: relative;
+
+  .input {
+    padding-right: 42px;
+  }
+
+}
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ls-space-2);
+  margin-top: var(--ls-space-3);
+  font-size: var(--ls-text-xs);
+
+
+
+}
+.login-footer-bottom {
+  margin-top: var(--ls-space-6);
+  padding-top: var(--ls-space-4);
+  border-top: 1px solid var(--ls-border);
+  text-align: center;
+  font-size: 11px;
+  color: var(--ls-muted);
+
+}
+@include down($bp-sm) {
+  .login-page {
+    padding: $ls-space-4;
+  }
+
+  .login-card {
+    padding: $ls-space-6 $ls-space-4;
+    border-radius: $ls-radius-lg;;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Barras de los mini-gráficos (tokens del sistema, sin estilos inline)
+   --------------------------------------------------------------------- */
+
+.bar-cell {
+  width: 180px;
+
+}
+.bar-track,
+.bar-fill {
+  height: 8px;
+  border-radius: 4px;
+
+}
+.bar-track {
+  background: var(--ls-primary-soft);
+
+}
+.bar-fill {
+  background: var(--ls-primary);
+
+}
+.chart-bars {
+  align-items: flex-end;
+  gap: 2px;
+  min-height: 120px;
+
+}
+.chart-col {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--ls-primary);
+  border-radius: 3px 3px 0 0;
+
+}
+.chart-bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+
+}

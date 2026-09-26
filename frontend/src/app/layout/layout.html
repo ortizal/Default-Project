@@ -1,15 +1,26 @@
 <div class="app-shell">
-  <app-sidebar [colapsado]="colapsado()" />
+  <app-sidebar
+    [colapsado]="colapsado()"
+    [abierto]="abierto()"
+    (salir)="salir()"
+    (navegar)="cerrarMenu()"
+  />
+  @if (abierto()) {
+    <div class="sidebar-backdrop" (click)="cerrarMenu()"></div>
+  }
   <div class="main">
     <app-header
       [colapsado]="colapsado()"
+      [abierto]="abierto()"
       [titulo]="titulo"
       [fecha]="fecha"
       (toggle)="alternar()"
       (salir)="salir()"
     />
     <div class="content">
-      <router-outlet />
+      <div class="content-wrapper">
+        <router-outlet />
+      </div>
     </div>
     <app-footer />
   </div>

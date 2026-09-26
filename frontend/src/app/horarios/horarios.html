@@ -1,12 +1,12 @@
 
+    <ui-page-header title="Horarios de atención">
+      <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevo()">+ Nuevo horario</button>
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Horarios de atención</h2>
-        <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevo()">+ Nuevo horario</button>
-      </div>
       <div class="toolbar">
-        <label class="label" style="margin:0 6px 0 0">Odontólogo</label>
-        <select class="input" style="width:280px" [(ngModel)]="odontologoSeleccionado" (change)="cargar()">
+        <label class="label mr-2">Odontólogo</label>
+        <select class="input" [(ngModel)]="odontologoSeleccionado" (change)="cargar()">
           <option value="" disabled>Selecciona un odontólogo</option>
           @for (o of odontologos; track o.id) {
             <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }} — {{ o.especialidad || 'General' }}</option>
@@ -16,14 +16,11 @@
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando horarios…">
         <thead>
           <tr><th>ID</th><th>Día</th><th>Inicio</th><th>Fin</th><th>Intervalo</th><th>Estado</th><th></th></tr>
         </thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando horarios…</td></tr>
-          }
           @for (h of items; track h.id) {
             <tr>
               <td>{{ h.id }}</td>
@@ -39,6 +36,42 @@
             </tr>
           } @empty {
             <tr><td colspan="7" class="empty">{{ odontologoSeleccionado ? 'Sin horarios configurados.' : 'Selecciona un odontólogo para ver sus horarios.' }}</td></tr>
+          }
+        </tbody>
+      </ui-table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Días de excepción de atención</h3>
+        <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevaExcepcion()">+ Nueva excepción</button>
+      </div>
+      <p class="label mb-2">
+        Días en que este odontólogo no sigue su horario semanal: la clínica cierra o atiende en otra ventana.
+        Al guardar, las citas activas que no quepan se cancelan y se avisa a los pacientes.
+      </p>
+      @if (aviso) {
+        <div class="msg">{{ aviso }}</div>
+      }
+      <table class="tbl">
+        <thead>
+          <tr><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Motivo</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (e of excepciones; track e.id) {
+            <tr>
+              <td>{{ e.fecha }}</td>
+              <td>
+                <span class="badge" [ngClass]="e.tipo === 'CERRADO' ? 'bad' : 'ok'">{{ e.tipoNombre }}</span>
+              </td>
+              <td>{{ rangoExcepcion(e) }}</td>
+              <td>{{ e.motivo || '—' }}</td>
+              <td class="flex">
+                <button class="btn small danger" (click)="eliminarExcepcion(e)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty">{{ odontologoSeleccionado ? 'Sin excepciones en los próximos 180 días.' : 'Selecciona un odontólogo.' }}</td></tr>
           }
         </tbody>
       </table>
@@ -60,8 +93,8 @@
                 }
               </select>
             </div>
-            <div><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="form.horaInicio" required /></div>
-            <div><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="form.horaFin" required /></div>
+            <div class="half"><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="form.horaInicio" required /></div>
+            <div class="half"><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="form.horaFin" required /></div>
             <div class="full"><label class="label">Intervalo (min) *</label><input class="input" type="number" min="5" [(ngModel)]="form.intervaloMinutos" /></div>
           </div>
           <div class="modal-actions">
@@ -72,3 +105,32 @@
       </div>
     }
   
+    @if (showExcepcion) {
+      <div class="modal-backdrop" (click)="close($event)">
+        <div class="modal" (click)="stop($event)">
+          <h2>Nueva excepción de atención</h2>
+          @if (error) {
+            <div class="msg error">{{ error }}</div>
+          }
+          <div class="form-row">
+            <div class="full"><label class="label">Fecha *</label><input class="input" type="date" [(ngModel)]="excForm.fecha" required /></div>
+            <div class="full">
+              <label class="label">Tipo *</label>
+              <select class="input" [(ngModel)]="excForm.tipo">
+                <option value="CERRADO">Cerrado (todo el día)</option>
+                <option value="HORARIO_ESPECIAL">Horario especial</option>
+              </select>
+            </div>
+            @if (!esCerrada()) {
+              <div class="half"><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="excForm.horaInicio" required /></div>
+              <div class="half"><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="excForm.horaFin" required /></div>
+            }
+            <div class="full"><label class="label">Motivo</label><input class="input" type="text" maxlength="255" placeholder="Ej: Feriado, mantenimiento, evento" [(ngModel)]="excForm.motivo" /></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" (click)="showExcepcion = false">Cancelar</button>
+            <button class="btn primary" (click)="guardarExcepcion()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }

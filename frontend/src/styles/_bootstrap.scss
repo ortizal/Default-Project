@@ -1,0 +1,158 @@
+// =====================================================================
+// Bootstrap 5 — subconjunto + retema Little Smile
+//
+// Se importa sólo lo que usa el CRM (grid, forms, buttons, tables…).
+// Las variables de Bootstrap se fijan ANTES de "variables" para que la
+// identidad #A1CB35 / #F86401 fluya hacia los componentes nativos.
+// No se importan modal/offcanvas/dropdown con JS: el CRM usa sus
+// propios componentes de superposición en src/app/ui/.
+// =====================================================================
+
+@use "sass:map";
+
+@import "variables";
+
+// --- Retema de Bootstrap --------------------------------------------
+$primary: $ls-primary;
+$secondary: $ls-secondary;
+$body-bg: $ls-background;
+$body-color: $ls-text;
+$body-font-family: $ls-font-family;
+$body-font-size: $ls-font-base;
+$body-emphasis-color: $ls-text;
+
+$border-color: $ls-border;
+$border-radius: $ls-radius-md;
+$border-radius-sm: $ls-radius-sm;
+$border-radius-lg: $ls-radius-lg;
+$border-radius-pill: 999px;
+
+$focus-ring-color: rgba($ls-primary, 0.38);
+$focus-ring-width: 3px;
+$focus-ring-opacity: 1;
+$focus-ring-blur: 0;
+
+$link-color: $ls-primary-dark;
+$link-hover-color: $ls-primary-dark;
+
+// En Bootstrap las fuentes se expresan en rem para que su aritmética
+// interna ($font-size * $line-height + padding) no mezcle unidades.
+$ls-font-xs-rem: 0.75rem; // 12px
+$ls-font-sm-rem: 0.8125rem; // 13px
+$ls-font-base-rem: 0.875rem; // 14px
+
+$font-size-base: $ls-font-base-rem;
+$font-size-sm: $ls-font-sm-rem;
+$headings-font-weight: 600;
+$headings-color: $ls-text;
+$line-height-base: 1.5;
+
+// Botones: escala sm (32–36px)
+$btn-font-size: $ls-font-sm-rem;
+$btn-font-weight: 500;
+$btn-padding-y: 0.45rem;
+$btn-padding-x: 0.75rem;
+$btn-border-radius: $ls-radius-sm;
+$btn-padding-y-sm: 0.3rem;
+$btn-padding-x-sm: 0.6rem;
+$btn-padding-y-lg: 0.55rem;
+$btn-padding-x-lg: 1rem;
+$btn-transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+  color 0.15s ease;
+
+// Controles: 34–36px
+$input-font-size: $ls-font-sm-rem;
+$input-padding-y: 0.45rem;
+$input-padding-x: 0.7rem;
+$input-border-color: $ls-border;
+$input-border-radius: $ls-radius-sm;
+$input-focus-border-color: $ls-primary;
+$input-placeholder-color: $ls-muted;
+$input-group-addon-bg: $ls-surface-2;
+
+// Tablas
+$table-font-size: $ls-font-sm-rem;
+$table-cell-padding-y: 0.55rem;
+$table-cell-padding-x: 0.75rem;
+$table-border-color: $ls-border;
+$table-border-radius: $ls-radius-md;
+$table-head-bg: $ls-surface-2;
+$table-head-color: $ls-muted;
+$table-striped-bg: rgba($ls-primary, 0.05);
+$table-hover-bg: rgba($ls-primary, 0.06);
+$table-color: $ls-text;
+
+// Cards / badges / alerts / pagination
+$card-border-color: $ls-border;
+$card-border-radius: $ls-radius-md;
+$card-cap-bg: transparent;
+$badge-font-size: $ls-font-xs-rem;
+$badge-font-weight: 600;
+$badge-padding-x: 0.5rem;
+$alert-border-radius: $ls-radius-md;
+$alert-border-width: 1px;
+$pagination-padding-x: 0.7rem;
+$pagination-padding-y: 0.35rem;
+$pagination-font-size: $ls-font-sm-rem;
+$pagination-border-radius: $ls-radius-sm;
+$pagination-active-bg: $ls-primary;
+$pagination-active-border-color: $ls-primary;
+$pagination-active-color: $ls-on-primary;
+$pagination-hover-bg: $ls-primary-soft;
+$pagination-hover-color: $ls-text;
+$pagination-hover-border-color: rgba($ls-primary, 0.5);
+
+$spinner-width: 1.25rem;
+$spinner-border-width: 0.18em;
+
+// --- Importación selectiva ------------------------------------------
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// Utilidades (tras definirse el mapa base de Bootstrap)
+$utilities: map.merge(
+  $utilities,
+  (
+    "gap": (
+      responsive: true,
+      property: gap,
+      class: gap,
+      values: (
+        0: 0,
+        1: $ls-space-2,
+        2: $ls-space-4,
+        3: $ls-space-6,
+        4: $ls-space-8,
+      ),
+    ),
+    "w-max-content": (
+      property: width,
+      class: w-max,
+      values: (content: max-content),
+    ),
+  )
+);
+
+@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/type";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/tables";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/badge";
+@import "bootstrap/scss/alert";
+@import "bootstrap/scss/pagination";
+@import "bootstrap/scss/tooltip";
+@import "bootstrap/scss/spinners";
+@import "bootstrap/scss/close";
+
+@import "bootstrap/scss/helpers";
+@import "bootstrap/scss/utilities/api";

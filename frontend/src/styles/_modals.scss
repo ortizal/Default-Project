@@ -1,0 +1,125 @@
+// =====================================================================
+// Modales y superposiciones (sin JS: *ngIf + backdrop propio)
+// =====================================================================
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: $ls-space-8 $ls-space-4;
+  background: rgba(38, 50, 56, 0.45);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+  animation: ls-fade-in 0.16s ease;
+
+}
+// Neutraliza la clase homónima de Bootstrap: nuestras superposiciones
+// no usan el sistema JS de Bootstrap.
+.modal {
+  position: static;
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  max-height: none;
+  margin: auto;
+  padding: $ls-space-6;
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-lg;
+  box-shadow: var(--ls-shadow-lg);
+  animation: ls-pop-in 0.18s ease;
+  overflow: visible;
+  transform: none;
+  opacity: 1;
+  z-index: auto;
+
+  &.narrow {
+    max-width: 480px;
+  }
+
+  &.wide {
+    max-width: 960px;
+  }
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: var(--ls-text-xl);
+    font-weight: 600;
+  }
+
+  .sub {
+    margin: 0 0 $ls-space-4;
+    font-size: var(--ls-text-sm);
+    color: var(--ls-muted);
+  }
+
+}
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  padding: $ls-space-6;
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-lg;
+  box-shadow: var(--ls-shadow-lg);
+
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: $ls-space-2;
+  margin-top: $ls-space-6;
+  padding-top: $ls-space-4;
+  border-top: 1px solid var(--ls-border);
+
+  @include md {
+    flex-direction: column-reverse;
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+}
+// Diálogo de confirmación para acciones destructivas
+
+// Móvil: modal a viewport completo
+@include down($bp-md) {
+  .modal-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .modal,
+  .modal-card {
+    max-width: none;
+    min-height: 100%;
+    border-radius: 0;
+    border: 0;
+    padding: $ls-space-4;
+  }
+}
+
+@keyframes ls-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ls-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

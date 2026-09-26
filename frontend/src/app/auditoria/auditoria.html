@@ -1,8 +1,8 @@
 
+    <ui-page-header title="Auditoría" />
+
     <div class="card">
-      <div class="between">
-        <h2>Auditoría</h2>
-        <form class="flex gap" (ngSubmit)="buscar()">
+      <form class="toolbar" (ngSubmit)="buscar()">
           <input class="input" [(ngModel)]="q" name="q" placeholder="Buscar acción, módulo o entidad" />
           <select class="input" [(ngModel)]="modulo" name="modulo" (ngModelChange)="buscar()">
             <option value="">Todos los módulos</option>
@@ -10,18 +10,14 @@
               <option [value]="m">{{ m }}</option>
             }
           </select>
-          <button class="btn primary" type="submit">Buscar</button>
-        </form>
-      </div>
+        <button class="btn primary" type="submit">Buscar</button>
+      </form>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando auditoría…">
         <thead><tr><th></th><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Entidad</th><th>IP</th></tr></thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="7" class="empty"><span class="spinner"></span> Cargando auditoría…</td></tr>
-          }
           @for (a of rows; track a.id) {
             <tr>
               <td><button class="btn small" (click)="toggle(a.id)">{{ abierto(a.id) ? '−' : '+' }}</button></td>
@@ -36,7 +32,7 @@
               <tr>
                 <td></td>
                 <td colspan="6">
-                  <div class="grid2" style="margin-top:4px">
+                  <div class="grid2 mt-1">
                     <div>
                       <div class="label">Datos anteriores</div>
                       <pre class="dump">{{ pretty(a.datosAnteriores) }}</pre>
@@ -53,13 +49,12 @@
             <tr><td colspan="7" class="empty">Sin registros de auditoría.</td></tr>
           }
         </tbody>
-      </table>
-      <div class="between" style="margin-top:12px">
-        <span class="muted">Página {{ pagina + 1 }} de {{ totalPag }}</span>
-        <div class="flex gap">
-          <button class="btn small" [disabled]="pagina === 0" (click)="ir(pagina - 1)">← Anterior</button>
-          <button class="btn small" [disabled]="pagina + 1 >= totalPag" (click)="ir(pagina + 1)">Siguiente →</button>
-        </div>
-      </div>
+      </ui-table>
+      <ui-pagination
+        [page]="pagina + 1"
+        [pages]="totalPag"
+        (prev)="ir(pagina - 1)"
+        (next)="ir(pagina + 1)"
+      />
     </div>
   

@@ -1,0 +1,81 @@
+// =====================================================================
+// Little Smile — variables SCSS (sólo valores, sin emitir CSS)
+// Escala base 4px. Los colores canónicos viven en _tokens.scss como
+// custom properties; aquí se replican como Sass para poder alimentar
+// las variables de Bootstrap antes de importarlo.
+// =====================================================================
+
+// --- Identidad -------------------------------------------------------
+$ls-primary: #a1cb35;
+$ls-secondary: #f86401;
+$ls-surface: #ffffff;
+$ls-surface-2: #fafbf8;
+$ls-background: #f6f8f4;
+$ls-text: #263238;
+$ls-muted: #6b7280;
+$ls-border: #e5e7eb;
+
+// Tintas derivadas (estado + contraste sobre el primario)
+$ls-primary-dark: #7fa524;
+$ls-primary-soft: #eef6da;
+$ls-secondary-dark: #d15501;
+$ls-secondary-soft: #fdeadb;
+$ls-on-primary: #263238; // texto sobre #A1CB35 (contraste AA)
+$ls-on-secondary: #ffffff;
+
+$ls-success: #2e7d32;
+$ls-success-soft: #e4f3e5;
+$ls-info: #0369a1;
+$ls-info-soft: #e0f2fe;
+$ls-warning: #b45309;
+$ls-warning-soft: #fef3c7;
+$ls-danger: #c62828;
+$ls-danger-dark: #a52121;
+$ls-danger-soft: #fdeaea;
+
+// Sidebar (capa oscura opcional sobre la paleta LS)
+$ls-sidebar-bg: #1d2a17;
+$ls-sidebar-fg: #cfd9c4;
+$ls-sidebar-active: #2a3d1d;
+
+// --- Breakpoints -----------------------------------------------------
+$bp-sm: 576px;
+$bp-md: 768px;
+$bp-lg: 992px;
+$bp-xl: 1200px;
+
+// --- Espaciado (4px) -------------------------------------------------
+$ls-space-1: 4px;
+$ls-space-2: 8px;
+$ls-space-3: 12px;
+$ls-space-4: 16px;
+$ls-space-6: 24px;
+$ls-space-8: 32px;
+
+// --- Radio -----------------------------------------------------------
+$ls-radius-sm: 6px;
+$ls-radius-md: 8px;
+$ls-radius-lg: 12px;
+
+// --- Controles (escala sm) ------------------------------------------
+$ls-control-h: 36px;
+$ls-control-h-sm: 32px;
+$ls-font-xs: 12px;
+$ls-font-sm: 13px;
+$ls-font-base: 14px;
+$ls-font-label: 12px;
+
+// --- Tipografía ------------------------------------------------------
+$ls-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+$ls-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+// --- Layout ----------------------------------------------------------
+$ls-sidebar-w: 232px;
+$ls-sidebar-w-collapsed: 64px;
+$ls-topbar-h: 56px;
+$ls-content-max: 1440px;
+
+// --- Sombras ---------------------------------------------------------
+$ls-shadow-sm: 0 1px 2px rgba(38, 50, 56, 0.06);
+$ls-shadow-md: 0 4px 12px rgba(38, 50, 56, 0.08);
+$ls-shadow-lg: 0 12px 32px rgba(38, 50, 56, 0.14);

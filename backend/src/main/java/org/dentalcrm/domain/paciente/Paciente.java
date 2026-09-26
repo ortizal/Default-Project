@@ -47,6 +47,9 @@ public class Paciente {
     @Column(length = 255)
     private String direccion;
 
+    @Column(length = 120)
+    private String ciudad;
+
     @Column(columnDefinition = "text")
     private String observaciones;
 

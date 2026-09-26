@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { GoogleCalendario, GoogleConnect, GoogleCredential, GoogleStatus, GoogleSyncResult } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent } from '../ui';
 
 @Component({
   selector: 'app-calendario',
   templateUrl: './calendario.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class CalendarioComponent implements OnInit {
   status?: GoogleStatus;

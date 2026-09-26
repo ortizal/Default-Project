@@ -1,12 +1,10 @@
 <div class="campaign-page">
-  <div class="campaign-head">
-    <div>
-      <span class="eyebrow">WhatsApp</span>
-      <h2>Publicidad masiva</h2>
-      <p class="muted">Envía una comunicación a tus pacientes activos con teléfono registrado.</p>
-    </div>
+  <ui-page-header
+    title="Publicidad masiva"
+    subtitle="Envía una comunicación a tus pacientes activos con teléfono registrado."
+  >
     <a class="btn" routerLink="/whatsapp/inbox">Volver al inbox</a>
-  </div>
+  </ui-page-header>
 
   @if (error) {
     <div class="msg error">{{ error }}</div>
@@ -35,7 +33,7 @@
 
       <div class="campaign-note">
         <strong>Destinatarios</strong>
-        <span>Pacientes activos con teléfono. Máximo 500 por campaña.</span>
+        <span>Pacientes activos con teléfono único. Los números repetidos se envían una sola vez. Máximo 500.</span>
       </div>
 
       <button class="btn primary publish-btn" type="button" (click)="enviar()"

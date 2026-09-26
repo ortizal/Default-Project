@@ -32,6 +32,7 @@ export interface Paciente {
   email?: string;
   fechaNacimiento?: string;
   direccion?: string;
+  ciudad?: string;
   observaciones?: string;
   estado?: string;
   tutores?: Tutor[];
@@ -75,6 +76,21 @@ export interface Horario {
   estado?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** Día de excepción de atención: la clínica cierra o atiende en otra ventana. */
+export interface ExcepcionHorario {
+  id: number;
+  odontologoId: number;
+  odontologoNombre: string;
+  fecha: string;
+  tipo: 'CERRADO' | 'HORARIO_ESPECIAL';
+  tipoNombre: string;
+  horaInicio: string | null;
+  horaFin: string | null;
+  motivo: string | null;
+  citasCanceladas?: number | null;
+  createdAt?: string;
 }
 
 export interface Cita {

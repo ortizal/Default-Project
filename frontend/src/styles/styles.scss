@@ -1,0 +1,32 @@
+// =====================================================================
+// Little Smile — punto de entrada de estilos globales
+// Orden: tokens -> bootstrap -> base -> componentes -> dark
+// =====================================================================
+
+// 1. Fundamentos (sólo variables, no emiten CSS salvo :root)
+@import "variables";
+@import "tokens";
+@import "mixins";
+
+// 2. Bootstrap 5 (override de variables + importación selectiva)
+@import "bootstrap";
+
+// 3. Base
+@import "reset";
+@import "typography";
+
+// 4. Componentes
+@import "layout";
+@import "buttons";
+@import "forms";
+@import "tables";
+@import "cards";
+@import "states";
+@import "modals";
+@import "pages";
+
+// 5. Utilidades
+@import "utilities";
+
+// 6. Tema oscuro (siempre al final: re-mapea los tokens)
+@import "dark";

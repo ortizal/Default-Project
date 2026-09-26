@@ -142,11 +142,29 @@ public class GoogleService {
     }
 
     public String crearEvento(String accessToken, String calendarId, EventoGoogle evento) {
+        return crearEvento(accessToken, calendarId, evento, null);
+    }
+
+    public String crearEvento(String accessToken, String calendarId, EventoGoogle evento, String eventId) {
+        try {
+            return crearEventoRemoto(accessToken, calendarId, evento, eventId);
+        } catch (BusinessException e) {
+            // A retry of the same deterministic event is already synchronized.
+            if (eventId != null && e.getMessage() != null && e.getMessage().contains("(409)")) {
+                return eventId;
+            }
+            throw e;
+        }
+    }
+
+    private String crearEventoRemoto(String accessToken, String calendarId, EventoGoogle evento, String eventId) {
         JsonNode json = ejecutarGoogle(apiClient.post()
-                .uri("/calendar/v3/calendars/{calendarId}/events", calendarId)
+                .uri(uriBuilder -> uriBuilder
+                        .path("/calendar/v3/calendars/{calendarId}/events")
+                        .build(calendarId))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payloadEvento(evento))
+                .bodyValue(payloadEvento(evento, eventId))
                 .retrieve()
             .bodyToMono(JsonNode.class));
         return json == null ? null : json.path("id").asText(null);
@@ -212,7 +230,15 @@ public class GoogleService {
     }
 
     public Object payloadEvento(EventoGoogle evento) {
-        return java.util.Map.of(
+        return payloadEvento(evento, null);
+    }
+
+    public Object payloadEvento(EventoGoogle evento, String eventId) {
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        if (eventId != null && !eventId.isBlank()) {
+            payload.put("id", eventId);
+        }
+        payload.putAll(java.util.Map.of(
                 "summary", evento.summary(),
                 "description", evento.description(),
                 "start", java.util.Map.of(
@@ -220,7 +246,8 @@ public class GoogleService {
                         "timeZone", evento.timeZone()),
                 "end", java.util.Map.of(
                     "dateTime", formatearFechaHora(evento.fecha(), evento.horaFin()),
-                        "timeZone", evento.timeZone()));
+                        "timeZone", evento.timeZone())));
+        return payload;
     }
 
             private String formatearFechaHora(LocalDate fecha, LocalTime hora) {

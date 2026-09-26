@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Auditoria, Page } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiTableComponent, UiPaginationComponent } from '../ui';
 
 const MODULOS = [
   'AGENDA',
@@ -22,7 +23,7 @@ const MODULOS = [
 @Component({
   selector: 'app-auditoria',
   templateUrl: './auditoria.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent, UiPaginationComponent],
 })
 export class AuditoriaComponent implements OnInit {
   readonly modulos = MODULOS;

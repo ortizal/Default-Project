@@ -2,32 +2,35 @@
 
 @include mat.core();
 
-// Tema claro M3 — paleta cyan (dental, tecnológico)
-$light-theme: mat.define-theme((
+// Paletas M3 más cercanas a la identidad Little Smile:
+//   primary  → chartreuse  (#A1CB35)
+//   tertiary → orange      (#F86401)
+// Los tonos exactos de marca se fuerzan además en src/styles/_tokens.scss
+// mediante --mat-sys-* (esa hoja se carga después y gana la cascada).
+$ls-light: mat.define-theme((
   color: (
     theme-type: light,
-    primary: mat.$cyan-palette,
-    tertiary: mat.$green-palette,
+    primary: mat.$chartreuse-palette,
+    tertiary: mat.$orange-palette,
   ),
 ));
 
-// Tema oscuro M3 — mismo matiz, superficies profundas
-$dark-theme: mat.define-theme((
+$ls-dark: mat.define-theme((
   color: (
     theme-type: dark,
-    primary: mat.$cyan-palette,
-    tertiary: mat.$green-palette,
+    primary: mat.$chartreuse-palette,
+    tertiary: mat.$orange-palette,
   ),
 ));
 
 :root {
   color-scheme: light;
-  @include mat.all-component-themes($light-theme);
+  @include mat.all-component-themes($ls-light);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    @include mat.all-component-themes($dark-theme);
+    @include mat.all-component-themes($ls-dark);
   }
 }

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { EstadisticasData, ReporteSerie } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent } from '../ui';
 
 @Component({
   selector: 'app-reportes',
   templateUrl: './reportes.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class ReportesComponent implements OnInit {
   e: EstadisticasData | null = null;

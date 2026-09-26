@@ -47,6 +47,15 @@ final class ParserAgendamiento {
     private static final Pattern P_HORA_DECIMAL = Pattern.compile("\\b(\\d{1,2})[:.](\\d{2})\\b");
     private static final Pattern P_HORA_AMPM = Pattern.compile("\\b(\\d{1,2})\\s*(am|pm)\\b");
     private static final Pattern P_INDICE = Pattern.compile("(?:opcion|opcion|el|la|numero|#)?\\s*\\b(\\d{1,2})\\b\\s*$");
+        private static final Map<String, Integer> NUMEROS = Map.ofEntries(
+            Map.entry("primera", 1), Map.entry("primero", 1), Map.entry("uno", 1),
+            Map.entry("segunda", 2), Map.entry("segundo", 2), Map.entry("dos", 2),
+            Map.entry("tercera", 3), Map.entry("tercero", 3), Map.entry("tres", 3),
+            Map.entry("cuarta", 4), Map.entry("cuarto", 4), Map.entry("cuatro", 4),
+            Map.entry("quinta", 5), Map.entry("quinto", 5), Map.entry("cinco", 5),
+            Map.entry("sexta", 6), Map.entry("sexto", 6), Map.entry("seis", 6),
+            Map.entry("septima", 7), Map.entry("septimo", 7), Map.entry("siete", 7),
+            Map.entry("octava", 8), Map.entry("octavo", 8), Map.entry("ocho", 8));
 
     private ParserAgendamiento() {
     }
@@ -59,6 +68,31 @@ final class ParserAgendamiento {
                 horaDelTexto(t).orElse(null),
                 servicioDelTexto(t, servicios).orElse(null),
                 doctorDelTexto(t, odontologos).orElse(null));
+    }
+
+    /**
+     * Interpreta la respuesta acotándola al paso que el bot tiene en pantalla.
+     * Cuando ya se preguntó "¿qué servicio?" o "¿para qué día?", un "2" es la
+     * opción 2 de esa lista: sin acotarlo, el mismo número se confundiría con el
+     * servicio, el odontólogo o la fecha de otros pasos.
+     *
+     * @param paso paso guardado en el contexto ({@code SERVICIO}, {@code DOCTOR},
+     *             {@code FECHA}, {@code HORA}); vacío en la primera intervención
+     * @return la hora no se interpreta aquí: se valida contra los cupos reales
+     *         del día, así que siempre vuelve vacía
+     */
+    static EntradaAgendamiento entradaParaPaso(String paso, String texto, LocalDate hoy,
+                                               List<Servicio> servicios, List<Odontologo> odontologos) {
+        String t = normalizar(texto);
+        return switch (paso == null ? "" : paso) {
+            case "SERVICIO" -> new EntradaAgendamiento(null, null,
+                    servicioDelTexto(t, servicios).orElse(null), null);
+            case "DOCTOR" -> new EntradaAgendamiento(null, null, null,
+                    doctorDelTexto(t, odontologos).orElse(null));
+            case "FECHA" -> new EntradaAgendamiento(fechaDelTexto(t, hoy).orElse(null), null, null, null);
+            case "HORA" -> EntradaAgendamiento.vacia();
+            default -> parsear(texto, hoy, servicios, odontologos);
+        };
     }
 
     static Optional<LocalDate> fechaDelTexto(String t, LocalDate hoy) {
@@ -258,6 +292,16 @@ final class ParserAgendamiento {
             }
         }
         return Optional.empty();
+    }
+
+    static Optional<Integer> indiceDeTexto(String texto, int tamano) {
+        String t = normalizar(texto).trim();
+        for (Map.Entry<String, Integer> numero : NUMEROS.entrySet()) {
+            if (t.matches("(?:opcion|opcion|el|la|numero|#)?\\s*" + numero.getKey())) {
+                return numero.getValue() <= tamano ? Optional.of(numero.getValue()) : Optional.empty();
+            }
+        }
+        return indiceDeLista(t, tamano);
     }
 
     private static Set<String> tokensSignificativos(String t) {

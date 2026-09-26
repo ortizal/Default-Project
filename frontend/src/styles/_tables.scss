@@ -1,0 +1,190 @@
+// =====================================================================
+// Tablas y listados — patrón único para todos los módulos
+// =====================================================================
+
+.tbl-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-md;
+  background: var(--ls-surface);
+
+  // Sombra sutil que indica contenido desplazable
+  &.scrollable {
+    box-shadow: inset -12px 0 12px -12px rgba(38, 50, 56, 0.18);
+  }
+
+}
+table.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ls-text-sm);
+  color: var(--ls-text);
+
+}
+.tbl th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 12px;
+  background: var(--ls-surface-2);
+  color: var(--ls-muted);
+  font-size: var(--ls-text-xs);
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--ls-border);
+
+}
+.tbl td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ls-border);
+  vertical-align: middle;
+  line-height: 1.4;
+
+}
+.tbl tbody tr {
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--ls-primary-soft);
+  }
+
+  &:last-child td {
+    border-bottom: 0;
+  }
+
+}
+.tbl .cell-actions {
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+
+}
+.tbl .cell-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+
+}
+.tbl .cell-center {
+  text-align: center;
+
+}
+// --- celda con tooltip CSS (sin JS) ----------------------------------
+.tbl td.cell-tooltip {
+  position: relative;
+
+}
+.tbl td.cell-tooltip:hover {
+  overflow: visible;
+  z-index: 5;
+
+}
+.tbl td.cell-tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 8px 10px;
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-sm;
+  background: var(--ls-text);
+  color: var(--ls-surface);
+  box-shadow: var(--ls-shadow-md);
+  font-size: var(--ls-text-xs);
+  font-weight: 400;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+
+}
+// --- estados de la tabla ---------------------------------------------
+.tbl-state {
+  padding: var(--ls-space-6) var(--ls-space-4);
+  text-align: center;
+  color: var(--ls-muted);
+  font-size: var(--ls-text-sm);
+
+}
+.tbl-state.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ls-space-2);
+
+}
+.tbl-state.error {
+  color: var(--ls-danger);
+  background: var(--ls-danger-soft);
+
+
+}
+// --- paginación compacta ---------------------------------------------
+.paginador,
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ls-space-3);
+  flex-wrap: wrap;
+  padding: var(--ls-space-3) 0 0;
+  font-size: var(--ls-text-sm);
+  color: var(--ls-muted);
+
+
+}
+.pagination-bar .btn:disabled {
+  opacity: 0.45;
+
+}
+// --- Móvil: scroll controlado y cabeceras legibles --------------------
+@include down($bp-md) {
+  .tbl-wrap {
+    border-radius: $ls-radius-sm;
+  }
+
+  table.tbl {
+    min-width: 640px;
+  }
+
+  .tbl th,
+  .tbl td {
+    padding: 8px 10px;
+    font-size: var(--ls-text-xs);
+  }
+
+  .acciones {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+// --- Tabla densa para modales / paneles estrechos ---------------------
+.tbl.dense {
+  font-size: var(--ls-text-xs);
+
+  th,
+  td {
+    padding: 6px 8px;
+  }
+
+}
+// Dentro de una card ya hay borde y padding: el envoltorio sólo aporta
+// el scroll horizontal, sin duplicar marcos.
+.card .tbl-wrap,
+.contenido .tbl-wrap {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+
+}

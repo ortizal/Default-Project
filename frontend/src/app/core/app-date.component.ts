@@ -56,9 +56,9 @@ import { MatIconModule } from '@angular/material/icon';
         box-sizing: border-box;
         width: 100%;
         min-width: 150px;
-        border: 1px solid var(--border);
-        background: var(--card);
-        color: var(--fg);
+        border: 1px solid var(--ls-border);
+        background: var(--ls-surface);
+        color: var(--ls-text);
         border-radius: 6px;
         padding: 8px 34px 8px 12px;
         font: inherit;
@@ -67,11 +67,11 @@ import { MatIconModule } from '@angular/material/icon';
       }
       .date-mask:focus {
         outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+        border-color: var(--ls-primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--ls-primary) 22%, transparent);
       }
       .date-mask::placeholder {
-        color: var(--muted);
+        color: var(--ls-muted);
         opacity: 1;
       }
       .date-btn {
@@ -81,7 +81,7 @@ import { MatIconModule } from '@angular/material/icon';
         transform: translateY(-50%);
         border: none;
         background: transparent;
-        color: var(--muted);
+        color: var(--ls-muted);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -91,8 +91,8 @@ import { MatIconModule } from '@angular/material/icon';
         line-height: 0;
       }
       .date-btn:hover {
-        color: var(--primary);
-        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--ls-primary);
+        background: color-mix(in srgb, var(--ls-primary) 12%, transparent);
       }
       .date-btn mat-icon {
         font-size: 19px;

@@ -191,7 +191,7 @@ class AgenteConversacionalServiceTest {
 
         assertTrue(segundo.mensaje().contains("Maria"));
         assertEquals(p, conv.getPaciente());
-        assertEquals(Intencion.AGENDAR_CITA, conv.getIntencion());
+        assertEquals(Intencion.VER_PERFIL, conv.getIntencion());
     }
 
     @Test
@@ -207,6 +207,27 @@ class AgenteConversacionalServiceTest {
         assertTrue(conv.getContextoAgente().contains("REG_CONFIRMAR"));
         assertFalse(r.transferirHumano());
     }
+
+        @Test
+        void nuevaCedulaCambiaElPacienteAunqueHabiaUnFlujoActivo() {
+                Conversacion conv = conversacion();
+                conv.setPaciente(paciente());
+                conv.setIntencion(Intencion.AGENDAR_CITA);
+                conv.setContextoAgente("{\"paso\":\"HORA\",\"fecha\":\"2026-09-15\"}");
+                Paciente otro = paciente();
+                otro.setId(8L);
+                otro.setNombres("Carlos");
+                otro.setApellidos("Vega");
+                otro.setCedula("1722222222");
+                when(pacienteRepository.findByCedulaIgnoreCase("1722222222")).thenReturn(Optional.of(otro));
+
+                AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "1722222222", null);
+
+                assertEquals(otro, conv.getPaciente());
+                assertEquals(Intencion.VER_PERFIL, conv.getIntencion());
+                assertNull(conv.getContextoAgente());
+                assertTrue(r.mensaje().contains("Carlos Vega"));
+        }
 
     @Test
     void registroCompletoPorChatCreaPacienteAdulto() {
@@ -237,7 +258,7 @@ class AgenteConversacionalServiceTest {
         creado.setNombres("Ana");
         creado.setApellidos("Gomez");
         PacienteResponse resp = new PacienteResponse(9L, "0000000000", "Ana", "Gomez",
-                "593999999999", null, LocalDate.of(1990, 8, 15), null,
+                "593999999999", null, LocalDate.of(1990, 8, 15), null, null,
                 "Registrado por WhatsApp", "ACTIVO", Instant.now(), Instant.now(), List.of());
         when(pacienteService.crear(any(PacienteRequest.class))).thenReturn(resp);
         when(pacienteRepository.findById(9L)).thenReturn(Optional.of(creado));
@@ -285,7 +306,7 @@ class AgenteConversacionalServiceTest {
         creado.setNombres("Sofia");
         creado.setApellidos("Rios");
         PacienteResponse resp = new PacienteResponse(9L, null, "Sofia", "Rios",
-                "593999999999", null, LocalDate.of(2016, 3, 12), null,
+                "593999999999", null, LocalDate.of(2016, 3, 12), null, null,
                 "Registrado por WhatsApp", "ACTIVO", Instant.now(), Instant.now(),
                 List.of(new TutorResponse(1L, "MADRE", "Laura", "Rios", null)));
         when(pacienteService.crear(any(PacienteRequest.class))).thenReturn(resp);
@@ -487,7 +508,7 @@ class AgenteConversacionalServiceTest {
                         horario(5, LocalTime.of(8, 0), LocalTime.of(17, 0))));
         when(agendaService.disponibilidad(eq(10L), any(LocalDate.class), any(), isNull()))
                 .thenReturn(List.of(new SlotResponse(LocalTime.of(9, 0), LocalTime.of(9, 45))));
-        when(horarioPdfService.generar(any(Odontologo.class), any(), any()))
+        when(horarioPdfService.generar(any(Odontologo.class), any(), any(), any()))
                 .thenReturn(new byte[]{(byte) '%', (byte) 'P', (byte) 'D', (byte) 'F'});
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "cuando atiende el doctor perez", null);
@@ -498,6 +519,31 @@ class AgenteConversacionalServiceTest {
         assertNotNull(r.adjunto());
         assertEquals("application/pdf", r.adjunto().mime());
         assertEquals("horario-perez.pdf", r.adjunto().nombreArchivo());
+        assertEquals(Intencion.PREGUNTAR_DISPONIBILIDAD, conv.getIntencion());
+    }
+
+    @Test
+    void disponibilidadDelDoctorTienePrioridadSobreFlujoPendiente() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        conv.setIntencion(Intencion.AGENDAR_CITA);
+        conv.setContextoAgente("{\"paso\":\"SERVICIO\"}");
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+        when(odontologoRepository.findById(10L)).thenReturn(Optional.of(doctorPerez()));
+        when(horarioRepository.findByOdontologoIdOrderByDiaSemanaAscHoraInicioAsc(10L))
+                .thenReturn(List.of(horario(1, LocalTime.of(8, 0), LocalTime.of(17, 0))));
+        when(agendaService.disponibilidad(eq(10L), any(LocalDate.class), any(), isNull()))
+                .thenReturn(List.of(new SlotResponse(LocalTime.of(9, 0), LocalTime.of(9, 45))));
+        when(horarioPdfService.generar(any(Odontologo.class), any(), any(), any()))
+                .thenReturn(new byte[]{(byte) '%', (byte) 'P', (byte) 'D', (byte) 'F'});
+
+        AgenteConversacionalService.RespuestaAgente r = servicio.procesar(
+                conv, "disponibilidad del doctor perez", null);
+
+        assertTrue(r.mensaje().contains("Carlos Perez"));
         assertEquals(Intencion.PREGUNTAR_DISPONIBILIDAD, conv.getIntencion());
     }
 
@@ -532,7 +578,7 @@ class AgenteConversacionalServiceTest {
                 .thenReturn(List.of(horario(2, LocalTime.of(9, 0), LocalTime.of(13, 0))));
         when(agendaService.disponibilidad(eq(20L), any(LocalDate.class), any(), isNull()))
                 .thenReturn(List.of(new SlotResponse(LocalTime.of(9, 0), LocalTime.of(9, 45))));
-        when(horarioPdfService.generar(any(Odontologo.class), any(), any()))
+        when(horarioPdfService.generar(any(Odontologo.class), any(), any(), any()))
                 .thenReturn(new byte[]{(byte) '%', (byte) 'P', (byte) 'D', (byte) 'F'});
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "cuando atiende el de ortodoncia", null);
@@ -609,5 +655,125 @@ class AgenteConversacionalServiceTest {
 
         assertTrue(r.mensaje().contains("no está configurada"));
         assertFalse(r.transferirHumano());
+    }
+
+    // ------------------------------------------------------------------
+    // Formato de la lista de horas y validación de las respuestas por paso
+    // ------------------------------------------------------------------
+
+    @Test
+        void cuposDisponiblesSeListanEnDosColumnas() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+        when(agendaService.disponibilidad(eq(10L), eq(manana), any(), isNull()))
+                .thenReturn(List.of(new SlotResponse(LocalTime.of(10, 0), LocalTime.of(10, 45)),
+                        new SlotResponse(LocalTime.of(11, 0), LocalTime.of(11, 45))));
+
+        AgenteConversacionalService.RespuestaAgente r =
+                servicio.procesar(conv, "cupos para manana con el doctor perez", null);
+
+        assertTrue(r.mensaje().contains("hay estos cupos:\n\n1. 10:00          2. 11:00"));
+    }
+
+    @Test
+    void numeroDeServicioFueraDeRangoExplicaElErrorYRepiteLaPregunta() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+
+        AgenteConversacionalService.RespuestaAgente pregunta = servicio.procesar(conv, "quiero una cita", null);
+        assertTrue(pregunta.mensaje().contains("¿Qué servicio"));
+        assertTrue(pregunta.mensaje().contains("1. Limpieza Dental"));
+
+        AgenteConversacionalService.RespuestaAgente error = servicio.procesar(conv, "2", null);
+        assertTrue(error.mensaje().contains("No entendí \"2\" como un servicio."));
+        assertTrue(error.mensaje().contains("¿Qué servicio"));
+        assertTrue(conv.getContextoAgente().contains("SERVICIO"));
+
+        AgenteConversacionalService.RespuestaAgente dia = servicio.procesar(conv, "1", null);
+        assertTrue(dia.mensaje().contains("¿Para qué día"));
+    }
+
+    @Test
+    void numeroDeHoraFueraDeRangoExplicaElErrorYRepiteLaLista() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+        when(agendaService.disponibilidad(eq(10L), eq(manana), eq(1L), isNull()))
+                .thenReturn(List.of(new SlotResponse(LocalTime.of(10, 0), LocalTime.of(10, 45))));
+
+        servicio.procesar(conv, "quiero una cita", null);
+        servicio.procesar(conv, "1", null);
+
+        AgenteConversacionalService.RespuestaAgente lista = servicio.procesar(conv, "mañana", null);
+        assertTrue(lista.mensaje().contains("¿A qué hora te conviene"));
+        assertTrue(lista.mensaje().contains("1. 10:00"));
+
+        AgenteConversacionalService.RespuestaAgente error = servicio.procesar(conv, "9", null);
+        assertTrue(error.mensaje().contains("La opción 9 no existe"));
+        assertTrue(error.mensaje().contains("1. 10:00"));
+
+        AgenteConversacionalService.RespuestaAgente propuesta = servicio.procesar(conv, "1", null);
+        assertTrue(propuesta.mensaje().contains("¿Confirmo tu cita?"));
+    }
+
+    @Test
+    void horaPuedeResponderseComoHoraNumericaONumeroEscrito() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+        when(agendaService.disponibilidad(eq(10L), eq(manana), eq(1L), isNull()))
+                .thenReturn(List.of(new SlotResponse(LocalTime.of(10, 0), LocalTime.of(10, 45)),
+                        new SlotResponse(LocalTime.of(11, 0), LocalTime.of(11, 45))));
+
+        servicio.procesar(conv, "quiero una cita", null);
+        servicio.procesar(conv, "1", null);
+        servicio.procesar(conv, "mañana", null);
+
+        AgenteConversacionalService.RespuestaAgente porHora = servicio.procesar(conv, "10", null);
+        assertTrue(porHora.mensaje().contains("¿Confirmo tu cita?"));
+    }
+
+    @Test
+    void pdfDeHorarioIncluyeLaDisponibilidadDeLosProximosSieteDias() {
+        Conversacion conv = conversacion();
+        conv.setPaciente(paciente());
+        when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
+                .thenReturn(List.of(servicioLimpieza()));
+        when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
+                .thenReturn(List.of(doctorPerez()));
+        when(odontologoRepository.findById(10L)).thenReturn(Optional.of(doctorPerez()));
+        when(horarioRepository.findByOdontologoIdOrderByDiaSemanaAscHoraInicioAsc(10L))
+                .thenReturn(List.of(horario(1, LocalTime.of(8, 0), LocalTime.of(17, 0))));
+        when(agendaService.disponibilidad(eq(10L), any(LocalDate.class), any(), isNull()))
+                .thenReturn(List.of(new SlotResponse(LocalTime.of(9, 0), LocalTime.of(9, 45))));
+        when(horarioPdfService.generar(any(Odontologo.class), any(), any(), any()))
+                .thenReturn(new byte[]{(byte) '%', (byte) 'P', (byte) 'D', (byte) 'F'});
+
+        AgenteConversacionalService.RespuestaAgente r =
+                servicio.procesar(conv, "cuando atiende el doctor perez", null);
+
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        verify(horarioPdfService).generar(any(Odontologo.class), any(), any(), captor.capture());
+        List<HorarioPdfService.DiaDisponibilidad> dias = captor.getValue();
+
+        assertEquals(7, dias.size());
+        assertTrue(dias.get(0).libre().contains("09:00"));
+        assertEquals("—", dias.get(0).ocupado());
+        assertTrue(r.mensaje().contains("disponibilidad de los próximos 7 días en PDF"));
     }
 }

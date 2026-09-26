@@ -1,21 +1,23 @@
 
+    <ui-page-header title="Inicio" />
+
     <div class="card">
-      <h2>Resumen del día</h2>
+      <div class="card-header"><h3 class="card-title">Resumen del día</h3></div>
       @if (cargando) {
         <span class="spin"></span>
       } @else if (d) {
         <div class="grid cols-3">
           <div class="stat card"><div class="num">{{ d.citasDeHoy }}</div><div class="lbl">Citas hoy</div></div>
-          <div class="stat card"><div class="num" style="color:var(--warning)">{{ d.citasPendientesHoy }}</div><div class="lbl">Pendientes hoy</div></div>
-          <div class="stat card"><div class="num" style="color:var(--success)">{{ d.citasConfirmadasHoy }}</div><div class="lbl">Confirmadas hoy</div></div>
-          <div class="stat card"><div class="num" style="color:var(--danger)">{{ d.citasCanceladasHoy }}</div><div class="lbl">Canceladas hoy</div></div>
-          <div class="stat card"><div class="num" style="color:var(--danger)">{{ d.noAsistieronHoy }}</div><div class="lbl">No asistieron</div></div>
+          <div class="stat card"><div class="num text-warning">{{ d.citasPendientesHoy }}</div><div class="lbl">Pendientes hoy</div></div>
+          <div class="stat card"><div class="num text-success">{{ d.citasConfirmadasHoy }}</div><div class="lbl">Confirmadas hoy</div></div>
+          <div class="stat card"><div class="num text-danger">{{ d.citasCanceladasHoy }}</div><div class="lbl">Canceladas hoy</div></div>
+          <div class="stat card"><div class="num text-danger">{{ d.noAsistieronHoy }}</div><div class="lbl">No asistieron</div></div>
           <div class="stat card"><div class="num">{{ d.pacientesNuevosMes }}</div><div class="lbl">Pacientes nuevos (mes)</div></div>
           <div class="stat card"><div class="num">{{ d.conversacionesAbiertas }}</div><div class="lbl">Conversaciones abiertas</div></div>
-          <div class="stat card"><div class="num" style="color:var(--success)">{{ d.mensajesEnviados }}</div><div class="lbl">Mensajes enviados</div></div>
-          <div class="stat card"><div class="num" style="color:var(--danger)">{{ d.mensajesConError }}</div><div class="lbl">Mensajes con error</div></div>
-          <div class="stat card"><div class="num" style="color:var(--success)">{{ d.notificacionesEnviadas }}</div><div class="lbl">Notificaciones enviadas</div></div>
-          <div class="stat card"><div class="num" style="color:var(--danger)">{{ d.notificacionesConError }}</div><div class="lbl">Notificaciones con error</div></div>
+          <div class="stat card"><div class="num text-success">{{ d.mensajesEnviados }}</div><div class="lbl">Mensajes enviados</div></div>
+          <div class="stat card"><div class="num text-danger">{{ d.mensajesConError }}</div><div class="lbl">Mensajes con error</div></div>
+          <div class="stat card"><div class="num text-success">{{ d.notificacionesEnviadas }}</div><div class="lbl">Notificaciones enviadas</div></div>
+          <div class="stat card"><div class="num text-danger">{{ d.notificacionesConError }}</div><div class="lbl">Notificaciones con error</div></div>
         </div>
       } @else {
         <div class="empty">No se pudo cargar el resumen.</div>

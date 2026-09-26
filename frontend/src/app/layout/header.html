@@ -1,19 +1,18 @@
-
-    <mat-toolbar class="topbar">
-      <button
-        mat-icon-button
-        [attr.aria-label]="colapsado() ? 'Expandir menú' : 'Colapsar menú'"
-        [attr.title]="colapsado() ? 'Expandir menú' : 'Colapsar menú'"
-        (click)="toggle.emit()"
-      >
-        <mat-icon>{{ colapsado() ? 'menu_open' : 'menu' }}</mat-icon>
-      </button>
-      <h1 class="mat-title-medium title">{{ titulo() }}</h1>
-      <span class="spacer"></span>
-      <span class="mat-body-medium muted">{{ fecha() }}</span>
-      <button mat-flat-button color="primary" (click)="salir.emit()">
-        <mat-icon>logout</mat-icon>
-        <span class="mat-label-large">Cerrar sesión</span>
-      </button>
-    </mat-toolbar>
-  
+<mat-toolbar class="topbar">
+  <button
+    class="topbar-menu"
+    mat-icon-button
+    [attr.aria-label]="cerrando() ? 'Cerrar menú' : 'Abrir menú'"
+    [attr.title]="cerrando() ? 'Cerrar menú' : 'Abrir menú'"
+    (click)="toggle.emit()"
+  >
+    <mat-icon>{{ cerrando() ? 'menu_open' : 'menu' }}</mat-icon>
+  </button>
+  <h1 class="topbar-title">{{ titulo() }}</h1>
+  <span class="topbar-spacer"></span>
+  <span class="topbar-date">{{ fecha() }}</span>
+  <button class="btn sm primary" (click)="salir.emit()">
+    <mat-icon>logout</mat-icon>
+    Cerrar sesión
+  </button>
+</mat-toolbar>

@@ -15,6 +15,7 @@ public record PacienteResponse(
         String email,
         LocalDate fechaNacimiento,
         String direccion,
+        String ciudad,
         String observaciones,
         String estado,
         Instant createdAt,
@@ -24,7 +25,7 @@ public record PacienteResponse(
     public static PacienteResponse from(Paciente p) {
         return new PacienteResponse(
                 p.getId(), p.getCedula(), p.getNombres(), p.getApellidos(),
-                p.getTelefono(), p.getEmail(), p.getFechaNacimiento(), p.getDireccion(),
+                p.getTelefono(), p.getEmail(), p.getFechaNacimiento(), p.getDireccion(), p.getCiudad(),
                 p.getObservaciones(), p.getEstado(), p.getCreatedAt(), p.getUpdatedAt(),
                 p.getTutores().stream().map(TutorResponse::from).toList());
     }

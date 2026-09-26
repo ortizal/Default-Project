@@ -1,12 +1,12 @@
 
+    <ui-page-header title="Odontólogos">
+      <ui-button variant="primary" (onClick)="nuevo()">+ Nuevo odontólogo</ui-button>
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Odontólogos</h2>
-        <button class="btn primary" (click)="nuevo()">+ Nuevo odontólogo</button>
-      </div>
       <div class="toolbar">
-        <input class="input" style="width:260px" placeholder="Buscar por nombre o especialidad" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
-        <select class="input" style="width:150px" [(ngModel)]="estado" (change)="cargar(0)">
+        <input class="input buscar" placeholder="Buscar por nombre o especialidad" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <select class="input" [(ngModel)]="estado" (change)="cargar(0)">
           <option value="">Todos los estados</option>
           <option value="ACTIVO">Activos</option>
           <option value="INACTIVO">Inactivos</option>
@@ -17,14 +17,11 @@
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
-      <table class="tbl">
+      <ui-table [loading]="cargando" loadingText="Cargando odontólogos…">
         <thead>
           <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Etiquetas</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr>
         </thead>
         <tbody>
-          @if (cargando) {
-            <tr><td colspan="8" class="empty"><span class="spinner"></span> Cargando odontólogos…</td></tr>
-          }
           @for (o of items; track o.id) {
             <tr>
               <td>{{ o.id }}</td>
@@ -33,7 +30,7 @@
               <td>{{ o.etiquetas || '-' }}</td>
               <td>{{ o.telefono || '-' }}</td>
               <td>{{ o.email || '-' }}</td>
-              <td><span class="badge" [ngClass]="o.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ o.estado }}</span></td>
+              <td><ui-badge [tone]="o.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ o.estado }}</ui-badge></td>
               <td class="flex">
                 <button class="btn small" (click)="editar(o)">Editar</button>
                 <button class="btn small danger" (click)="desactivar(o)" [disabled]="o.estado !== 'ACTIVO'">Desactivar</button>
@@ -43,12 +40,13 @@
             <tr><td colspan="8" class="empty">Sin odontólogos registrados.</td></tr>
           }
         </tbody>
-      </table>
-      <div class="between" style="margin-top:10px">
-        <button class="btn small" (click)="cargar(page - 1)" [disabled]="page <= 0">Anterior</button>
-        <span class="muted">Página {{ page + 1 }} de {{ totalPages }}</span>
-        <button class="btn small" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente</button>
-      </div>
+      </ui-table>
+      <ui-pagination
+        [page]="page + 1"
+        [pages]="totalPages"
+        (prev)="cargar(page - 1)"
+        (next)="cargar(page + 1)"
+      />
     </div>
 
     @if (showForm) {
@@ -74,7 +72,7 @@
                 }
               </select>
               @if (calendarios.length === 0) {
-                <div class="muted" style="margin-top:4px">Conecta una cuenta de Google en el menú "Calendario Google" para asignar un calendario personal.</div>
+                <div class="muted mt-1">Conecta una cuenta de Google en el menú "Calendario Google" para asignar un calendario personal.</div>
               }
             </div>
           </div>

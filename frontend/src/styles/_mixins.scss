@@ -1,0 +1,73 @@
+// =====================================================================
+// Mixins — breakpoints, superficies y estados reutilizables
+// =====================================================================
+
+@mixin up($bp) {
+  @media (min-width: $bp) {
+    @content;
+  }
+}
+
+@mixin down($bp) {
+  @media (max-width: calc(#{$bp} - 0.02px)) {
+    @content;
+  }
+}
+
+@mixin sm {
+  @include down($bp-sm) {
+    @content;
+  }
+}
+
+@mixin md {
+  @include down($bp-md) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @include down($bp-lg) {
+    @content;
+  }
+}
+
+@mixin xl {
+  @include down($bp-xl) {
+    @content;
+  }
+}
+
+// Superficie blanca estándar: fondo + borde sutil + radio consistente
+@mixin surface($radius: $ls-radius-md) {
+  background: var(--ls-surface);
+  border: 1px solid var(--ls-border);
+  border-radius: $radius;
+}
+
+// Centrado flex inline reutilizable (botones, badges, iconos)
+@mixin inline-flex-center {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Foco visible y consistente en todo control interactivo
+@mixin focus-ring {
+  outline: none;
+  border-color: var(--ls-primary);
+  box-shadow: var(--ls-focus-ring);
+}
+
+// Truncate de una línea
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Texto de ayuda / secundario
+@mixin muted($size: var(--ls-text-sm)) {
+  color: var(--ls-muted);
+  font-size: $size;
+}

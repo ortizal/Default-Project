@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, Servicio } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
 
 @Component({
   selector: 'app-servicios',
   templateUrl: './servicios.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
 })
 export class ServiciosComponent implements OnInit {
   items: Servicio[] = [];
@@ -78,6 +79,7 @@ error: (e) => {
   }
 
   desactivar(s: Servicio): void {
+    if (!confirm('¿Desactivar este servicio?')) return;
     this.api.del<void>(`/servicios/${s.id}`).subscribe({
       next: () => this.cargar(this.page),
       error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },

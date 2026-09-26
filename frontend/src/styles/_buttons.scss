@@ -1,0 +1,223 @@
+// =====================================================================
+// Botones — escala sm (32–36px), variantes y estados completos
+// Variantes: primary | secondary(default) | outline | danger | ghost
+// Tamaños:   sm / small (32px) · default (36px) · lg (42px)
+// =====================================================================
+
+.btn {
+  @include inline-flex-center;
+  gap: 6px;
+  min-height: $ls-control-h;
+  padding: 7px 14px;
+  // Variante por defecto = secundaria: borde visible para que el botón
+  // se distinga del fondo blanco de la card.
+  border: 1px solid var(--ls-border);
+  border-radius: $ls-radius-sm;
+  background: var(--ls-surface);
+  color: var(--ls-text);
+  font-family: inherit;
+  font-size: var(--ls-text-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ls-focus-ring);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--ls-surface-2);
+    border-color: var(--ls-border);
+  }
+
+  // Estados de envío: no permite dobles clics
+  &.loading,
+  &[aria-busy="true"] {
+    position: relative;
+    opacity: 0.8;
+    pointer-events: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(38, 50, 56, 0.25);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: ls-rot 0.7s linear infinite;
+    }
+  }
+
+  &:disabled,
+  &[disabled],
+  &.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  mat-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+  }
+}
+
+// ------------------------------------------------------------ variantes
+.btn.primary,
+.btn.success {
+  color: var(--ls-on-primary);
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.95);
+    border-color: transparent;
+  }
+}
+
+.btn.primary {
+  background: var(--ls-primary);
+  border-color: var(--ls-primary);
+  color: var(--ls-on-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--ls-primary-dark);
+    border-color: var(--ls-primary-dark);
+    color: var(--ls-on-state);
+  }
+}
+
+.btn.success {
+  background: var(--ls-success);
+  border-color: var(--ls-success);
+  color: var(--ls-on-state);
+}
+
+.btn.secondary {
+  background: var(--ls-surface);
+  border-color: var(--ls-border);
+  color: var(--ls-text);
+}
+
+.btn.outline {
+  background: transparent;
+  border-color: var(--ls-border);
+  color: var(--ls-text);
+
+  &:hover:not(:disabled) {
+    background: var(--ls-primary-soft);
+    border-color: var(--ls-primary);
+    color: var(--ls-primary-dark);
+  }
+}
+
+.btn.danger {
+  background: var(--ls-danger);
+  border-color: var(--ls-danger);
+  color: var(--ls-on-state);
+
+  &:hover:not(:disabled) {
+    background: $ls-danger-dark;
+    border-color: $ls-danger-dark;
+    filter: none;
+  }
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ls-muted);
+
+  &:hover:not(:disabled) {
+    background: var(--ls-surface-2);
+    color: var(--ls-text);
+  }
+}
+
+// ---------------------------------------------------------------- tamaños
+.btn.sm,
+.btn.small {
+  min-height: $ls-control-h-sm;
+  padding: 5px 10px;
+  font-size: var(--ls-text-xs);
+  gap: 4px;
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.btn.lg {
+  min-height: 42px;
+  padding: 10px 20px;
+  font-size: var(--ls-text-base);
+}
+
+.btn.block {
+  width: 100%;
+}
+
+// ------------------------------------------------- botón sólo de icono
+.icon-btn {
+  @include inline-flex-center;
+  width: $ls-control-h-sm;
+  height: $ls-control-h-sm;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: $ls-radius-sm;
+  background: transparent;
+  color: var(--ls-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: var(--ls-primary-soft);
+    color: var(--ls-primary-dark);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ls-focus-ring);
+  }
+
+  &.danger:hover {
+    background: var(--ls-danger-soft);
+    color: var(--ls-danger);
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ------------------------------------------------- grupo de acciones
+.acciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+@keyframes ls-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}

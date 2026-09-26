@@ -160,20 +160,13 @@ class WhatsAppServiceTest {
     }
 
     @Test
-    void webhookMensajeCreaConversacionVinculaPacienteYGuardaMensaje() throws Exception {
+    void webhookMensajeCreaConversacionSinVincularPacientePorTelefono() throws Exception {
         WhatsappSesion s = sesion(1L, "principal");
         when(sesionRepository.findBySesionId("principal")).thenReturn(Optional.of(s));
         when(conversacionRepository.findBySesionIdAndTelefono(1L, "593999999999"))
                 .thenReturn(Optional.empty());
         when(conversacionRepository.save(any(Conversacion.class))).thenAnswer(a -> a.getArgument(0));
         when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(a -> a.getArgument(0));
-
-        Paciente p = new Paciente();
-        p.setId(9L);
-        p.setNombres("Juan");
-        p.setApellidos("Perez");
-        p.setTelefono("+593999999999");
-        when(pacienteRepository.activosConTelefono()).thenReturn(List.of(p));
 
         ObjectMapper mapper = new ObjectMapper();
         WebhookResponse r = servicio.recibirWebhook(mapper.readTree("""
@@ -182,7 +175,7 @@ class WhatsAppServiceTest {
 
         assertTrue(r.recibido());
         verify(conversacionRepository, atLeastOnce()).save(argThat(c ->
-                "593999999999".equals(c.getTelefono()) && c.getPaciente() != null
+            "593999999999".equals(c.getTelefono()) && c.getPaciente() == null
                         && c.getEstado() == EstadoConversacion.BOT));
         verify(mensajeRepository).save(argThat(m ->
                 m.getDireccion() == DireccionMensaje.ENTRADA
@@ -204,8 +197,6 @@ class WhatsAppServiceTest {
                 .thenReturn(Optional.empty());
         when(conversacionRepository.save(any(Conversacion.class))).thenAnswer(a -> a.getArgument(0));
         when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(a -> a.getArgument(0));
-        when(pacienteRepository.activosConTelefono()).thenReturn(List.of());
-
         ObjectMapper mapper = new ObjectMapper();
         WebhookResponse r = servicio.recibirWebhook(mapper.readTree("""
                 {"event":"message","session":"alantek-dental","data":{
@@ -241,7 +232,6 @@ class WhatsAppServiceTest {
         when(conversacionRepository.findById(1L)).thenReturn(Optional.of(c));
         when(conversacionRepository.save(any(Conversacion.class))).thenReturn(c);
         when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(a -> a.getArgument(0));
-        when(pacienteRepository.activosConTelefono()).thenReturn(List.of());
         when(provider.estaConfigurado()).thenReturn(true);
         when(agenteConversacionalService.procesar(any(Conversacion.class), anyString(), any()))
                 .thenReturn(new AgenteConversacionalService.RespuestaAgente("Tu horario",

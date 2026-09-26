@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Automatizacion, Plantilla } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiTableComponent } from '../ui';
 
 const EVENTOS = ['CITA_CREADA', 'CITA_PROXIMA', 'CITA_CONFIRMADA', 'CITA_CANCELADA', 'CITA_ATENDIDA', 'NO_ASISTIO'];
 
 @Component({
   selector: 'app-automatizaciones',
   templateUrl: './automatizaciones.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class AutomatizacionesComponent implements OnInit {
   items: Automatizacion[] = [];

@@ -1,0 +1,447 @@
+// =====================================================================
+// Layout — app-shell, sidebar, topbar, content-wrapper, page-header
+// =====================================================================
+
+.app-shell {
+  position: relative;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+
+}
+// El componente personalizado es el hijo flex real; el <aside> vive dentro.
+app-sidebar {
+  display: block;
+  flex: 0 0 auto;
+  height: 100%;
+  min-width: 0;
+
+}
+// --------------------------------------------------------------- main
+.main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  background: var(--ls-background);
+
+}
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+}
+// Contenedor único de todas las vistas internas: centra, alinea y
+// limita el ancho. Toda página entra aquí vía <router-outlet />.
+.content-wrapper {
+  width: 100%;
+  max-width: $ls-content-max;
+  margin: 0 auto;
+  padding: $ls-space-4 $ls-space-6 $ls-space-6;
+
+  // Formularios/paneles extensos pueden pedir el ancho completo.
+  &.wide {
+    max-width: none;
+  }
+
+}
+// ------------------------------------------------------------- topbar
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: $ls-space-3;
+  height: $ls-topbar-h;
+  padding: 0 $ls-space-4;
+  background: var(--ls-surface);
+  border-bottom: 1px solid var(--ls-border);
+  // Material: mat-toolbar hereda la superficie LS en vez del verde.
+  --mat-toolbar-container-background: var(--ls-surface);
+  --mat-toolbar-container-color: var(--ls-text);
+  --mat-toolbar-title-color: var(--ls-text);
+
+  .topbar-title {
+    margin: 0;
+    font-size: var(--ls-text-lg);
+    font-weight: 600;
+    color: var(--ls-text);
+    white-space: nowrap;
+    @include truncate;
+  }
+
+  .topbar-spacer {
+    flex: 1 1 auto;
+  }
+
+  .topbar-date {
+    color: var(--ls-muted);
+    font-size: var(--ls-text-sm);
+    white-space: nowrap;
+
+    @include md {
+      display: none;
+    }
+  }
+
+  .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: $ls-space-2;
+    font-size: var(--ls-text-sm);
+    color: var(--ls-muted);
+    white-space: nowrap;
+
+    @include md {
+      display: none;
+    }
+
+    strong {
+      color: var(--ls-text);
+      font-weight: 600;
+    }
+  }
+
+
+}
+// ------------------------------------------------------------- sidebar
+.sidebar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: $ls-sidebar-w;
+  height: 100vh;
+  background: var(--ls-sidebar-bg);
+  color: var(--ls-sidebar-fg);
+  overflow: hidden;
+  transition: width 0.22s ease, transform 0.24s ease;
+  z-index: 1040;
+
+  &.collapsed {
+    width: $ls-sidebar-w-collapsed;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: $ls-space-2;
+    height: $ls-topbar-h;
+    padding: 0 $ls-space-4;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ls-on-dark);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    overflow: hidden;
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--ls-primary);
+      color: var(--ls-on-primary);
+      font-size: 17px;
+      flex: 0 0 auto;
+
+      mat-icon {
+        font-size: 17px;
+        width: 17px;
+        height: 17px;
+        line-height: 1;
+      }
+    }
+
+    // sólo se oculta el icono directo (el de la marca va en .brand-mark)
+    > mat-icon {
+      display: none;
+    }
+  }
+
+  .brand-name {
+    @include truncate;
+  }
+
+  .sidebar-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: $ls-space-2 0;
+  }
+
+  .section {
+    padding: $ls-space-3 $ls-space-4 $ls-space-1;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.42);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $ls-space-3;
+    padding: 9px $ls-space-4;
+    font-size: var(--ls-text-sm);
+    color: var(--ls-sidebar-fg);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    border-left: 3px solid transparent;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+
+    mat-icon {
+      font-size: 19px;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ls-on-dark);
+    }
+
+    &.active {
+      background: var(--ls-sidebar-active);
+      color: var(--ls-on-dark);
+      border-left-color: var(--ls-primary);
+      font-weight: 600;
+    }
+  }
+
+  .sidebar-footer {
+    padding: $ls-space-3 $ls-space-4;
+    font-size: var(--ls-text-xs);
+    color: rgba(255, 255, 255, 0.55);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    overflow: hidden;
+
+    strong {
+      color: var(--ls-on-dark);
+      font-weight: 600;
+    }
+  }
+
+  // ---- estado colapsado (desktop) ----
+  &.collapsed {
+    .brand-name,
+    .section,
+    .sidebar-footer {
+      display: none;
+    }
+
+    a {
+      justify-content: center;
+      padding: 11px 0;
+      border-left-width: 0;
+
+      &.active {
+        border-left-width: 3px;
+        border-left-color: var(--ls-primary);
+      }
+
+      .txt {
+        display: none;
+      }
+    }
+
+    .brand {
+      justify-content: center;
+      padding: 0;
+    }
+  }
+
+}
+// Fondo al abrir el drawer en móvil
+.sidebar-backdrop {
+  @include up($bp-lg) {
+    display: none;
+  }
+
+  position: fixed;
+  inset: 0;
+  background: rgba(38, 50, 56, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1035;
+  animation: ls-fade-in 0.18s ease;
+
+}
+// -------------------------------------------------- responsive / móvil
+@include down($bp-lg) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: var(--ls-shadow-lg);
+    width: $ls-sidebar-w;
+
+    &.open {
+      transform: translateX(0);
+    }
+
+    &.collapsed {
+      width: $ls-sidebar-w;
+    }
+  }
+
+  .content-wrapper {
+    padding: $ls-space-3 $ls-space-4 $ls-space-6;
+  }
+
+  .topbar {
+    padding: 0 $ls-space-3;
+    gap: $ls-space-2;
+  }
+}
+
+// ------------------------------------------------------- page-header
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $ls-space-4;
+  margin-bottom: $ls-space-4;
+  flex-wrap: wrap;
+
+  &-body {
+    min-width: 0;
+  }
+
+  &-actions {
+    display: flex;
+    align-items: center;
+    gap: $ls-space-2;
+    flex-wrap: wrap;
+  }
+
+  @include md {
+    flex-direction: column;
+    align-items: stretch;
+
+    &-actions {
+      justify-content: flex-start;
+    }
+  }
+
+}
+// Barra de filtros / acciones secundarias bajo el page-header
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: $ls-space-2;
+  flex-wrap: wrap;
+  margin-bottom: $ls-space-4;
+
+  .filter-bar-spacer {
+    flex: 1 1 auto;
+  }
+
+  @include md {
+    .filter-bar-spacer {
+      display: none;
+    }
+  }
+
+}
+// Zona de contenido de página (bloques apilados)
+
+// ------------------------------------------------------------- footer
+.app-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: $ls-space-3;
+  min-height: 44px;
+  padding: 0 $ls-space-4;
+  background: var(--ls-surface);
+  color: var(--ls-muted);
+  border-top: 1px solid var(--ls-border);
+  font-size: var(--ls-text-xs);
+  // Material: mat-toolbar hereda la superficie LS
+  --mat-toolbar-container-background: var(--ls-surface);
+  --mat-toolbar-container-color: var(--ls-muted);
+
+  .spacer {
+    flex: 1 1 auto;
+  }
+
+}
+// ---------------------------------------------------------------------
+// Refuerzo de especificidad: los estilos M3 de Angular Material se
+// emiten con selectores de dos clases (.mat-mdc-toolbar.mdc-toolbar).
+// Estas reglas van después y con mayor peso para que la identidad
+// Little Smile gane siempre.
+// ---------------------------------------------------------------------
+.app-shell .main .topbar {
+  height: $ls-topbar-h;
+  min-height: $ls-topbar-h;
+  background: var(--ls-surface);
+  color: var(--ls-text);
+  font-family: var(--ls-font);
+  font-size: var(--ls-text-sm);
+  font-weight: 400;
+  line-height: 1.4;
+  --mat-toolbar-container-background: var(--ls-surface);
+  --mat-toolbar-container-color: var(--ls-text);
+  --mat-toolbar-title-color: var(--ls-text);
+
+}
+.app-shell .main .topbar h1,
+.app-shell .main .topbar .topbar-title {
+  font-family: var(--ls-font);
+  font-size: var(--ls-text-lg);
+  font-weight: 600;
+  color: var(--ls-text);
+
+}
+.app-shell .main .app-footer {
+  height: 44px;
+  min-height: 44px;
+  background: var(--ls-surface);
+  font-family: var(--ls-font);
+  font-size: var(--ls-text-xs);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ls-muted);
+  --mat-toolbar-container-background: var(--ls-surface);
+  --mat-toolbar-container-color: var(--ls-muted);
+
+}
+.app-shell .main .app-footer span {
+  font-size: var(--ls-text-xs);
+  line-height: 1.4;
+  color: var(--ls-muted);
+
+}
+// Pie del sidebar: botón visible sobre la capa oscura
+.sidebar .sidebar-footer .btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--ls-on-dark);
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+}
+// Botón de sesión en el topbar: sólo icono + texto corto en pantallas
+// medianas para no desbordar la barra.
+.sidebar .sidebar-nav a mat-icon {
+  color: inherit;
+
+}

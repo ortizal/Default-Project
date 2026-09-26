@@ -85,7 +85,7 @@ class GoogleServiceTest {
         assertEquals("America/Guayaquil", start.get("timeZone"));
         @SuppressWarnings("unchecked")
         Map<String, Object> end = (Map<String, Object>) map.get("end");
-        assertEquals("2026-09-16T11:30", end.get("dateTime"));
+        assertEquals("2026-09-16T11:30:00", end.get("dateTime"));
     }
 
     @Test

@@ -5,11 +5,12 @@ import { Api } from '../core/api';
 import { Paciente, Page, Tutor, nombreEstado } from '../core/models';
 import { AppDateComponent } from '../core/app-date.component';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
 
 @Component({
   selector: 'app-pacientes',
   templateUrl: './pacientes.html',
-  imports: [CommonModule, FormsModule, AppDateComponent],
+  imports: [CommonModule, FormsModule, AppDateComponent, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
 })
 export class PacientesComponent implements OnInit {
   items: Paciente[] = [];
@@ -71,6 +72,15 @@ export class PacientesComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  /** Teléfono en formato legible: +593991112233 → +593 99 111 2233 */
+  formatoTelefono(telefono?: string): string {
+    if (!telefono) return '-';
+    const m = /^\+593(\d{9})$/.exec(telefono.trim());
+    if (!m) return telefono;
+    const n = m[1];
+    return `+593 ${n.slice(0, 2)} ${n.slice(2, 5)} ${n.slice(5)}`;
+  }
+
   get esMenor(): boolean {
     const fn = this.form.fechaNacimiento;
     if (!fn) return false;
@@ -106,6 +116,7 @@ export class PacientesComponent implements OnInit {
       email: this.form.email || null,
       fechaNacimiento: this.form.fechaNacimiento || null,
       direccion: this.form.direccion || null,
+      ciudad: this.form.ciudad || null,
       observaciones: this.form.observaciones || null,
       estado: this.form.estado || 'ACTIVO',
       tutores,
@@ -134,6 +145,7 @@ export class PacientesComponent implements OnInit {
   }
 
   desactivar(p: Paciente): void {
+    if (!confirm('¿Desactivar este paciente?')) return;
     this.api.del<void>(`/pacientes/${p.id}`).subscribe({
       next: () => this.cargar(this.page),
       error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },

@@ -1,5 +1,7 @@
 <div class="citas-container">
-  <h2 style="margin:0 0 16px">📅 Citas</h2>
+  <ui-page-header title="Citas">
+    <button class="btn primary" (click)="abrirNueva()">+ Nueva cita</button>
+    </ui-page-header>
 
   <!-- Stats -->
   <div class="stats-row">
@@ -60,7 +62,6 @@
       <input class="input sm" [(ngModel)]="pacienteNombre" (keyup.enter)="cargar(0)" placeholder="Nombre..." />
     </div>
     <div class="toolbar-actions">
-      <button class="btn sm primary" (click)="abrirNueva()">+ Nueva Cita</button>
       <button class="btn sm" (click)="cargar(0)" [disabled]="cargando">↻ Refrescar</button>
     </div>
   </div>
@@ -128,7 +129,7 @@
                       <button class="btn sm danger" (click)="cancelar(c)">✗ Cancelar</button>
                     }
                     @if (c.estado === 'CANCELADA' && c.canceladaMotivo) {
-                      <span class="muted sm" [title]="c.canceladaMotivo" style="font-size:10px">{{ c.canceladaMotivo }}</span>
+                      <span class="muted text-xs" [title]="c.canceladaMotivo">{{ c.canceladaMotivo }}</span>
                     }
                   </div>
                 </td>
@@ -139,13 +140,12 @@
       }
 
       <!-- Paginación -->
-      @if (totalPages > 1) {
-        <div class="citas-pagination">
-          <button class="btn sm" (click)="cargar(page - 1)" [disabled]="page <= 0">← Anterior</button>
-          <span class="muted">Pág {{ page + 1 }} de {{ totalPages }}</span>
-          <button class="btn sm" (click)="cargar(page + 1)" [disabled]="page + 1 >= totalPages">Siguiente →</button>
-        </div>
-      }
+      <ui-pagination
+        [page]="page + 1"
+        [pages]="totalPages"
+        (prev)="cargar(page - 1)"
+        (next)="cargar(page + 1)"
+      />
     </div>
   }
 
@@ -188,7 +188,7 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-field">
+          <div class="form-field half">
             <label class="label">Hora inicio</label>
             <input class="input sm" type="time" [(ngModel)]="nuevaCita.horaInicio" />
           </div>

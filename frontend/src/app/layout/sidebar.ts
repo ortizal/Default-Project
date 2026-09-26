@@ -1,8 +1,7 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { AuthService } from '../core/auth.service';
 import { MENU } from './menu';
 
 const ICONOS: Record<string, string> = {
@@ -14,6 +13,7 @@ const ICONOS: Record<string, string> = {
   '/agenda': 'calendar_month',
   '/citas': 'event_available',
   '/whatsapp/inbox': 'chat',
+  '/whatsapp/campana': 'campaign',
   '/whatsapp/sesiones': 'smart_toy',
   '/plantillas': 'description',
   '/notificaciones': 'notifications',
@@ -28,119 +28,51 @@ const ICONOS: Record<string, string> = {
 @Component({
   selector: 'app-sidebar',
   template: `
-    <aside class="sidebar" [class.collapsed]="colapsado()">
+    <aside class="sidebar" [class.collapsed]="colapsado()" [class.open]="abierto()">
       <div class="brand">
-        <mat-icon>dental_care</mat-icon>
-        @if (!colapsado()) {
-          <span>CRM Dental</span>
-        }
+        <span class="brand-mark"><mat-icon>medical_services</mat-icon></span>
+        <span class="brand-name">Little Smile CRM</span>
       </div>
-      <nav class="lista">
+
+      <nav class="sidebar-nav">
         @for (sec of MENU; track sec.section) {
-          <div class="section" [hidden]="colapsado()">{{ sec.section }}</div>
+          <div class="section">{{ sec.section }}</div>
           @for (item of sec.items; track item.path) {
             <a
               [routerLink]="item.path"
               routerLinkActive="active"
-              [attr.title]="colapsado() ? item.label : null"
+              [title]="colapsado() ? item.label : null"
+              (click)="navegar.emit()"
             >
               <mat-icon>{{ ICONOS[item.path] ?? 'chevron_right' }}</mat-icon>
-              @if (!colapsado()) {
-                <span class="txt">{{ item.label }}</span>
-              }
+              <span class="txt">{{ item.label }}</span>
             </a>
           }
         }
       </nav>
-      <footer>
-        <div class="muted">Usuario: <strong>{{ usuario }}</strong></div>
-        <button class="btn small" style="margin-top:6px" (click)="salir()">
+
+      <div class="sidebar-footer">
+        <div>Usuario: <strong>{{ usuario }}</strong></div>
+        <button class="btn sm block mt-2" (click)="salir.emit()">
           Cerrar sesión
         </button>
-      </footer>
+      </div>
     </aside>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        height: 100%;
-      }
-      .sidebar {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        width: 230px;
-        background: var(--sidebar-bg);
-        color: var(--sidebar-fg);
-        overflow: hidden;
-        transition: width 0.22s ease;
-      }
-      .sidebar.collapsed {
-        width: 62px;
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 16px 14px;
-        font-weight: 600;
-        color: #fff;
-        border-bottom: 1px solid #1e293b;
-        white-space: nowrap;
-      }
-      .lista {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        min-height: 0;
-      }
-      .section {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        padding: 10px 14px 4px;
-      }
-      .lista a {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        font-size: 13.5px;
-        text-decoration: none;
-        color: var(--sidebar-fg);
-        border-left: 3px solid transparent;
-      }
-      .lista a:hover {
-        background: #1e293b;
-      }
-      .lista a.active {
-        background: var(--sidebar-active);
-        color: #fff;
-        border-left-color: #14b8a6;
-      }
-      .lista a mat-icon {
-        font-size: 20px;
-        width: 22px;
-        height: 22px;
-      }
-      footer {
-        padding: 12px 14px;
-        font-size: 12px;
-        border-top: 1px solid #1e293b;
-      }
-    `,
-  ],
-  imports: [RouterLink, RouterLinkActive, MatListModule, MatIconModule, MatTooltipModule],
+  imports: [RouterLink, RouterLinkActive, MatIconModule],
 })
 export class SidebarComponent {
   readonly colapsado = input(false);
+  readonly abierto = input(false);
+  readonly salir = output<void>();
+  readonly navegar = output<void>();
+
   readonly MENU = MENU;
   readonly ICONOS = ICONOS;
 
-  usuario = '';
+  private readonly auth = inject(AuthService);
 
-  salir(): void {
-    /* el layout se encarga del logout */
+  get usuario(): string {
+    return this.auth.username;
   }
 }

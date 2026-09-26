@@ -1,7 +1,7 @@
-import { Component, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../core/auth.service';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { SidebarComponent } from './sidebar';
 import { HeaderComponent } from './header';
 import { FooterComponent } from './footer';
@@ -11,21 +11,26 @@ import { MENU } from './menu';
   selector: 'app-layout',
   templateUrl: './layout.html',
   styleUrl: './layout.css',
-  imports: [
-    RouterOutlet,
-    SidebarComponent,
-    HeaderComponent,
-    FooterComponent,
-    MatToolbarModule,
-  ],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, FooterComponent],
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnDestroy {
   readonly colapsado = signal(false);
+  readonly abierto = signal(false);
 
-  constructor(
-    protected readonly auth: AuthService,
-    private readonly router: Router,
-  ) {}
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly sub: Subscription;
+
+  constructor() {
+    // Al navegar en móvil siempre se cierra el drawer.
+    this.sub = this.router.events.subscribe((e) => {
+      if (e instanceof NavigationEnd) this.abierto.set(false);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
 
   get titulo(): string {
     const seg = this.router.url.split('/')[1];
@@ -57,11 +62,24 @@ export class LayoutComponent {
     });
   }
 
+  /** Un mismo botón: en desktop colapsa el sidebar, en móvil abre el drawer. */
   alternar(): void {
-    this.colapsado.update((c) => !c);
+    if (this.esMovil()) {
+      this.abierto.update((v) => !v);
+    } else {
+      this.colapsado.update((c) => !c);
+    }
+  }
+
+  cerrarMenu(): void {
+    this.abierto.set(false);
   }
 
   salir(): void {
     this.auth.logout();
+  }
+
+  private esMovil(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 991px)').matches;
   }
 }

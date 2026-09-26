@@ -44,6 +44,14 @@ public class Mensaje {
     @Column(length = 500)
     private String error;
 
+    /**
+     * Intentos de reenvío/retoma realizados sobre este mensaje por la
+     * recuperación de chats ({@code WhatsAppRecuperacionService}). Limita los
+     * reintentos para no reenviar en bucle un mensaje que sigue fallando.
+     */
+    @Column(nullable = false)
+    private Integer reintentos = 0;
+
     @Column(name = "received_at", nullable = false)
     private Instant receivedAt;
 

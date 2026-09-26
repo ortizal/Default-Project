@@ -3,6 +3,7 @@ package org.dentalcrm.web.cita;
 import org.dentalcrm.domain.cita.Cita;
 import org.dentalcrm.domain.cita.CitaRepository;
 import org.dentalcrm.domain.cita.EstadoCita;
+import org.dentalcrm.domain.horario.ExcepcionHorario;
 import org.dentalcrm.domain.horario.HorarioOdontologoRepository;
 import org.dentalcrm.domain.odontologo.OdontologoRepository;
 import org.dentalcrm.domain.paciente.PacienteRepository;
@@ -11,6 +12,7 @@ import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.service.CurrentUserService;
 import org.dentalcrm.web.agenda.AgendaService;
+import org.dentalcrm.web.cita.dto.CitaRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,15 +33,18 @@ class CitaServiceTest {
     private CitaRepository citaRepo;
     private HorarioOdontologoRepository horarioRepo;
     private AgendaService agendaService;
+    private PacienteRepository pacRepo;
+    private OdontologoRepository docRepo;
+    private ServicioRepository servRepo;
 
     @BeforeEach
     void setUp() {
         citaRepo = mock(CitaRepository.class);
         horarioRepo = mock(HorarioOdontologoRepository.class);
         agendaService = mock(AgendaService.class);
-        PacienteRepository pacRepo = mock(PacienteRepository.class);
-        OdontologoRepository docRepo = mock(OdontologoRepository.class);
-        ServicioRepository servRepo = mock(ServicioRepository.class);
+        pacRepo = mock(PacienteRepository.class);
+        docRepo = mock(OdontologoRepository.class);
+        servRepo = mock(ServicioRepository.class);
         servicio = new CitaService(citaRepo, pacRepo, docRepo, servRepo, horarioRepo,
                 agendaService, mock(AuditService.class), mock(CurrentUserService.class),
                 mock(org.springframework.context.ApplicationEventPublisher.class),
@@ -101,6 +106,98 @@ class CitaServiceTest {
         when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
         var r = servicio.cancelar(1L, null);
         assertEquals(EstadoCita.CANCELADA, r.estado());
+    }
+
+    // ------------------------------------------------------------------
+    // Días de excepción de atención
+    // ------------------------------------------------------------------
+
+    @Test
+    void rechazaCitaEnDiaCerradoPorExcepcion() {
+        LocalDate fecha = futura();
+        ExcepcionHorario cerrada = new ExcepcionHorario();
+        cerrada.setTipo(ExcepcionHorario.TIPO_CERRADO);
+        prepararCreacion(fecha);
+        when(agendaService.excepcion(1L, fecha)).thenReturn(Optional.of(cerrada));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> servicio.crear(new CitaRequest(1L, 1L, 1L, fecha, LocalTime.of(9, 0), null)));
+
+        assertEquals("HORARIO_NO_DISPONIBLE", ex.getCode());
+        org.mockito.Mockito.verify(citaRepo, org.mockito.Mockito.never()).save(any(Cita.class));
+    }
+
+    @Test
+    void rechazaCitaFueraDelHorarioEspecialDelDia() {
+        LocalDate fecha = futura();
+        ExcepcionHorario especial = new ExcepcionHorario();
+        especial.setTipo(ExcepcionHorario.TIPO_HORARIO_ESPECIAL);
+        especial.setHoraInicio(LocalTime.of(9, 0));
+        especial.setHoraFin(LocalTime.of(13, 0));
+        prepararCreacion(fecha);
+        when(agendaService.excepcion(1L, fecha)).thenReturn(Optional.of(especial));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> servicio.crear(new CitaRequest(1L, 1L, 1L, fecha, LocalTime.of(15, 0), null)));
+
+        assertEquals("HORARIO_NO_DISPONIBLE", ex.getCode());
+    }
+
+    @Test
+    void admiteCitaDentroDelHorarioEspecialDelDia() {
+        LocalDate fecha = futura();
+        ExcepcionHorario especial = new ExcepcionHorario();
+        especial.setTipo(ExcepcionHorario.TIPO_HORARIO_ESPECIAL);
+        especial.setHoraInicio(LocalTime.of(9, 0));
+        especial.setHoraFin(LocalTime.of(13, 0));
+        prepararCreacion(fecha);
+        when(agendaService.excepcion(1L, fecha)).thenReturn(Optional.of(especial));
+        when(citaRepo.findOverlap(any(), any(), any(), any())).thenReturn(java.util.List.of());
+        when(agendaService.estaLibre(any(), any(), any(), any())).thenReturn(true);
+        when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var r = servicio.crear(new CitaRequest(1L, 1L, 1L, fecha, LocalTime.of(10, 0), null));
+
+        assertEquals(fecha, r.fecha());
+        assertEquals(LocalTime.of(10, 0), r.horaInicio());
+    }
+
+    /** Fechas futuras para que la validación de "día pasado" no dispare antes. */
+    private static LocalDate futura() {
+        return LocalDate.now(java.time.ZoneId.of("America/Guayaquil")).plusDays(7);
+    }
+
+    private void prepararCreacion(LocalDate fecha) {
+        when(pacRepo.findById(1L)).thenReturn(Optional.of(pacienteBasico()));
+        when(docRepo.findById(1L)).thenReturn(Optional.of(doctorBasico()));
+        when(servRepo.findById(1L)).thenReturn(Optional.of(servicioBasico()));
+        when(horarioRepo.findByOdontologoIdAndDiaSemanaAndEstado(any(), any(), any()))
+                .thenReturn(horarioDisponible());
+    }
+
+    private static org.dentalcrm.domain.paciente.Paciente pacienteBasico() {
+        org.dentalcrm.domain.paciente.Paciente p = new org.dentalcrm.domain.paciente.Paciente();
+        p.setId(1L);
+        p.setNombres("Juan");
+        p.setApellidos("Pérez");
+        return p;
+    }
+
+    private static org.dentalcrm.domain.odontologo.Odontologo doctorBasico() {
+        org.dentalcrm.domain.odontologo.Odontologo d = new org.dentalcrm.domain.odontologo.Odontologo();
+        d.setId(1L);
+        d.setNombres("María");
+        d.setApellidos("López");
+        return d;
+    }
+
+    private static org.dentalcrm.domain.servicio.Servicio servicioBasico() {
+        org.dentalcrm.domain.servicio.Servicio s = new org.dentalcrm.domain.servicio.Servicio();
+        s.setId(1L);
+        s.setNombre("Limpieza");
+        s.setDuracionMinutos(45);
+        s.setEstado("ACTIVO");
+        return s;
     }
 
     private static Cita citaCompleta(Long id, EstadoCita estado) {

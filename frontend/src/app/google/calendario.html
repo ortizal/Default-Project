@@ -1,15 +1,13 @@
 
+    <ui-page-header title="Google Calendar">
+      @if (status?.conectada) {
+        <button class="btn primary" (click)="sync()">Sincronizar citas</button>
+        <button class="btn" (click)="syncInbound()">Actualizar disponibilidad</button>
+        <button class="btn danger" (click)="disconnect()">Desconectar</button>
+      }
+    </ui-page-header>
+
     <div class="card">
-      <div class="between">
-        <h2>Google Calendar</h2>
-        @if (status?.conectada) {
-          <div class="flex gap">
-            <button class="btn primary" (click)="sync()">Sincronizar citas</button>
-            <button class="btn" (click)="syncInbound()">Actualizar disponibilidad</button>
-            <button class="btn danger" (click)="disconnect()">Desconectar</button>
-          </div>
-        }
-      </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
@@ -21,7 +19,7 @@
           La integración con Google no está configurada. Configura las credenciales OAuth
           para habilitar Google Calendar.
         </div>
-        <div class="grid2" style="margin-top:16px">
+        <div class="grid2 mt-4">
           <div>
             <label class="label">Client ID</label>
             <input class="input" [(ngModel)]="credenciales.clientId" placeholder="google.client-id" />
@@ -47,12 +45,12 @@
             <input class="input" [(ngModel)]="credenciales.apiBaseUrl" />
           </div>
         </div>
-        <div class="flex gap" style="margin-top:16px">
+        <div class="flex gap mt-4">
           <button class="btn primary" (click)="guardarCredenciales()" [disabled]="credGuardando">
             {{ credGuardando ? 'Guardando...' : 'Guardar credenciales' }}
           </button>
           @if (credGuardado) {
-            <span class="msg ok" style="margin-top:8px">Credenciales guardadas correctamente</span>
+            <span class="msg ok mt-2">Credenciales guardadas correctamente</span>
           }
         </div>
       }
@@ -84,14 +82,14 @@
         </div>
 
         @if (!status.conectada) {
-          <div class="between" style="margin-top:16px">
+          <div class="between mt-4">
             <p class="muted">Conecta una cuenta de Google para que las citas se reflejen en tu calendario.</p>
             <button class="btn primary" (click)="connect()">Conectar con Google</button>
           </div>
         }
 
         @if (status.conectada) {
-          <h3 style="margin-top:20px">Calendarios de la cuenta</h3>
+          <h3 class="mt-4">Calendarios de la cuenta</h3>
           <table class="tbl">
             <thead><tr><th>Calendario</th><th>Zona horaria</th><th></th></tr></thead>
             <tbody>

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Odontologo, Page, GoogleCalendario } from '../core/models';
 import { withLoading } from '../core/loading';
+import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
 
 @Component({
   selector: 'app-odontologos',
   templateUrl: './odontologos.html',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
 })
 export class OdontologosComponent implements OnInit {
   items: Odontologo[] = [];
@@ -95,6 +96,7 @@ error: (e) => {
   }
 
   desactivar(o: Odontologo): void {
+    if (!confirm('¿Desactivar este odontólogo?')) return;
     this.api.del<void>(`/odontologos/${o.id}`).subscribe({
       next: () => this.cargar(this.page),
       error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
