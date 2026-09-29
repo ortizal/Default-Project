@@ -1,0 +1,54 @@
+<div class="consultorio-page">
+  <ui-page-header
+    title="Datos del consultorio"
+    subtitle="Información que se comparte con los pacientes al confirmar una cita."
+  />
+
+  @if (error) {
+    <div class="msg error" role="alert">{{ error }}</div>
+  }
+  @if (exito) {
+    <div class="msg ok" role="status">{{ exito }}</div>
+  }
+
+  <form class="card consultorio-form" (ngSubmit)="guardar()">
+    @if (cargando) {
+      <p class="muted">Cargando datos...</p>
+    } @else {
+      <div class="field-grid">
+        <label class="field">
+          <span class="label">Nombre del consultorio *</span>
+          <input class="input" name="nombre" [(ngModel)]="form.nombre" required maxlength="150" />
+        </label>
+        <label class="field">
+          <span class="label">Teléfono</span>
+          <input class="input" name="telefono" [(ngModel)]="form.telefono" type="tel" maxlength="30" />
+        </label>
+        <label class="field field-wide">
+          <span class="label">Dirección</span>
+          <input class="input" name="direccion" [(ngModel)]="form.direccion" maxlength="500" />
+        </label>
+        <label class="field field-wide">
+          <span class="label">Enlace de ubicación</span>
+          <input class="input" name="enlaceUbicacion" [(ngModel)]="form.enlaceUbicacion" type="url" maxlength="1000" placeholder="https://maps.google.com/..." />
+        </label>
+        <label class="field field-wide">
+          <span class="label">Horario de atención</span>
+          <textarea class="input" name="horarioAtencion" [(ngModel)]="form.horarioAtencion" rows="3" maxlength="500" placeholder="Lunes a viernes, 09:00 a 18:00"></textarea>
+        </label>
+      </div>
+
+      @if (form.enlaceUbicacion) {
+        <a class="map-link" [href]="form.enlaceUbicacion" target="_blank" rel="noopener noreferrer">
+          Abrir enlace de ubicación
+        </a>
+      }
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit" [disabled]="guardando">
+          {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    }
+  </form>
+</div>

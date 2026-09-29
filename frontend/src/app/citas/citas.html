@@ -3,6 +3,10 @@
     <button class="btn primary" (click)="abrirNueva()">+ Nueva cita</button>
     </ui-page-header>
 
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
+
   <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card total">
@@ -30,16 +34,16 @@
   <!-- Toolbar de filtros -->
   <div class="citas-toolbar">
     <div class="form-field">
-      <label class="label">Desde</label>
-      <input class="input sm" type="date" [(ngModel)]="desde" (change)="cargar(0)" />
+      <label class="label" for="lf1">Desde</label>
+      <input id="lf1" class="input sm" type="date" [(ngModel)]="desde" (change)="cargar(0)" >
     </div>
     <div class="form-field">
-      <label class="label">Hasta</label>
-      <input class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar(0)" />
+      <label class="label" for="lf2">Hasta</label>
+      <input id="lf2" class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar(0)" >
     </div>
     <div class="form-field">
-      <label class="label">Estado</label>
-      <select class="input sm" [(ngModel)]="estado" (ngModelChange)="cargar(0)">
+      <label class="label" for="lf3">Estado</label>
+      <select id="lf3" class="input sm" [(ngModel)]="estado" (ngModelChange)="cargar(0)">
         <option value="">Todos</option>
         <option value="PENDIENTE">Pendiente</option>
         <option value="CONFIRMADA">Confirmada</option>
@@ -49,8 +53,8 @@
       </select>
     </div>
     <div class="form-field">
-      <label class="label">Odontólogo</label>
-      <select class="input sm" [(ngModel)]="doctorId" (ngModelChange)="cargar(0)">
+      <label class="label" for="lf4">Odontólogo</label>
+      <select id="lf4" class="input sm" [(ngModel)]="doctorId" (ngModelChange)="cargar(0)">
         <option value="">Todos</option>
         @for (o of odontologos; track o.id) {
           <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
@@ -58,8 +62,8 @@
       </select>
     </div>
     <div class="form-field">
-      <label class="label">Paciente</label>
-      <input class="input sm" [(ngModel)]="pacienteNombre" (keyup.enter)="cargar(0)" placeholder="Nombre..." />
+      <label class="label" for="lf5">Paciente</label>
+      <input id="lf5" class="input sm" [(ngModel)]="pacienteNombre" (keyup.enter)="cargar(0)" placeholder="Nombre..." >
     </div>
     <div class="toolbar-actions">
       <button class="btn sm" (click)="cargar(0)" [disabled]="cargando">↻ Refrescar</button>
@@ -114,7 +118,7 @@
                 <td>{{ c.servicioNombre }}</td>
                 <td>{{ c.doctorNombre }}</td>
                 <td>
-                  <span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}<span *ngIf="c.confirmada && c.estado !== 'CONFIRMADA'"> ✓</span></span>
+                  <span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}@if (c.confirmada && c.estado !== 'CONFIRMADA') {<span> ✓</span>}</span>
                 </td>
                 <td>
                   <div class="acciones">
@@ -151,13 +155,13 @@
 
   <!-- Modal nueva cita -->
   @if (mostrarModal) {
-    <div class="modal-backdrop" (click)="cerrarModal()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <h3>Nueva Cita</h3>
+    <div role="presentation" class="modal-backdrop" (click)="cerrarModal()">
+      <div role="presentation" class="modal-card" (click)="$event.stopPropagation()">
+        <h2>Nueva Cita</h2>
         <div class="form-row">
           <div class="form-field">
-            <label class="label">Paciente</label>
-            <select class="input sm" [(ngModel)]="nuevaCita.pacienteId">
+            <label class="label" for="lf6">Paciente</label>
+            <select id="lf6" class="input sm" [(ngModel)]="nuevaCita.pacienteId">
               <option [value]="0" disabled>Selecciona un paciente…</option>
               @for (p of pacientes; track p.id) {
                 <option [value]="p.id">{{ p.nombres }} {{ p.apellidos }}{{ p.cedula ? ' — ' + p.cedula : '' }}</option>
@@ -165,8 +169,8 @@
             </select>
           </div>
           <div class="form-field">
-            <label class="label">Odontólogo</label>
-            <select class="input sm" [(ngModel)]="nuevaCita.doctorId">
+            <label class="label" for="lf7">Odontólogo</label>
+            <select id="lf7" class="input sm" [(ngModel)]="nuevaCita.doctorId">
               @for (o of odontologos; track o.id) {
                 <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
               }
@@ -175,26 +179,26 @@
         </div>
         <div class="form-row">
           <div class="form-field">
-            <label class="label">Servicio</label>
-            <select class="input sm" [(ngModel)]="nuevaCita.servicioId">
+            <label class="label" for="lf8">Servicio</label>
+            <select id="lf8" class="input sm" [(ngModel)]="nuevaCita.servicioId">
               @for (s of servicios; track s.id) {
                 <option [value]="s.id">{{ s.nombre }} ({{ s.duracionMinutos }} min)</option>
               }
             </select>
           </div>
           <div class="form-field">
-            <label class="label">Fecha</label>
-            <input class="input sm" type="date" [(ngModel)]="nuevaCita.fecha" />
+            <label class="label" for="lf9">Fecha</label>
+            <input id="lf9" class="input sm" type="date" [(ngModel)]="nuevaCita.fecha" >
           </div>
         </div>
         <div class="form-row">
           <div class="form-field half">
-            <label class="label">Hora inicio</label>
-            <input class="input sm" type="time" [(ngModel)]="nuevaCita.horaInicio" />
+            <label class="label" for="lf10">Hora inicio</label>
+            <input id="lf10" class="input sm" type="time" [(ngModel)]="nuevaCita.horaInicio" >
           </div>
           <div class="form-field full">
-            <label class="label">Observaciones</label>
-            <input class="input sm" [(ngModel)]="nuevaCita.observaciones" placeholder="Notas adicionales..." />
+            <label class="label" for="lf11">Observaciones</label>
+            <input id="lf11" class="input sm" [(ngModel)]="nuevaCita.observaciones" placeholder="Notas adicionales..." >
           </div>
         </div>
         <div class="form-actions">

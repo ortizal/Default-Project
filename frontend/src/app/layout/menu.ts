@@ -26,6 +26,7 @@ export const MENU: MenuSection[] = [
     items: [
       { path: '/whatsapp/inbox', label: 'WhatsApp Inbox' },
       { path: '/whatsapp/campana', label: 'Publicidad WhatsApp' },
+      { path: '/redes-sociales', label: 'Redes sociales' },
       { path: '/whatsapp/sesiones', label: 'Sesiones WhatsApp' },
       { path: '/plantillas', label: 'Plantillas' },
       { path: '/notificaciones', label: 'Notificaciones' },
@@ -48,6 +49,7 @@ export const MENU: MenuSection[] = [
       { path: '/reportes', label: 'Reportes' },
       { path: '/auditoria', label: 'Auditoría' },
       { path: '/usuarios', label: 'Usuarios' },
+      { path: '/configuracion/consultorio', label: 'Datos del consultorio' },
     ],
   },
 ];

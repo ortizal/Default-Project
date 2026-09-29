@@ -1,10 +1,16 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
-import { GoogleCalendario, GoogleConnect, GoogleCredential, GoogleStatus, GoogleSyncResult } from '../core/models';
+import {
+  GoogleCalendario,
+  GoogleConnect,
+  GoogleCredential,
+  GoogleStatus,
+  GoogleSyncResult,
+} from '../core/models';
 import { withLoading } from '../core/loading';
-import { UiPageHeaderComponent } from '../ui';
+import { UiPageHeaderComponent, UiConfirmService } from '../ui';
 
 @Component({
   selector: 'app-calendario',
@@ -12,6 +18,11 @@ import { UiPageHeaderComponent } from '../ui';
   imports: [CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class CalendarioComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly confirmacion = inject(UiConfirmService);
+
   status?: GoogleStatus;
   syncResult?: GoogleSyncResult;
   error = '';
@@ -19,8 +30,6 @@ export class CalendarioComponent implements OnInit {
   credenciales?: GoogleCredential;
   credGuardando = false;
   credGuardado = false;
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -33,10 +42,16 @@ export class CalendarioComponent implements OnInit {
         this.syncResult = undefined;
         this.cdr.markForCheck();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
     this.api.get<GoogleCredential>('/google/credentials').subscribe({
-      next: (c) => { this.credenciales = c; this.cdr.markForCheck(); },
+      next: (c) => {
+        this.credenciales = c;
+        this.cdr.markForCheck();
+      },
       error: () => this.cdr.markForCheck(),
     });
   }
@@ -49,14 +64,20 @@ export class CalendarioComponent implements OnInit {
         }
         this.cdr.markForCheck();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
   seleccionar(c: GoogleCalendario): void {
     this.api.post<void>(`/google/calendars/${c.id}/select`, {}).subscribe({
       next: () => this.cargar(),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -67,7 +88,10 @@ export class CalendarioComponent implements OnInit {
         this.cdr.markForCheck();
         this.cargar();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -77,15 +101,28 @@ export class CalendarioComponent implements OnInit {
         this.error = '';
         this.cdr.markForCheck();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  disconnect(): void {
-    if (!confirm('¿Desconectar la cuenta de Google y borrar sus tokens?')) return;
+  async disconnect(): Promise<void> {
+    if (
+      !(await this.confirmacion.abrir({
+        titulo: 'Desconectar Google',
+        mensaje: '¿Desconectar la cuenta de Google y borrar sus tokens?',
+        confirmarTexto: 'Desconectar',
+      }))
+    )
+      return;
     this.api.del<void>('/google/disconnect').subscribe({
       next: () => this.cargar(),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -99,15 +136,24 @@ export class CalendarioComponent implements OnInit {
         this.credenciales = r;
         this.credGuardando = false;
         this.credGuardado = true;
-        setTimeout(() => { this.credGuardado = false; this.cdr.markForCheck(); }, 3000);
+        setTimeout(() => {
+          this.credGuardado = false;
+          this.cdr.markForCheck();
+        }, 3000);
         this.cargar();
       },
-      error: (e) => { this.error = this.msg(e); this.credGuardando = false; this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.credGuardando = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return (a?.status === 400 || a?.status === 409) && a.error?.message ? a.error.message : 'Error de conexión';
+    return (a?.status === 400 || a?.status === 409) && a.error?.message
+      ? a.error.message
+      : 'Error de conexión';
   }
 }

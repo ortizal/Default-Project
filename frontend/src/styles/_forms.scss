@@ -76,10 +76,6 @@ textarea.input {
     }
   }
 
-  &[aria-invalid="true"] ~ .field-error,
-  &.invalid ~ .field-error {
-    display: block;
-  }
 
 }
 textarea.input {

@@ -418,7 +418,7 @@ class AgenteConversacionalServiceTest {
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "mañana a las 10", haceTresMinutos);
 
-        assertTrue(r.mensaje().contains("Reinicié"));
+        assertTrue(r.mensaje().toLowerCase().contains("reinicié"));
         assertNull(conv.getIntencion());
         assertNull(conv.getContextoAgente());
     }
@@ -431,7 +431,7 @@ class AgenteConversacionalServiceTest {
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "mañana a las 10", haceUnMinuto);
 
-        assertFalse(r.mensaje().contains("Reinicié"));
+        assertFalse(r.mensaje().toLowerCase().contains("reinicié"));
         assertEquals(Intencion.REGISTRAR_PACIENTE, conv.getIntencion());
     }
 
@@ -444,7 +444,7 @@ class AgenteConversacionalServiceTest {
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "reiniciar", null);
 
-        assertTrue(r.mensaje().contains("Reinicié"));
+        assertTrue(r.mensaje().toLowerCase().contains("reinicié"));
         assertNull(conv.getIntencion());
         assertNull(conv.getContextoAgente());
         assertFalse(r.transferirHumano());

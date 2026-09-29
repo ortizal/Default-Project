@@ -45,7 +45,7 @@
 .eyebrow {
   display: block;
   margin-bottom: 3px;
-  color: var(--ls-primary);
+  color: var(--ls-primary-text);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .12em;
@@ -126,7 +126,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--ls-primary-soft);
-  color: var(--ls-primary-dark);
+  color: var(--ls-primary-text);
   font-size: 11px;
   font-weight: 800;
 }
@@ -320,7 +320,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--ls-primary-soft);
-  color: var(--ls-primary);
+  color: var(--ls-primary-text);
   font-size: 26px;
 }
 

@@ -36,23 +36,31 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Lint
+
+```bash
+ng lint          # ESLint + angular-eslint
+```
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
 ```bash
-ng test
+ng test --no-watch
 ```
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+Los e2e corren con [Playwright](https://playwright.dev/). Requieren el servidor de
+desarrollo en marcha (`ng serve`, el `webServer` de `playwright.config.ts` lo reutiliza
+si ya está corriendo) y un navegador instalado (`npx playwright install chromium`).
 
 ```bash
-ng e2e
+npm run e2e                     # toda la suite
+npx playwright test qa          # un solo archivo
+npx playwright test contraste   # contraste WCAG AA en los 4 modos de tema
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
 ## Additional Resources
 

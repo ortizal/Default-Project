@@ -8,7 +8,9 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['json', { outputFile: 'test-results/results.json' }]],
   use: {
-    baseURL: 'http://localhost',
+    // La app se sirve bajo /dental_crm/ (baseHref en angular.json).
+    // Las rutas relativas de los specs se resuelven contra esta base.
+    baseURL: 'http://localhost:4200/dental_crm/',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -19,4 +21,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
+  // Si el dev server ya está levantado se reutiliza; si no, se arranca solo.
+  webServer: {
+    command: 'npm run start -- --host 127.0.0.1 --port 4200 --proxy-config proxy.conf.json',
+    url: 'http://localhost:4200/dental_crm/',
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
 });

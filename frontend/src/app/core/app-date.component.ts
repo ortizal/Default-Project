@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  input,
   Output,
   ViewChild,
   ElementRef,
@@ -22,6 +23,8 @@ import { MatIconModule } from '@angular/material/icon';
         maxlength="10"
         placeholder="dd/mm/aaaa"
         autocomplete="off"
+        [id]="controlId() || null"
+        [attr.aria-label]="ariaLabel()"
         [value]="display"
         (input)="onMask($event)"
         (blur)="onBlur()"
@@ -38,6 +41,8 @@ import { MatIconModule } from '@angular/material/icon';
         #native
         class="date-native"
         type="date"
+        [attr.aria-label]="ariaLabel()"
+        [attr.tabindex]="-1"
         (change)="onNative($event)"
       />
     </span>
@@ -77,7 +82,9 @@ import { MatIconModule } from '@angular/material/icon';
       .date-btn {
         position: absolute;
         top: 50%;
-        right: 4px;
+        right: 2px;
+        min-width: 32px;
+        min-height: 32px;
         transform: translateY(-50%);
         border: none;
         background: transparent;
@@ -111,7 +118,7 @@ import { MatIconModule } from '@angular/material/icon';
       :host(.on-primary) .date-mask {
         background: rgba(255, 255, 255, 0.14);
         border-color: rgba(255, 255, 255, 0.55);
-        color: #fff;
+        color: var(--ls-on-dark);
       }
       :host(.on-primary) .date-mask::placeholder {
         color: rgba(255, 255, 255, 0.75);
@@ -120,7 +127,7 @@ import { MatIconModule } from '@angular/material/icon';
         color: rgba(255, 255, 255, 0.85);
       }
       :host(.on-primary) .date-btn:hover {
-        color: #fff;
+        color: var(--ls-on-dark);
         background: rgba(255, 255, 255, 0.15);
       }
     `,
@@ -135,14 +142,19 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppDateComponent implements ControlValueAccessor {
-  @Output() readonly change = new EventEmitter<string | null>();
+  /** Nombre accesible del campo; lo aporta quien usa <app-date>. */
+  readonly ariaLabel = input('Fecha');
+  /** id del input visible, para asociarlo con su <label for="…">. */
+  readonly controlId = input('');
+
+  @Output() readonly cambio = new EventEmitter<string | null>();
 
   @ViewChild('native') private native!: ElementRef<HTMLInputElement>;
 
   private value: string | null = null;
   private committed: string | null = null;
-  private onChange: (value: string | null) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string | null) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 
   get display(): string {
     return this.toDisplay(this.value);
@@ -176,7 +188,7 @@ export class AppDateComponent implements ControlValueAccessor {
     this.onTouched();
     if (this.value !== this.committed) {
       this.committed = this.value;
-      this.change.emit(this.value);
+      this.cambio.emit(this.value);
     }
   }
 
@@ -200,7 +212,7 @@ export class AppDateComponent implements ControlValueAccessor {
     this.committed = iso;
     this.onChange(iso);
     this.onTouched();
-    this.change.emit(iso);
+    this.cambio.emit(iso);
   }
 
   private mask(raw: string): string {

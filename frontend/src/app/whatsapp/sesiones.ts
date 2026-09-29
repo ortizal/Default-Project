@@ -1,10 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, WhatsappSesion } from '../core/models';
 import { withLoading } from '../core/loading';
-import { UiPageHeaderComponent, UiPaginationComponent } from '../ui';
+import { UiPageHeaderComponent, UiPaginationComponent, UiConfirmService } from '../ui';
 
 @Component({
   selector: 'app-sesiones',
@@ -13,11 +13,17 @@ import { UiPageHeaderComponent, UiPaginationComponent } from '../ui';
   imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
 })
 export class SesionesComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly confirmacion = inject(UiConfirmService);
+
   items: WhatsappSesion[] = [];
   buscar = '';
   estadoF = '';
   cargando = false;
   error = '';
+  exito = '';
   page = 0;
   totalPages = 1;
   total = 0;
@@ -31,8 +37,6 @@ export class SesionesComponent implements OnInit {
   totalDesconectadas = 0;
   totalError = 0;
 
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
-
   ngOnInit(): void {
     this.cargar(0);
   }
@@ -40,8 +44,18 @@ export class SesionesComponent implements OnInit {
   cargar(p: number): void {
     this.error = '';
     const seq = ++this.reqSeq;
-    const params = new URLSearchParams({ page: String(p), size: String(this.size), busca: this.buscar || '', estado: this.estadoF || '' });
-    withLoading(this, this.api.get<Page<WhatsappSesion>>('/whatsapp/sesiones?' + params.toString()), () => seq === this.reqSeq, this.cdr).subscribe({
+    const params = new URLSearchParams({
+      page: String(p),
+      size: String(this.size),
+      busca: this.buscar || '',
+      estado: this.estadoF || '',
+    });
+    withLoading(
+      this,
+      this.api.get<Page<WhatsappSesion>>('/whatsapp/sesiones?' + params.toString()),
+      () => seq === this.reqSeq,
+      this.cdr,
+    ).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
         this.items = r.content ?? [];
@@ -63,36 +77,64 @@ export class SesionesComponent implements OnInit {
     this.totalConectadas = this.items.filter((s) => s.estado === 'CONECTADA').length;
     this.totalQR = this.items.filter((s) => s.estado === 'CONECTANDO').length;
     this.totalDesconectadas = this.items.filter((s) => s.estado === 'DESCONECTADA').length;
-    this.totalError = this.items.filter((s) => s.estado === 'ERROR' || (s.lastError && s.lastError.length > 0)).length;
+    this.totalError = this.items.filter(
+      (s) => s.estado === 'ERROR' || (s.lastError && s.lastError.length > 0),
+    ).length;
   }
 
   probar(s: WhatsappSesion): void {
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/conectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
   conectar(s: WhatsappSesion): void {
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/conectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  desconectar(s: WhatsappSesion): void {
-    if (!confirm('¿Desconectar la sesión?')) return;
+  async desconectar(s: WhatsappSesion): Promise<void> {
+    if (
+      !(await this.confirmacion.abrir({
+        titulo: 'Desconectar sesión',
+        mensaje: '¿Desconectar la sesión?',
+        confirmarTexto: 'Desconectar',
+      }))
+    )
+      return;
     this.api.post<WhatsappSesion>(`/whatsapp/sesiones/${s.id}/desconectar`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  borrar(s: WhatsappSesion): void {
-    if (!confirm(`¿Eliminar la sesión ${s.sesionId}?`)) return;
+  async borrar(s: WhatsappSesion): Promise<void> {
+    if (
+      !(await this.confirmacion.abrir({
+        titulo: 'Eliminar sesión',
+        mensaje: `¿Eliminar la sesión ${s.sesionId}?`,
+        confirmarTexto: 'Eliminar',
+      }))
+    )
+      return;
     this.api.del<void>(`/whatsapp/sesiones/${s.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -112,34 +154,55 @@ export class SesionesComponent implements OnInit {
     }
     this.cargando = true;
     this.cdr.markForCheck();
-    this.api.post<WhatsappSesion>('/whatsapp/sesiones', {
-      sesionId: this.nuevaSesion.sesionId.trim(),
-      nombre: this.nuevaSesion.nombre.trim() || null,
-    }).subscribe({
-      next: () => {
-        this.mostrarModal = false;
-        this.cargar(0);
-      },
-      error: (e) => {
-        this.error = this.msg(e);
-        this.cargando = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .post<WhatsappSesion>('/whatsapp/sesiones', {
+        sesionId: this.nuevaSesion.sesionId.trim(),
+        nombre: this.nuevaSesion.nombre.trim() || null,
+      })
+      .subscribe({
+        next: () => {
+          this.exito = 'Sesión creada correctamente';
+          this.error = '';
+          setTimeout(() => {
+            this.exito = '';
+            this.cdr.markForCheck();
+          }, 3000);
+          this.mostrarModal = false;
+          this.cargar(0);
+        },
+        error: (e) => {
+          this.error = this.msg(e);
+          this.cargando = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   badge(estado: string): string {
     switch (estado) {
-      case 'CONECTADA': return 'ok';
-      case 'CONECTANDO': return 'warn';
-      case 'DESCONECTADA': return 'bad';
-      case 'ERROR': return 'bad';
-      default: return 'dim';
+      case 'CONECTADA':
+        return 'ok';
+      case 'CONECTANDO':
+        return 'warn';
+      case 'DESCONECTADA':
+        return 'bad';
+      case 'ERROR':
+        return 'bad';
+      default:
+        return 'dim';
     }
   }
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return a.status === 409 || a.status === 400 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a.status === 409 || a.status === 400
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
+  }
+
+  /** Escape cierra el modal/drawer mientras esté abierto. */
+  @HostListener('document:keydown.escape')
+  cerrarConEscape(): void {
+    if (this.mostrarModal) this.cerrarModal();
   }
 }

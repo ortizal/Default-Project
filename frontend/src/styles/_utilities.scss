@@ -267,17 +267,23 @@
   align-items: flex-end;
 
 }
-// Estados semánticos sobre texto (cifras, etiquetas, enlaces)
+// Estados semánticos sobre texto (cifras, etiquetas, enlaces).
+// !important para ganarle a las utilidades de Bootstrap, que fijan el
+// color Sass del tema claro y no siguen los tokens del dark.
 .text-danger {
-  color: var(--ls-danger);
+  color: var(--ls-danger) !important;
 
 }
 .text-success {
-  color: var(--ls-success);
+  color: var(--ls-success) !important;
 
 }
 .text-warning {
-  color: var(--ls-warning);
+  color: var(--ls-warning) !important;
+
+}
+.text-info {
+  color: var(--ls-info) !important;
 
 }
 // Ocupa todas las columnas de cualquier rejilla (`.grid` o `.form-grid`)

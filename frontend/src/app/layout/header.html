@@ -1,16 +1,26 @@
-<mat-toolbar class="topbar">
+<mat-toolbar class="topbar" role="banner">
   <button
     class="topbar-menu"
     mat-icon-button
     [attr.aria-label]="cerrando() ? 'Cerrar menú' : 'Abrir menú'"
     [attr.title]="cerrando() ? 'Cerrar menú' : 'Abrir menú'"
-    (click)="toggle.emit()"
+    (click)="alternarMenu.emit()"
   >
     <mat-icon>{{ cerrando() ? 'menu_open' : 'menu' }}</mat-icon>
   </button>
   <h1 class="topbar-title">{{ titulo() }}</h1>
   <span class="topbar-spacer"></span>
   <span class="topbar-date">{{ fecha() }}</span>
+  <button
+    class="topbar-tema"
+    mat-icon-button
+    type="button"
+    [attr.aria-label]="etiquetaTema()"
+    [attr.title]="etiquetaTema()"
+    (click)="alternarTema()"
+  >
+    <mat-icon>{{ oscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  </button>
   <button class="btn sm primary" (click)="salir.emit()">
     <mat-icon>logout</mat-icon>
     Cerrar sesión

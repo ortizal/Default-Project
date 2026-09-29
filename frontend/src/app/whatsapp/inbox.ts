@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -11,6 +11,9 @@ import { Conversacion, ConversacionDetalle, Mensaje } from '../core/models';
   imports: [CommonModule, FormsModule],
 })
 export class InboxComponent implements OnInit, OnDestroy {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   conversaciones: Conversacion[] = [];
   seleccion: Conversacion | null = null;
   detalle: ConversacionDetalle | null = null;
@@ -22,8 +25,6 @@ export class InboxComponent implements OnInit, OnDestroy {
   error = '';
   private timer: ReturnType<typeof setInterval> | null = null;
   private reqSeq = 0;
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarLista();
@@ -40,31 +41,39 @@ export class InboxComponent implements OnInit, OnDestroy {
 
   cargarLista(silencioso = false): void {
     const seq = ++this.reqSeq;
-    this.api.get<Conversacion[]>(`/whatsapp/conversaciones?q=${encodeURIComponent(this.q)}`).subscribe({
-      next: (r) => {
-        if (seq !== this.reqSeq) return;
-        this.conversaciones = r;
-        if (this.seleccion) {
-          const a = r.find((c) => c.id === this.seleccion!.id);
-          if (a) this.seleccion = a;
-          this.abrir(this.seleccion);
-        }
-        this.cdr.markForCheck();
-      },
-      error: (e) => {
-        if (seq !== this.reqSeq) return;
-        if (!silencioso) this.error = this.msg(e);
-        this.cdr.markForCheck();
-      },
-    });
+    this.api
+      .get<Conversacion[]>(`/whatsapp/conversaciones?q=${encodeURIComponent(this.q)}`)
+      .subscribe({
+        next: (r) => {
+          if (seq !== this.reqSeq) return;
+          this.conversaciones = r;
+          if (this.seleccion) {
+            const a = r.find((c) => c.id === this.seleccion!.id);
+            if (a) this.seleccion = a;
+            this.abrir(this.seleccion);
+          }
+          this.cdr.markForCheck();
+        },
+        error: (e) => {
+          if (seq !== this.reqSeq) return;
+          if (!silencioso) this.error = this.msg(e);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   abrir(c: Conversacion): void {
     this.seleccion = c;
     this.nuevoEstado = '';
     this.api.get<ConversacionDetalle>(`/whatsapp/conversaciones/${c.id}`).subscribe({
-      next: (d) => { this.detalle = d; this.cdr.markForCheck(); },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      next: (d) => {
+        this.detalle = d;
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -73,7 +82,9 @@ export class InboxComponent implements OnInit, OnDestroy {
     this.enviando = true;
     this.cdr.markForCheck();
     this.api
-      .post<Mensaje>(`/whatsapp/conversaciones/${this.detalle.conversacion.id}/mensajes`, { texto: this.texto.trim() })
+      .post<Mensaje>(`/whatsapp/conversaciones/${this.detalle.conversacion.id}/mensajes`, {
+        texto: this.texto.trim(),
+      })
       .subscribe({
         next: (m) => {
           this.texto = '';
@@ -92,7 +103,9 @@ export class InboxComponent implements OnInit, OnDestroy {
   cambiarEstado(): void {
     if (!this.detalle || !this.nuevoEstado) return;
     this.api
-      .post<Conversacion>(`/whatsapp/conversaciones/${this.detalle.conversacion.id}/estado`, { estado: this.nuevoEstado })
+      .post<Conversacion>(`/whatsapp/conversaciones/${this.detalle.conversacion.id}/estado`, {
+        estado: this.nuevoEstado,
+      })
       .subscribe({
         next: (c) => {
           this.seleccion = c;
@@ -100,7 +113,10 @@ export class InboxComponent implements OnInit, OnDestroy {
           this.nuevoEstado = '';
           this.cdr.markForCheck();
         },
-        error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+        error: (e) => {
+          this.error = this.msg(e);
+          this.cdr.markForCheck();
+        },
       });
   }
 
@@ -132,6 +148,8 @@ export class InboxComponent implements OnInit, OnDestroy {
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return a?.status === 409 || a?.status === 400 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a?.status === 409 || a?.status === 400
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
   }
 }

@@ -1,17 +1,34 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Page, Usuario } from '../core/models';
 import { withLoading } from '../core/loading';
-import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
+import {
+  UiPageHeaderComponent,
+  UiButtonComponent,
+  UiTableComponent,
+  UiPaginationComponent,
+  UiBadgeComponent,
+} from '../ui';
 
 @Component({
   selector: 'app-usuarios',
   templateUrl: './usuarios.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    UiPageHeaderComponent,
+    UiButtonComponent,
+    UiTableComponent,
+    UiPaginationComponent,
+    UiBadgeComponent,
+  ],
 })
 export class UsuariosComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   readonly ROLES = ['SUPER_ADMIN', 'ADMIN', 'RECEPCION', 'ODONTOLOGO'];
   items: Usuario[] = [];
   q = '';
@@ -20,11 +37,10 @@ export class UsuariosComponent implements OnInit {
   totalPages = 1;
   cargando = false;
   error = '';
+  exito = '';
   showForm = false;
   form: Partial<Usuario> & { password?: string; nuevaPassword?: string } = {};
   rolesSel: string[] = [];
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar(0);
@@ -32,17 +48,25 @@ export class UsuariosComponent implements OnInit {
 
   cargar(p: number): void {
     this.error = '';
-    const seq = this.page = Math.max(p, 0);
+    const seq = (this.page = Math.max(p, 0));
     const params = new URLSearchParams({ page: String(seq), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
-    withLoading(this, this.api.get<Page<Usuario>>(`/usuarios?${params.toString()}`), undefined, this.cdr).subscribe({
+    withLoading(
+      this,
+      this.api.get<Page<Usuario>>(`/usuarios?${params.toString()}`),
+      undefined,
+      this.cdr,
+    ).subscribe({
       next: (r) => {
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(seq, this.totalPages - 1);
         this.cdr.markForCheck();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -65,11 +89,22 @@ export class UsuariosComponent implements OnInit {
   }
 
   toggleRol(r: string): void {
-    this.rolesSel = this.rolesSel.includes(r) ? this.rolesSel.filter((x) => x !== r) : [...this.rolesSel, r];
+    this.rolesSel = this.rolesSel.includes(r)
+      ? this.rolesSel.filter((x) => x !== r)
+      : [...this.rolesSel, r];
   }
 
+  guardando = false;
+
   guardar(): void {
-    if (!this.form.username || !this.form.email || !this.form.nombres || !this.form.apellidos || this.rolesSel.length === 0) {
+    if (this.guardando) return;
+    if (
+      !this.form.username ||
+      !this.form.email ||
+      !this.form.nombres ||
+      !this.form.apellidos ||
+      this.rolesSel.length === 0
+    ) {
       this.error = 'Completa usuario, email, nombres, apellidos y al menos un rol';
       this.cdr.markForCheck();
       return;
@@ -98,13 +133,22 @@ export class UsuariosComponent implements OnInit {
         });
     this.cargando = true;
     this.cdr.markForCheck();
+    this.guardando = true;
     req.subscribe({
       next: () => {
+        this.guardando = false;
+        this.exito = 'Usuario guardado correctamente';
+        this.error = '';
+        setTimeout(() => {
+          this.exito = '';
+          this.cdr.markForCheck();
+        }, 3000);
         this.showForm = false;
         this.cdr.markForCheck();
         this.cargar(this.page);
       },
       error: (e) => {
+        this.guardando = false;
         this.error = this.msg(e);
         this.cargando = false;
         this.cdr.markForCheck();
@@ -115,7 +159,10 @@ export class UsuariosComponent implements OnInit {
   cambiarEstado(u: Usuario): void {
     this.api.post<Usuario>(`/usuarios/${u.id}/estado`, {}).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -130,6 +177,14 @@ export class UsuariosComponent implements OnInit {
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
     if (a?.status === 403) return 'Sin permisos para gestionar usuarios';
-    return a?.status === 409 || a?.status === 400 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a?.status === 409 || a?.status === 400
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
+  }
+
+  /** Escape cierra el modal/drawer mientras esté abierto. */
+  @HostListener('document:keydown.escape')
+  cerrarConEscape(): void {
+    if (this.showForm) this.showForm = false;
   }
 }

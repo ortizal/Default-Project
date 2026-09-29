@@ -1,12 +1,16 @@
 
     <ui-page-header title="Odontólogos">
-      <ui-button variant="primary" (onClick)="nuevo()">+ Nuevo odontólogo</ui-button>
+      <ui-button variant="primary" (clicked)="nuevo()">+ Nuevo odontólogo</ui-button>
     </ui-page-header>
+
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
 
     <div class="card">
       <div class="toolbar">
-        <input class="input buscar" placeholder="Buscar por nombre o especialidad" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
-        <select class="input" [(ngModel)]="estado" (change)="cargar(0)">
+        <input class="input buscar" aria-label="Buscar por nombre o especialidad" placeholder="Buscar por nombre o especialidad" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <select class="input" aria-label="Estado del odontólogo" [(ngModel)]="estado" (change)="cargar(0)">
           <option value="">Todos los estados</option>
           <option value="ACTIVO">Activos</option>
           <option value="INACTIVO">Inactivos</option>
@@ -19,7 +23,7 @@
       }
       <ui-table [loading]="cargando" loadingText="Cargando odontólogos…">
         <thead>
-          <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Etiquetas</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr>
+          <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Etiquetas</th><th>Teléfono</th><th>Email</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr>
         </thead>
         <tbody>
           @for (o of items; track o.id) {
@@ -50,22 +54,22 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar odontólogo' : 'Nuevo odontólogo' }}</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
-            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
-            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
-            <div><label class="label">Especialidad</label><input class="input" [(ngModel)]="form.especialidad" /></div>
-            <div><label class="label">Etiquetas</label><input class="input" placeholder="Ej: ortodoncia, niños, urgencias" [(ngModel)]="form.etiquetas" /></div>
-            <div><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
-            <div><label class="label">Email</label><input class="input" type="email" [(ngModel)]="form.email" /></div>
+            <div><label class="label" for="lf1">Nombres *</label><input id="lf1" class="input" [(ngModel)]="form.nombres" required ></div>
+            <div><label class="label" for="lf2">Apellidos *</label><input id="lf2" class="input" [(ngModel)]="form.apellidos" required ></div>
+            <div><label class="label" for="lf3">Especialidad</label><input id="lf3" class="input" [(ngModel)]="form.especialidad" ></div>
+            <div><label class="label" for="lf4">Etiquetas</label><input id="lf4" class="input" placeholder="Ej: ortodoncia, niños, urgencias" [(ngModel)]="form.etiquetas" ></div>
+            <div><label class="label" for="lf5">Teléfono</label><input id="lf5" class="input" [(ngModel)]="form.telefono" ></div>
+            <div><label class="label" for="lf6">Email</label><input id="lf6" class="input" type="email" [(ngModel)]="form.email" ></div>
             <div class="full">
-              <label class="label">Calendario personal (Google Calendar)</label>
-              <select class="input" [(ngModel)]="form.googleCalendarId">
+              <label class="label" for="lf7">Calendario personal (Google Calendar)</label>
+              <select id="lf7" class="input" [(ngModel)]="form.googleCalendarId">
                 <option value="">— Sin calendario personal —</option>
                 @for (c of calendarios; track c.id) {
                   <option [value]="c.calendarId">{{ c.summary }}</option>
@@ -78,7 +82,7 @@
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

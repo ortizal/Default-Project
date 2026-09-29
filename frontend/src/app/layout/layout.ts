@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnDestroy, HostListener } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../core/auth.service';
@@ -42,6 +42,7 @@ export class LayoutComponent implements OnDestroy {
     if (seg === 'horarios') return 'Horarios';
     if (seg === 'agenda') return 'Agenda';
     if (seg === 'whatsapp') return 'WhatsApp';
+    if (seg === 'redes-sociales') return 'Redes sociales';
     if (seg === 'google') return 'Google Calendar';
     if (seg === 'plantillas') return 'Plantillas';
     if (seg === 'automatizaciones') return 'Automatizaciones';
@@ -81,5 +82,11 @@ export class LayoutComponent implements OnDestroy {
 
   private esMovil(): boolean {
     return typeof window !== 'undefined' && window.matchMedia('(max-width: 991px)').matches;
+  }
+
+  /** Escape cierra el modal/drawer mientras esté abierto. */
+  @HostListener('document:keydown.escape')
+  cerrarConEscape(): void {
+    if (this.abierto()) this.cerrarMenu();
   }
 }

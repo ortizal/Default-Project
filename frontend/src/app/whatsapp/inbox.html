@@ -43,7 +43,7 @@
           </div>
         </div>
         <div class="chat-actions">
-          <select class="chat-estado-select" [(ngModel)]="nuevoEstado" (change)="cambiarEstado()">
+          <select class="chat-estado-select" aria-label="Estado de la conversación" [(ngModel)]="nuevoEstado" (change)="cambiarEstado()">
             <option value="" disabled>Cambiar estado…</option>
             <option value="BOT">Bot</option>
             <option value="ATENCION_HUMANA">Atención humana</option>
@@ -68,7 +68,7 @@
         }
       </div>
       <form class="chat-input" (ngSubmit)="enviar()">
-        <textarea class="input" [(ngModel)]="texto" name="texto" placeholder="Escribe una respuesta…" rows="1" required></textarea>
+        <textarea class="input" [(ngModel)]="texto" name="texto" aria-label="Mensaje" placeholder="Escribe una respuesta…" rows="1" required></textarea>
         <button class="btn primary" [disabled]="!texto.trim() || enviando">{{ enviando ? 'Enviando...' : 'Enviar' }}</button>
       </form>
     } @else {

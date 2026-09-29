@@ -3,12 +3,16 @@
       <button class="btn primary" (click)="nueva()">+ Nueva automatización</button>
     </ui-page-header>
 
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
+
     <div class="card">
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando automatizaciones…">
-        <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Minutos antes</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th></th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Minutos antes</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
         <tbody>
           @for (a of items; track a.id) {
             <tr>
@@ -19,8 +23,11 @@
               <td>{{ a.plantillaNombre }}</td>
               <td>{{ a.condicion || '-' }}</td>
               <td>
-                <button class="btn small" [ngClass]="a.activa ? 'primary' : ''" (click)="toggle(a)">
-                  {{ a.activa ? 'Activada' : 'Desactivada' }}
+                <span class="badge mr-1" [ngClass]="a.activa ? 'ok' : 'dim'">{{ a.activa ? 'Activa' : 'Inactiva' }}</span>
+                <button class="btn small" [ngClass]="a.activa ? 'primary' : ''" (click)="toggle(a)"
+                  [attr.title]="a.activa ? 'Desactivar automatización' : 'Activar automatización'"
+                  [attr.aria-label]="(a.activa ? 'Desactivar' : 'Activar') + ' la automatización ' + a.nombre">
+                  {{ a.activa ? 'Desactivar' : 'Activar' }}
                 </button>
               </td>
               <td class="flex">
@@ -36,25 +43,25 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar automatización' : 'Nueva automatización' }}</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
-          <label class="label">Nombre *</label>
-          <input class="input" [(ngModel)]="form.nombre" required />
-          <label class="label">Evento *</label>
-          <select class="input" [(ngModel)]="form.evento">
+          <label class="label" for="lf1">Nombre *</label>
+          <input id="lf1" class="input" [(ngModel)]="form.nombre" required >
+          <label class="label" for="lf2">Evento *</label>
+          <select id="lf2" class="input" [(ngModel)]="form.evento">
             @for (ev of EVENTOS; track ev) {
               <option [value]="ev">{{ ev }}</option>
             }
           </select>
           <div class="form-row">
-            <div><label class="label">Minutos antes *</label><input class="input" type="number" min="0" [(ngModel)]="form.minutosAntes" /></div>
+            <div><label class="label" for="lf3">Minutos antes *</label><input id="lf3" class="input" type="number" min="0" [(ngModel)]="form.minutosAntes" ></div>
             <div>
-              <label class="label">Plantilla *</label>
-              <select class="input" [(ngModel)]="form.plantillaId">
+              <label class="label" for="lf4">Plantilla *</label>
+              <select id="lf4" class="input" [(ngModel)]="form.plantillaId">
                 <option value="">—</option>
                 @for (p of plantillas; track p.id) {
                   <option [value]="p.id">{{ p.nombre }}</option>
@@ -62,14 +69,14 @@
               </select>
             </div>
           </div>
-          <label class="label">Condición</label>
-          <input class="input" [(ngModel)]="form.condicion" placeholder="ej. estado:cita" />
+          <label class="label" for="lf5">Condición</label>
+          <input id="lf5" class="input" [(ngModel)]="form.condicion" placeholder="ej. estado:cita" >
           <label class="label flex items-center gap-2">
             <input type="checkbox" [(ngModel)]="form.activa" /> Activa
           </label>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

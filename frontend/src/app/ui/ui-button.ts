@@ -26,7 +26,7 @@ export type UiButtonSize = 'sm' | 'md' | 'lg';
       [attr.aria-busy]="loading() || null"
       [attr.aria-label]="ariaLabel()"
       [attr.title]="title() || ariaLabel()"
-      (click)="onClick.emit($event)"
+      (click)="clicked.emit($event)"
     >
       @if (icon()) {
         <mat-icon>{{ icon() }}</mat-icon>
@@ -47,5 +47,5 @@ export class UiButtonComponent {
   readonly ariaLabel = input<string | null>(null);
   readonly title = input<string | null>(null);
 
-  readonly onClick = output<MouseEvent>();
+  readonly clicked = output<MouseEvent>();
 }

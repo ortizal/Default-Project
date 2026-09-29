@@ -3,14 +3,14 @@
 
     <div class="card">
       <div class="toolbar">
-          <select class="input sm" [(ngModel)]="estadoF" (ngModelChange)="cargar()">
+          <select class="input sm" aria-label="Estado" [(ngModel)]="estadoF" (ngModelChange)="cargar()">
             <option value="">Todos los estados</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="ENVIADA">Enviada</option>
             <option value="ERROR">Error</option>
             <option value="CANCELADA">Cancelada</option>
           </select>
-          <select class="input sm" [(ngModel)]="eventoF" (ngModelChange)="cargar()">
+          <select class="input sm" aria-label="Evento" [(ngModel)]="eventoF" (ngModelChange)="cargar()">
             <option value="">Todos los eventos</option>
             <option value="CITA_CREADA">Cita creada</option>
             <option value="CITA_PROXIMA">Cita próxima</option>

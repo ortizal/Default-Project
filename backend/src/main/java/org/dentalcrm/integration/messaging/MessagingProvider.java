@@ -18,6 +18,9 @@ public interface MessagingProvider {
 
     void enviarMensaje(String sesionId, String telefono, String texto);
 
+    void enviarImagen(String sesionId, String telefono, String nombreArchivo,
+                      String mime, byte[] contenido, String caption);
+
     /**
      * Envía un documento (PDF, imagen, etc.) por WhatsApp. Implementado por
      * OpenWA vía send-document (base64).

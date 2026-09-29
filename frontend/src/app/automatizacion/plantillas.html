@@ -3,12 +3,16 @@
       <button class="btn primary" (click)="nueva()">+ Nueva plantilla</button>
     </ui-page-header>
 
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
+
     <div class="card">
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando plantillas…">
-        <thead><tr><th>ID</th><th>Nombre</th><th>Contenido</th><th>Activa</th><th></th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Contenido</th><th>Activa</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
         <tbody>
           @for (p of items; track p.id) {
             <tr>
@@ -29,16 +33,16 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar plantilla' : 'Nueva plantilla' }}</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
-          <label class="label">Nombre *</label>
-          <input class="input" [(ngModel)]="form.nombre" required />
-          <label class="label">Contenido *</label>
-          <textarea class="input" rows="5" [(ngModel)]="form.contenido" required></textarea>
+          <label class="label" for="lf1">Nombre *</label>
+          <input id="lf1" class="input" [(ngModel)]="form.nombre" required >
+          <label class="label" for="lf2">Contenido *</label>
+          <textarea id="lf2" class="input" rows="5" [(ngModel)]="form.contenido" required></textarea>
           <div class="muted text-xs mt-1">
             Variables: <code>&#123;nombres&#125;</code>, <code>&#123;fecha&#125;</code>, <code>&#123;hora&#125;</code>, <code>&#123;servicio&#125;</code>, <code>&#123;doctor&#125;</code>
           </div>
@@ -47,7 +51,7 @@
           </label>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

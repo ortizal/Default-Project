@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     '(document:keydown.escape)': 'onEscape()',
   },
   template: `
-    <div class="modal-backdrop" (click)="cerrable() && close.emit()" role="presentation">
+    <div class="modal-backdrop" role="presentation" (click)="onBackdrop($event)">
       <div
         class="modal"
         [class.narrow]="size() === 'narrow'"
@@ -19,7 +19,6 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="title() || null"
-        (click)="$event.stopPropagation()"
       >
         @if (title()) {
           <h2>{{ title() }}</h2>
@@ -41,9 +40,14 @@ export class UiModalComponent {
   readonly size = input<'narrow' | 'default' | 'wide'>('default');
   readonly cerrable = input(true);
 
-  readonly close = output<void>();
+  readonly closed = output<void>();
 
   onEscape(): void {
-    if (this.cerrable()) this.close.emit();
+    if (this.cerrable()) this.closed.emit();
+  }
+
+  /** Sólo el clic directo sobre el fondo cierra; el resto se ignora. */
+  onBackdrop(e: MouseEvent): void {
+    if (this.cerrable() && e.target === e.currentTarget) this.closed.emit();
   }
 }

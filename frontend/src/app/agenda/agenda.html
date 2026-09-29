@@ -1,10 +1,14 @@
 
     <ui-page-header title="Agenda del día" />
 
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
+
     <div class="card">
       <div class="toolbar">
-        <app-date class="fecha-filtro" [(ngModel)]="fecha" (change)="cargarTodo()" />
-        <select class="input" [(ngModel)]="odontologoSeleccionado" (change)="cargarTodo()">
+        <app-date class="fecha-filtro" ariaLabel="Fecha" [(ngModel)]="fecha" (cambio)="cargarTodo()" />
+        <select class="input" aria-label="Odontólogo" [(ngModel)]="odontologoSeleccionado" (change)="cargarTodo()">
           <option value="">Todos los odontólogos</option>
           @for (o of odontologos; track o.id) {
             <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
@@ -26,7 +30,7 @@
       @if (vista === 'dia') {
       <div class="grid cols-2 mt-2">
         <div class="span-all">
-          <h3>Horarios atendidos hoy</h3>
+          <h2>Horarios atendidos hoy</h2>
           @if (horarios.length === 0) {
             <div class="empty">Sin horario configurado para hoy ({{ diario }}).</div>
           }
@@ -39,9 +43,9 @@
         </div>
 
         <div class="card m-0">
-          <h3>Citas del día</h3>
+          <h2>Citas del día</h2>
           <table class="tbl">
-            <thead><tr><th>Hora</th><th>Paciente</th><th>Servicio</th><th>Estado</th><th></th></tr></thead>
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Servicio</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
             <tbody>
               @for (c of citas; track c.id) {
                 <tr>
@@ -59,7 +63,7 @@
         </div>
 
         <div class="card m-0">
-          <h3>Bloqueos</h3>
+          <h2>Bloqueos</h2>
           @for (b of bloqueos; track b.id) {
             <div class="between">
               <span>{{ b.horaInicio || 'Todo el día' }}{{ b.horaInicio && b.horaFin ? '–' + b.horaFin : '' }} — {{ b.motivo || 'Sin motivo' }}</span>
@@ -73,9 +77,9 @@
 
       <div class="card mt-4">
         <div class="between">
-          <h3>Disponibilidad</h3>
+          <h2>Disponibilidad</h2>
           <div class="flex">
-            <select class="input" [(ngModel)]="servicioSeleccionado" (change)="cargarSlots()">
+            <select class="input" aria-label="Servicio" [(ngModel)]="servicioSeleccionado" (change)="cargarSlots()">
               <option value="">Selecciona un servicio</option>
               @for (s of servicios; track s.id) {
                 <option [value]="s.id">{{ s.nombre }} ({{ s.duracionMinutos }} min)</option>
@@ -106,31 +110,31 @@
     </div>
 
     @if (showBloqueo) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>Bloquear horario</h2>
           <div class="form-row">
-            <div class="half"><label class="label">Hora inicio</label><input class="input" type="time" [(ngModel)]="bloqueo.horaInicio" /></div>
-            <div><label class="label">Hora fin</label><input class="input" type="time" [(ngModel)]="bloqueo.horaFin" /></div>
-            <div class="full"><label class="label">Motivo</label><input class="input" [(ngModel)]="bloqueo.motivo" /></div>
+            <div class="half"><label class="label" for="lf1">Hora inicio</label><input id="lf1" class="input" type="time" [(ngModel)]="bloqueo.horaInicio" ></div>
+            <div><label class="label" for="lf2">Hora fin</label><input id="lf2" class="input" type="time" [(ngModel)]="bloqueo.horaFin" ></div>
+            <div class="full"><label class="label" for="lf3">Motivo</label><input id="lf3" class="input" [(ngModel)]="bloqueo.motivo" ></div>
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showBloqueo = false">Cancelar</button>
-            <button class="btn primary" (click)="guardarBloqueo()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardarBloqueo()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>
     }
 
     @if (showCita) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>Nueva cita</h2>
           <div class="sub">{{ fecha }} — {{ horaSugerida }}</div>
           <div class="form-row">
             <div class="full">
-              <label class="label">Paciente *</label>
-              <select class="input" [(ngModel)]="cita.pacienteId">
+              <label class="label" for="lf4">Paciente *</label>
+              <select id="lf4" class="input" [(ngModel)]="cita.pacienteId">
                 <option value="">Selecciona un paciente</option>
                 @for (p of pacientes; track p.id) {
                   <option [value]="p.id">{{ p.nombres }} {{ p.apellidos }}</option>
@@ -138,20 +142,20 @@
               </select>
             </div>
             <div>
-              <label class="label">Servicio *</label>
-              <select class="input" [(ngModel)]="cita.servicioId" (change)="onServicio()">
+              <label class="label" for="lf5">Servicio *</label>
+              <select id="lf5" class="input" [(ngModel)]="cita.servicioId" (change)="onServicio()">
                 <option value="">—</option>
                 @for (s of servicios; track s.id) {
                   <option [value]="s.id">{{ s.nombre }}</option>
                 }
               </select>
             </div>
-            <div><label class="label">Hora *</label><input class="input" type="time" [(ngModel)]="cita.horaInicio" required /></div>
-            <div class="full"><label class="label">Observaciones</label><input class="input" [(ngModel)]="cita.observaciones" /></div>
+            <div><label class="label" for="lf6">Hora *</label><input id="lf6" class="input" type="time" [(ngModel)]="cita.horaInicio" required ></div>
+            <div class="full"><label class="label" for="lf7">Observaciones</label><input id="lf7" class="input" [(ngModel)]="cita.observaciones" ></div>
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showCita = false">Cancelar</button>
-            <button class="btn primary" (click)="guardarCita()">Agendar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardarCita()">{{ guardando ? 'Agendando…' : 'Agendar' }}</button>
           </div>
         </div>
       </div>

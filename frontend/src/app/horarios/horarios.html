@@ -3,10 +3,14 @@
       <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevo()">+ Nuevo horario</button>
     </ui-page-header>
 
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
+
     <div class="card">
       <div class="toolbar">
-        <label class="label mr-2">Odontólogo</label>
-        <select class="input" [(ngModel)]="odontologoSeleccionado" (change)="cargar()">
+        <label class="label mr-2" for="lf1">Odontólogo</label>
+        <select id="lf1" class="input" [(ngModel)]="odontologoSeleccionado" (change)="cargar()">
           <option value="" disabled>Selecciona un odontólogo</option>
           @for (o of odontologos; track o.id) {
             <option [value]="o.id">{{ o.nombres }} {{ o.apellidos }} — {{ o.especialidad || 'General' }}</option>
@@ -18,7 +22,7 @@
       }
       <ui-table [loading]="cargando" loadingText="Cargando horarios…">
         <thead>
-          <tr><th>ID</th><th>Día</th><th>Inicio</th><th>Fin</th><th>Intervalo</th><th>Estado</th><th></th></tr>
+          <tr><th>ID</th><th>Día</th><th>Inicio</th><th>Fin</th><th>Intervalo</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr>
         </thead>
         <tbody>
           @for (h of items; track h.id) {
@@ -43,7 +47,7 @@
 
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Días de excepción de atención</h3>
+        <h2 class="card-title">Días de excepción de atención</h2>
         <button class="btn primary" [disabled]="!odontologoSeleccionado" (click)="nuevaExcepcion()">+ Nueva excepción</button>
       </div>
       <p class="label mb-2">
@@ -55,7 +59,7 @@
       }
       <table class="tbl">
         <thead>
-          <tr><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Motivo</th><th></th></tr>
+          <tr><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Motivo</th><th><span class="visually-hidden">Acciones</span></th></tr>
         </thead>
         <tbody>
           @for (e of excepciones; track e.id) {
@@ -78,58 +82,58 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar horario' : 'Nuevo horario' }}</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
             <div class="full">
-              <label class="label">Día de la semana *</label>
-              <select class="input" [(ngModel)]="form.diaSemana">
+              <label class="label" for="lf2">Día de la semana *</label>
+              <select id="lf2" class="input" [(ngModel)]="form.diaSemana">
                 @for (d of DIAS; track $index) {
                   <option [value]="$index + 1">{{ d }}</option>
                 }
               </select>
             </div>
-            <div class="half"><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="form.horaInicio" required /></div>
-            <div class="half"><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="form.horaFin" required /></div>
-            <div class="full"><label class="label">Intervalo (min) *</label><input class="input" type="number" min="5" [(ngModel)]="form.intervaloMinutos" /></div>
+            <div class="half"><label class="label" for="lf3">Hora inicio *</label><input id="lf3" class="input" type="time" [(ngModel)]="form.horaInicio" required ></div>
+            <div class="half"><label class="label" for="lf4">Hora fin *</label><input id="lf4" class="input" type="time" [(ngModel)]="form.horaFin" required ></div>
+            <div class="full"><label class="label" for="lf5">Intervalo (min) *</label><input id="lf5" class="input" type="number" min="5" [(ngModel)]="form.intervaloMinutos" ></div>
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>
     }
   
     @if (showExcepcion) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>Nueva excepción de atención</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
-            <div class="full"><label class="label">Fecha *</label><input class="input" type="date" [(ngModel)]="excForm.fecha" required /></div>
+            <div class="full"><label class="label" for="lf6">Fecha *</label><input id="lf6" class="input" type="date" [(ngModel)]="excForm.fecha" required ></div>
             <div class="full">
-              <label class="label">Tipo *</label>
-              <select class="input" [(ngModel)]="excForm.tipo">
+              <label class="label" for="lf7">Tipo *</label>
+              <select id="lf7" class="input" [(ngModel)]="excForm.tipo">
                 <option value="CERRADO">Cerrado (todo el día)</option>
                 <option value="HORARIO_ESPECIAL">Horario especial</option>
               </select>
             </div>
             @if (!esCerrada()) {
-              <div class="half"><label class="label">Hora inicio *</label><input class="input" type="time" [(ngModel)]="excForm.horaInicio" required /></div>
-              <div class="half"><label class="label">Hora fin *</label><input class="input" type="time" [(ngModel)]="excForm.horaFin" required /></div>
+              <div class="half"><label class="label" for="lf8">Hora inicio *</label><input id="lf8" class="input" type="time" [(ngModel)]="excForm.horaInicio" required ></div>
+              <div class="half"><label class="label" for="lf9">Hora fin *</label><input id="lf9" class="input" type="time" [(ngModel)]="excForm.horaFin" required ></div>
             }
-            <div class="full"><label class="label">Motivo</label><input class="input" type="text" maxlength="255" placeholder="Ej: Feriado, mantenimiento, evento" [(ngModel)]="excForm.motivo" /></div>
+            <div class="full"><label class="label" for="lf10">Motivo</label><input id="lf10" class="input" type="text" maxlength="255" placeholder="Ej: Feriado, mantenimiento, evento" [(ngModel)]="excForm.motivo" ></div>
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showExcepcion = false">Cancelar</button>
-            <button class="btn primary" (click)="guardarExcepcion()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardarExcepcion()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

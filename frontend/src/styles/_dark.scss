@@ -2,52 +2,64 @@
 // Dark mode — se remapea la misma paleta LS, no un tema distinto.
 // Sólo cambian las variables de superficie/texto; el verde y el naranja
 // se mantienen idénticos en ambos temas.
+//
+// El bloque va en un mixin aplicado a `html.theme-dark`. La clase la pone el
+// script de <head> (siempre presente): por defecto refleja al sistema y, si el
+// usuario tocó el alternador del topbar, su elección guardada.
 // =====================================================================
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ls-background: #0e1712;
-    --ls-surface: #16211c;
-    --ls-surface-2: #1d2a24;
-    --ls-border: #2b3a33;
-    --ls-border-strong: #3a4b43;
-    --ls-text: #e7ede9;
-    --ls-muted: #9aa8a1;
+@mixin ls-dark-theme {
+  color-scheme: dark;
 
-    --ls-hero-a: #0b1310;
-    --ls-hero-b: #0a0f0d;
-    --ls-hero-c: #0c1218;
+  --ls-background: #0e1712;
+  --ls-surface: #16211c;
+  --ls-surface-2: #1d2a24;
+  --ls-border: #2b3a33;
+  --ls-border-strong: #3a4b43;
+  --ls-text: #e7ede9;
+  --ls-muted: #9aa8a1;
 
-    --ls-sidebar-bg: #101a16;
-    --ls-sidebar-fg: #cbd5d0;
-    --ls-sidebar-active: rgba(161, 203, 53, 0.14);
+  --ls-hero-a: #0b1310;
+  --ls-hero-b: #0a0f0d;
+  --ls-hero-c: #0c1218;
 
-    --ls-primary-soft: rgba(161, 203, 53, 0.16);
-    --ls-secondary-soft: rgba(248, 100, 1, 0.18);
+  --ls-sidebar-bg: #101a16;
+  --ls-sidebar-fg: #cbd5d0;
+  --ls-sidebar-active: rgba(161, 203, 53, 0.14);
 
-    --ls-success-soft: rgba(46, 125, 50, 0.22);
-    --ls-danger-soft: rgba(198, 40, 40, 0.22);
-    --ls-warning-soft: rgba(180, 83, 9, 0.24);
-    --ls-info-soft: rgba(3, 105, 161, 0.24);
+  --ls-primary-text: #a1cb35;
+  --ls-secondary-dark: #ff9a5a;
 
-    --ls-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --ls-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
-    --ls-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --ls-primary-soft: rgba(161, 203, 53, 0.16);
+  --ls-secondary-soft: rgba(248, 100, 1, 0.18);
 
-    // Material hereda la superficie oscura
-    --mat-sys-surface: #16211c;
-    --mat-sys-surface-container: #1d2a24;
-    --mat-sys-surface-container-low: #16211c;
-    --mat-sys-surface-container-high: #212f28;
-    --mat-sys-on-surface: #e7ede9;
-    --mat-sys-on-surface-variant: #9aa8a1;
-    --mat-sys-outline: #3a4b43;
-    --mat-sys-outline-variant: #2b3a33;
-    --mat-toolbar-container-background: #16211c;
-    --mat-toolbar-container-color: #e7ede9;
+  // Los tonos semánticos se aclaran para superar 4.5:1 sobre las
+  // superficies oscuras (badges y .msg usan texto sobre fondo teñido).
+  --ls-success: #66bb6a;
+  --ls-info: #4fc3f7;
+  --ls-warning: #f59e0b;
+  --ls-danger: #f57c76;
 
-    color-scheme: dark;
-  }
+  --ls-success-soft: rgba(102, 187, 106, 0.18);
+  --ls-danger-soft: rgba(239, 108, 102, 0.18);
+  --ls-warning-soft: rgba(245, 158, 11, 0.18);
+  --ls-info-soft: rgba(79, 195, 247, 0.18);
+
+  --ls-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --ls-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --ls-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  // Material hereda la superficie oscura
+  --mat-sys-surface: #16211c;
+  --mat-sys-surface-container: #1d2a24;
+  --mat-sys-surface-container-low: #16211c;
+  --mat-sys-surface-container-high: #212f28;
+  --mat-sys-on-surface: #e7ede9;
+  --mat-sys-on-surface-variant: #9aa8a1;
+  --mat-sys-outline: #3a4b43;
+  --mat-sys-outline-variant: #2b3a33;
+  --mat-toolbar-container-background: #16211c;
+  --mat-toolbar-container-color: #e7ede9;
 
   body {
     background: var(--ls-background);
@@ -63,7 +75,10 @@
     background: rgba(255, 255, 255, 0.045);
   }
 
-  .seg-btn {
+  // Sólo el segmento inactivo se apaga; .active conserva el relleno
+  // chartreuse de la regla base (si no, la tinta oscura caería sobre fondo
+  // oscuro y el texto quedaría ilegible).
+  .seg-btn:not(.active) {
     background: var(--ls-surface-2);
     color: var(--ls-muted);
   }
@@ -93,9 +108,22 @@
 
   // El verde primario debe pasar contraste sobre superficies oscuras
   .btn.primary,
-  .badge.primary,
   .seg-btn.active {
     color: #16211c;
+  }
+
+  // El badge va sobre fondo teñido (no relleno), así que pide texto claro
+  .badge.primary {
+    color: var(--ls-primary);
+  }
+
+  // --ls-danger se aclara para el texto: el relleno del botón necesita tinta oscura
+  .btn.danger {
+    color: #3d0f0d;
+  }
+
+  .btn.danger:hover:not(:disabled) {
+    color: var(--ls-on-state);
   }
 
   .btn.primary:hover:not(:disabled) {
@@ -112,7 +140,9 @@
   }
 }
 
-// Clase explícita para sobreescribir al sistema (futuro toggle manual)
-html.dark {
-  color-scheme: dark;
+// El script de <head> en src/index.html deja SIEMPRE una clase en <html>
+// (theme-dark o theme-light): sigue al sistema si no hay elección guardada y
+// la respeta si la hay. Así Material y la paleta LS cambian a la vez.
+html.theme-dark {
+  @include ls-dark-theme;
 }

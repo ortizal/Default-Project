@@ -1,18 +1,22 @@
 
     <ui-page-header title="Usuarios">
-      <ui-button variant="primary" (onClick)="nuevo()">+ Nuevo usuario</ui-button>
+      <ui-button variant="primary" (clicked)="nuevo()">+ Nuevo usuario</ui-button>
     </ui-page-header>
+
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
 
     <div class="card">
       <div class="toolbar">
-        <input class="input buscar" placeholder="Buscar por usuario, nombre o email" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <input class="input buscar" aria-label="Buscar por usuario, nombre o email" placeholder="Buscar por usuario, nombre o email" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
         <button class="btn" (click)="cargar(0)">Buscar</button>
       </div>
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando usuarios…">
-        <thead><tr><th>ID</th><th>Usuario</th><th>Nombres</th><th>Email</th><th>Teléfono</th><th>Roles</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr><th>ID</th><th>Usuario</th><th>Nombres</th><th>Email</th><th>Teléfono</th><th>Roles</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
         <tbody>
           @for (u of items; track u.id) {
             <tr>
@@ -46,25 +50,25 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
-            <div class="half"><label class="label">Usuario *</label><input class="input" [(ngModel)]="form.username" required [readonly]="!!form.id" /></div>
-            <div class="half"><label class="label">Email *</label><input class="input" type="email" [(ngModel)]="form.email" required /></div>
-            <div class="half"><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
-            <div class="half"><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
+            <div class="half"><label class="label" for="lf1">Usuario *</label><input id="lf1" class="input" [(ngModel)]="form.username" required [readonly]="!!form.id" ></div>
+            <div class="half"><label class="label" for="lf2">Email *</label><input id="lf2" class="input" type="email" [(ngModel)]="form.email" required ></div>
+            <div class="half"><label class="label" for="lf3">Nombres *</label><input id="lf3" class="input" [(ngModel)]="form.nombres" required ></div>
+            <div class="half"><label class="label" for="lf4">Apellidos *</label><input id="lf4" class="input" [(ngModel)]="form.apellidos" required ></div>
             @if (!form.id) {
-              <div class="full"><label class="label">Contraseña *</label><input class="input" type="password" [(ngModel)]="form.password" required autocomplete="new-password" /></div>
+              <div class="full"><label class="label" for="lf5">Contraseña *</label><input id="lf5" class="input" type="password" [(ngModel)]="form.password" required autocomplete="new-password" ></div>
             } @else {
-              <div class="full"><label class="label">Nueva contraseña (opcional)</label><input class="input" type="password" [(ngModel)]="form.nuevaPassword" autocomplete="new-password" placeholder="Dejar vacío para no cambiar" /></div>
+              <div class="full"><label class="label" for="lf6">Nueva contraseña (opcional)</label><input id="lf6" class="input" type="password" [(ngModel)]="form.nuevaPassword" autocomplete="new-password" placeholder="Dejar vacío para no cambiar" ></div>
             }
-            <div class="full"><label class="label">Teléfono</label><input class="input" [(ngModel)]="form.telefono" /></div>
+            <div class="full"><label class="label" for="lf7">Teléfono</label><input id="lf7" class="input" [(ngModel)]="form.telefono" ></div>
             <div class="full">
-              <label class="label">Roles *</label>
+              <span class="label">Roles *</span>
               <div class="flex wrap">
                 @for (r of ROLES; track r) {
                   <label class="mr-2 text-sm">
@@ -76,7 +80,7 @@
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

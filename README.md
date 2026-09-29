@@ -138,10 +138,35 @@ mvn spring-boot:run
 cd frontend
 npm install
 npx ng serve --proxy-config proxy.conf.json   # proxy /api -> http://localhost:8080
-# abrir http://localhost:4200 (usuario admin / admin123)
+# abrir http://localhost:4200/dental_crm (usuario admin / admin123)
 # compilación de producción:
 npx ng build --configuration production
 ```
+
+### Verificación de calidad (frontend)
+
+```bash
+npx ng lint                    # ESLint + angular-eslint (0 errores)
+npx ng test --no-watch         # unitarios (Vitest)
+npm run e2e                    # Playwright; requiere `ng serve` en :4200
+npx ng build --configuration production   # build de producción (sin warnings)
+```
+
+Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en 10 páginas,
+con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
+campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
+Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en claro/oscuro × preferencia
+del sistema/manual), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
+(diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
+
+### Sistema de diseño
+
+- **SCSS + Bootstrap 5**, paleta `#A1CB35` / `#F86401` / `#FFFFFF`, escala compacta `sm`.
+- Tokens en `src/theme.scss` y `src/styles/`; plantilla de página común `.content-wrapper`.
+- UI kit reutilizable en `src/app/ui/` (`ui-page-header`, `ui-table`, `ui-pagination`,
+  `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`…).
+- Material Angular retematizado a la paleta LS; tema oscuro por clase en `<html>`
+  con alternador en el topbar (respeta `prefers-color-scheme` mientras no haya elección).
 
 ## Estructura
 

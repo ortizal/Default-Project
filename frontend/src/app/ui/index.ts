@@ -14,3 +14,5 @@ export * from './ui-empty-state';
 export * from './ui-loading';
 export * from './ui-pagination';
 export * from './ui-confirm-dialog';
+export * from './ui-confirm-host';
+export * from './confirm.service';

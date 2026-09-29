@@ -11,7 +11,8 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.dentalcrm.domain.horario.HorarioOdontologo;
 import org.dentalcrm.domain.odontologo.Odontologo;
-import org.springframework.beans.factory.annotation.Value;
+import org.dentalcrm.web.configuracion.ConsultorioService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
@@ -32,16 +33,24 @@ public class HorarioPdfService {
     private static final String[] DIAS = {"Lunes", "Martes", "Miércoles", "Jueves",
             "Viernes", "Sábado", "Domingo"};
 
-    private final String clinicaNombre;
-    private final String clinicaDireccion;
-    private final String clinicaTelefono;
+    private final ConsultorioService consultorioService;
+    private final String clinicaNombreInicial;
+    private final String clinicaDireccionInicial;
+    private final String clinicaTelefonoInicial;
 
-    public HorarioPdfService(@Value("${app.clinica.nombre:Clínica Dental}") String clinicaNombre,
-                             @Value("${app.clinica.direccion:}") String clinicaDireccion,
-                             @Value("${app.clinica.telefono:}") String clinicaTelefono) {
-        this.clinicaNombre = clinicaNombre;
-        this.clinicaDireccion = clinicaDireccion;
-        this.clinicaTelefono = clinicaTelefono;
+    @Autowired
+    public HorarioPdfService(ConsultorioService consultorioService) {
+        this.consultorioService = consultorioService;
+        this.clinicaNombreInicial = null;
+        this.clinicaDireccionInicial = null;
+        this.clinicaTelefonoInicial = null;
+    }
+
+    HorarioPdfService(String clinicaNombre, String clinicaDireccion, String clinicaTelefono) {
+        this.consultorioService = null;
+        this.clinicaNombreInicial = clinicaNombre;
+        this.clinicaDireccionInicial = clinicaDireccion;
+        this.clinicaTelefonoInicial = clinicaTelefono;
     }
 
     public String nombreArchivo(Odontologo doctor) {
@@ -132,6 +141,10 @@ public class HorarioPdfService {
     }
 
     private void encabezado(Document doc) {
+        var consultorio = consultorioService == null ? null : consultorioService.obtener();
+        String clinicaNombre = consultorio == null ? clinicaNombreInicial : consultorio.nombre();
+        String clinicaDireccion = consultorio == null ? clinicaDireccionInicial : consultorio.direccion();
+        String clinicaTelefono = consultorio == null ? clinicaTelefonoInicial : consultorio.telefono();
         Paragraph p = new Paragraph(clinicaNombre, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15, new Color(20, 90, 160)));
         p.setAlignment(Element.ALIGN_CENTER);
         doc.add(p);

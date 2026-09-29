@@ -9,9 +9,11 @@
   // Identidad
   --ls-primary: #a1cb35;
   --ls-primary-dark: #7fa524;
+  // Verde de marca oscurecido: el chartreuse puro no llega a 4.5:1 sobre blanco
+  --ls-primary-text: #547018;
   --ls-primary-soft: #eef6da;
   --ls-secondary: #f86401;
-  --ls-secondary-dark: #d15501;
+  --ls-secondary-dark: #b84a00;
   --ls-secondary-soft: #fdeadb;
   --ls-on-primary: #263238;
   --ls-on-secondary: #ffffff;
@@ -36,7 +38,7 @@
   --ls-hero-c: #101820;
 
   // Estados
-  --ls-success: #2e7d32;
+  --ls-success: #27702b;
   --ls-success-soft: #e4f3e5;
   --ls-info: #0369a1;
   --ls-info-soft: #e0f2fe;

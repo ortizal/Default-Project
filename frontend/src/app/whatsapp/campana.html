@@ -12,7 +12,7 @@
 
   <div class="campaign-grid">
     <section class="card campaign-form">
-      <h3>Crear publicación</h3>
+      <h2>Crear publicación</h2>
       <label class="label" for="texto">Texto del mensaje</label>
       <textarea id="texto" class="input" [(ngModel)]="texto" rows="6"
         placeholder="Ej. Tenemos promociones especiales este mes..."></textarea>
@@ -43,7 +43,7 @@
     </section>
 
     <section class="card status-card">
-      <h3>Publicar en Estado</h3>
+      <h2>Publicar en Estado</h2>
       <p class="muted">La versión actual de OpenWA no expone una ruta confirmada para publicar Estados.</p>
       <button class="btn" type="button" disabled title="OpenWA no expone esta operación">
         Publicar en Estado
@@ -56,7 +56,7 @@
     <section class="card result-card">
       <div class="result-head">
         <div>
-          <h3>Resultado de la campaña</h3>
+          <h2>Resultado de la campaña</h2>
           <p class="muted">{{ resultado.total }} destinatarios procesados.</p>
         </div>
         <div class="result-stats">

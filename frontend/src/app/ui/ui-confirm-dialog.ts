@@ -14,7 +14,7 @@ import { UiButtonComponent } from './ui-button';
       [title]="title()"
       size="narrow"
       [cerrable]="true"
-      (close)="cancel.emit()"
+      (closed)="cancelled.emit()"
     >
       <div class="confirm-body">
         <span class="confirm-icon" aria-hidden="true">{{ icon() }}</span>
@@ -22,12 +22,12 @@ import { UiButtonComponent } from './ui-button';
       </div>
 
       <ng-container actions>
-        <ui-button variant="ghost" (onClick)="cancel.emit()">
+        <ui-button variant="ghost" (clicked)="cancelled.emit()">
           {{ cancelText() }}
         </ui-button>
         <ui-button
           [variant]="danger() ? 'danger' : 'primary'"
-          (onClick)="confirm.emit()"
+          (clicked)="confirm.emit()"
         >
           {{ confirmText() }}
         </ui-button>
@@ -45,5 +45,6 @@ export class UiConfirmDialogComponent {
   readonly icon = input('warning');
 
   readonly confirm = output<void>();
-  readonly cancel = output<void>();
+  /** 'cancel' es evento nativo (HTMLDialogElement), por eso 'cancelled'. */
+  readonly cancelled = output<void>();
 }

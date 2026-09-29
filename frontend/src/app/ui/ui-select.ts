@@ -67,8 +67,8 @@ export class UiSelectComponent implements ControlValueAccessor {
 
   readonly isDisabled = computed(() => this.cvaDisabled || this.disabled());
 
-  private onChange: (v: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (v: string) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 
   writeValue(v: unknown): void {
     this.value = v == null ? '' : String(v);

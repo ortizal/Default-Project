@@ -515,7 +515,11 @@ public class AgenteConversacionalService {
         List<Servicio> servicios = serviciosActivos();
         List<Odontologo> odontologos = odontologosActivos();
         EntradaAgendamiento entrada = ParserAgendamiento.parsear(t, hoy(), servicios, odontologos);
-        if (entrada != null && entrada.servicioId() != null) {
+        // "mañana a las 10" sin nombrar servicio es también una petición de
+        // cita: antes sólo contaba el servicio y el bot respondía
+        // "no logré entenderte" en vez de iniciar el flujo.
+        if (entrada != null && (entrada.servicioId() != null || entrada.doctorId() != null
+                || entrada.fecha() != null || entrada.horaInicio() != null)) {
             return Intencion.AGENDAR_CITA;
         }
         if (contiene(t, PALABRAS_SALUDO)) {

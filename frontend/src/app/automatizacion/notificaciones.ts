@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -12,13 +12,14 @@ import { UiPageHeaderComponent, UiTableComponent } from '../ui';
   imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class NotificacionesComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   items: Notificacion[] = [];
   error = '';
   cargando = false;
   estadoF = '';
   eventoF = '';
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -28,9 +29,20 @@ export class NotificacionesComponent implements OnInit {
     const params = new URLSearchParams({ limite: '200' });
     if (this.estadoF) params.set('estado', this.estadoF);
     if (this.eventoF) params.set('evento', this.eventoF);
-    withLoading(this, this.api.get<Notificacion[]>(`/automatizaciones/notificaciones?${params.toString()}`), undefined, this.cdr).subscribe({
-      next: (r) => { this.items = r; this.cdr.markForCheck(); },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+    withLoading(
+      this,
+      this.api.get<Notificacion[]>(`/automatizaciones/notificaciones?${params.toString()}`),
+      undefined,
+      this.cdr,
+    ).subscribe({
+      next: (r) => {
+        this.items = r;
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -51,6 +63,8 @@ export class NotificacionesComponent implements OnInit {
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return a?.status === 409 || a?.status === 400 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a?.status === 409 || a?.status === 400
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
   }
 }

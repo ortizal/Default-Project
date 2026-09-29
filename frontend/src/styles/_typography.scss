@@ -51,6 +51,11 @@ samp {
   font-size: 0.9em;
 
 }
+// Bootstrap pinta <code> de rosa; usamos el naranja LS (legible en ambos temas)
+code {
+  color: var(--ls-secondary-dark);
+
+}
 // --- Roles tipográficos --------------------------------------------
 .page-title {
   font-size: var(--ls-text-page);

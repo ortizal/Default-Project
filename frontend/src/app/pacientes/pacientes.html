@@ -1,12 +1,16 @@
 
     <ui-page-header title="Pacientes">
-      <ui-button variant="primary" (onClick)="nuevo()">+ Nuevo paciente</ui-button>
+      <ui-button variant="primary" (clicked)="nuevo()">+ Nuevo paciente</ui-button>
     </ui-page-header>
+
+    @if (exito) {
+      <div class="msg ok">{{ exito }}</div>
+    }
 
     <div class="card">
       <div class="toolbar">
-        <input class="input buscar" placeholder="Buscar por nombre, cédula o teléfono" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
-        <select class="input" [(ngModel)]="estado" (change)="cargar(0)">
+        <input class="input buscar" aria-label="Buscar por nombre, cédula o teléfono" placeholder="Buscar por nombre, cédula o teléfono" [(ngModel)]="q" (keyup.enter)="cargar(0)" />
+        <select class="input" aria-label="Estado del paciente" [(ngModel)]="estado" (change)="cargar(0)">
           <option value="">Todos los estados</option>
           <option value="ACTIVO">Activos</option>
           <option value="INACTIVO">Inactivos</option>
@@ -19,7 +23,7 @@
       }
       <ui-table [loading]="cargando" loadingText="Cargando pacientes…">
         <thead>
-          <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Estado</th><th></th></tr>
+          <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr>
         </thead>
         <tbody>
           @for (p of items; track p.id) {
@@ -49,47 +53,47 @@
     </div>
 
     @if (showForm) {
-      <div class="modal-backdrop" (click)="close($event)">
-        <div class="modal" (click)="stop($event)">
+      <div role="presentation" class="modal-backdrop" (click)="close($event)">
+        <div role="presentation" class="modal" (click)="stop($event)">
           <h2>{{ form.id ? 'Editar paciente' : 'Nuevo paciente' }}</h2>
           <div class="sub">Los campos con * son obligatorios.</div>
           @if (error) {
             <div class="msg error">{{ error }}</div>
           }
           <div class="form-row">
-            <div><label class="label">Cédula</label><input class="input" maxlength="20" [(ngModel)]="form.cedula" /></div>
-            <div><label class="label">Fecha nacimiento</label><app-date [(ngModel)]="form.fechaNacimiento" /></div>
-            <div><label class="label">Nombres *</label><input class="input" [(ngModel)]="form.nombres" required /></div>
-            <div><label class="label">Apellidos *</label><input class="input" [(ngModel)]="form.apellidos" required /></div>
-            <div><label class="label">Teléfono</label><input class="input" maxlength="30" [(ngModel)]="form.telefono" /></div>
-            <div><label class="label">Email</label><input class="input" type="email" [(ngModel)]="form.email" /></div>
-            <div><label class="label">Dirección</label><input class="input" [(ngModel)]="form.direccion" /></div>
-            <div><label class="label">Ciudad</label><input class="input" maxlength="120" [(ngModel)]="form.ciudad" /></div>
+            <div><label class="label" for="lf1">Cédula</label><input id="lf1" class="input" maxlength="20" [(ngModel)]="form.cedula" ></div>
+            <div><label class="label" for="lfFecha">Fecha nacimiento</label><app-date id="lfFecha" controlId="lfFecha" ariaLabel="Fecha de nacimiento" [(ngModel)]="form.fechaNacimiento" /></div>
+            <div><label class="label" for="lf2">Nombres *</label><input id="lf2" class="input" [(ngModel)]="form.nombres" required ></div>
+            <div><label class="label" for="lf3">Apellidos *</label><input id="lf3" class="input" [(ngModel)]="form.apellidos" required ></div>
+            <div><label class="label" for="lf4">Teléfono</label><input id="lf4" class="input" maxlength="30" [(ngModel)]="form.telefono" ></div>
+            <div><label class="label" for="lf5">Email</label><input id="lf5" class="input" type="email" [(ngModel)]="form.email" ></div>
+            <div><label class="label" for="lf6">Dirección</label><input id="lf6" class="input" [(ngModel)]="form.direccion" ></div>
+            <div><label class="label" for="lf7">Ciudad</label><input id="lf7" class="input" maxlength="120" [(ngModel)]="form.ciudad" ></div>
             @if (esMenor) {
               <div class="full sep-top">
-                <label class="label">Tutor(es) — obligatorio por ser menor de edad</label>
+                <span class="label">Tutor(es) — obligatorio por ser menor de edad</span>
                 <div class="form-row">
                   <div class="stack">
-                    <label class="label">Padre (PADRE)</label>
-                    <input class="input" placeholder="Nombres *" [(ngModel)]="tutorPadre.nombres" />
-                    <input class="input" placeholder="Apellidos" [(ngModel)]="tutorPadre.apellidos" />
-                    <input class="input" placeholder="Teléfono" [(ngModel)]="tutorPadre.telefono" />
+                    <label class="label" for="lf8">Padre (PADRE)</label>
+                    <input id="lf8" class="input" placeholder="Nombres *" [(ngModel)]="tutorPadre.nombres" >
+                    <input class="input" aria-label="Apellidos del padre" placeholder="Apellidos" [(ngModel)]="tutorPadre.apellidos" />
+                    <input class="input" aria-label="Teléfono del padre" placeholder="Teléfono" [(ngModel)]="tutorPadre.telefono" />
                   </div>
                   <div class="stack">
-                    <label class="label">Madre (MADRE)</label>
-                    <input class="input" placeholder="Nombres *" [(ngModel)]="tutorMadre.nombres" />
-                    <input class="input" placeholder="Apellidos" [(ngModel)]="tutorMadre.apellidos" />
-                    <input class="input" placeholder="Teléfono" [(ngModel)]="tutorMadre.telefono" />
+                    <label class="label" for="lf9">Madre (MADRE)</label>
+                    <input id="lf9" class="input" placeholder="Nombres *" [(ngModel)]="tutorMadre.nombres" >
+                    <input class="input" aria-label="Apellidos de la madre" placeholder="Apellidos" [(ngModel)]="tutorMadre.apellidos" />
+                    <input class="input" aria-label="Teléfono de la madre" placeholder="Teléfono" [(ngModel)]="tutorMadre.telefono" />
                   </div>
                 </div>
                 <div class="sub mt-2">Registra al padre y/o la madre (al menos uno).</div>
               </div>
             }
-            <div class="full"><label class="label">Observaciones</label><textarea class="input" [(ngModel)]="form.observaciones"></textarea></div>
+            <div class="full"><label class="label" for="lf10">Observaciones</label><textarea id="lf10" class="input" [(ngModel)]="form.observaciones"></textarea></div>
           </div>
           <div class="modal-actions">
             <button class="btn" (click)="showForm = false">Cancelar</button>
-            <button class="btn primary" (click)="guardar()">Guardar</button>
+            <button class="btn primary" [disabled]="guardando" (click)="guardar()">{{ guardando ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </div>
       </div>

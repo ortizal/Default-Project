@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -23,9 +23,18 @@ const MODULOS = [
 @Component({
   selector: 'app-auditoria',
   templateUrl: './auditoria.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent, UiPaginationComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    UiPageHeaderComponent,
+    UiTableComponent,
+    UiPaginationComponent,
+  ],
 })
 export class AuditoriaComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   readonly modulos = MODULOS;
   rows: Auditoria[] = [];
   q = '';
@@ -35,8 +44,6 @@ export class AuditoriaComponent implements OnInit {
   cargando = false;
   error = '';
   private abiertos = new Set<number>();
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -52,13 +59,21 @@ export class AuditoriaComponent implements OnInit {
     if (this.q.trim()) params.push(`q=${encodeURIComponent(this.q.trim())}`);
     if (this.modulo) params.push(`modulo=${this.modulo}`);
     params.push(`page=${this.pagina}`, 'size=20');
-    withLoading(this, this.api.get<Page<Auditoria>>(`/auditoria?${params.join('&')}`), undefined, this.cdr).subscribe({
+    withLoading(
+      this,
+      this.api.get<Page<Auditoria>>(`/auditoria?${params.join('&')}`),
+      undefined,
+      this.cdr,
+    ).subscribe({
       next: (r) => {
         this.rows = r.content;
         this.totalPag = Math.max(r.totalPages ?? 1, 1);
         this.cdr.markForCheck();
       },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 

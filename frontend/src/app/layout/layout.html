@@ -6,7 +6,7 @@
     (navegar)="cerrarMenu()"
   />
   @if (abierto()) {
-    <div class="sidebar-backdrop" (click)="cerrarMenu()"></div>
+    <div role="presentation" class="sidebar-backdrop" (click)="cerrarMenu()"></div>
   }
   <div class="main">
     <app-header
@@ -14,14 +14,14 @@
       [abierto]="abierto()"
       [titulo]="titulo"
       [fecha]="fecha"
-      (toggle)="alternar()"
+      (alternarMenu)="alternar()"
       (salir)="salir()"
     />
-    <div class="content">
+    <main class="content">
       <div class="content-wrapper">
         <router-outlet />
       </div>
-    </div>
+    </main>
     <app-footer />
   </div>
 </div>

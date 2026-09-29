@@ -7,7 +7,7 @@
   margin: 0 auto;
 }
 .eyebrow {
-  color: var(--ls-primary);
+  color: var(--ls-primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .12em;
@@ -75,7 +75,9 @@
   font-size: 12px;
 }
 
-.campaign-note span,
+.campaign-note span {
+  color: var(--ls-text);
+}
 .status-help {
   color: var(--ls-muted);
 }

@@ -28,7 +28,7 @@
     margin: 0 0 6px;
     font-size: 26px;
     font-weight: 700;
-    color: var(--ls-primary-dark);
+    color: var(--ls-primary-text);
   }
 
   .sub {
@@ -288,6 +288,11 @@
   background: var(--ls-primary);
   border-radius: 3px 3px 0 0;
 
+}
+
+// Las etiquetas caen dentro de la columna chartreuse: tinta oscura.
+.chart-col .muted {
+  color: var(--ls-on-primary);
 }
 .chart-bar {
   width: 100%;

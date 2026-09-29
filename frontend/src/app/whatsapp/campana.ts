@@ -1,8 +1,8 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { UiPageHeaderComponent } from '../ui';
+import { UiPageHeaderComponent, UiConfirmService } from '../ui';
 import { Api } from '../core/api';
 
 interface ResultadoDestinatario {
@@ -26,14 +26,17 @@ interface CampanaResponse {
   imports: [CommonModule, FormsModule, RouterLink, UiPageHeaderComponent],
 })
 export class CampanaComponent {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly confirmacion = inject(UiConfirmService);
+
   texto = '';
   enlace = '';
   archivo: File | null = null;
   enviando = false;
   error = '';
   resultado?: CampanaResponse;
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   seleccionarArchivo(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -46,13 +49,20 @@ export class CampanaComponent {
     this.archivo = null;
   }
 
-  enviar(): void {
+  async enviar(): Promise<void> {
     if (!this.texto.trim() && !this.enlace.trim() && !this.archivo) {
       this.error = 'Agrega un texto, enlace, imagen o video.';
       return;
     }
     const contenido = this.archivo ? ` y el archivo “${this.archivo.name}”` : '';
-    if (!confirm(`Se enviará esta publicidad a todos los pacientes activos${contenido}. ¿Continuar?`)) return;
+    if (
+      !(await this.confirmacion.abrir({
+        titulo: 'Enviar campaña',
+        mensaje: `Se enviará esta publicidad a todos los pacientes activos${contenido}. ¿Continuar?`,
+        confirmarTexto: 'Enviar',
+      }))
+    )
+      return;
 
     const form = new FormData();
     if (this.texto.trim()) form.append('texto', this.texto.trim());

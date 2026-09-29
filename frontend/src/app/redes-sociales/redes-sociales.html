@@ -1,0 +1,70 @@
+<ui-page-header title="Redes sociales">
+  <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
+</ui-page-header>
+
+<section class="card">
+  @if (error) { <div class="msg error" role="alert">{{ error }}</div> }
+  @if (aviso) { <div class="msg ok" role="status">{{ aviso }}</div> }
+  @if (cargando && !status) { <div class="empty"><span class="spinner"></span> Consultando conexiones...</div> }
+
+  @if (status) {
+    <div class="grid2">
+      <article class="stat">
+        <div class="between">
+          <div>
+            <h2>Facebook e Instagram</h2>
+            <p class="muted">Conecta una página de Facebook y las cuentas profesionales de Instagram vinculadas.</p>
+          </div>
+          @if (status.meta.accounts.length) {
+            <button class="btn danger small" (click)="desconectar('meta', 'Meta')">Desconectar</button>
+          } @else {
+            <button class="btn primary" (click)="conectar('meta')" [disabled]="!status.meta.configured || conectando !== ''">
+              {{ conectando === 'meta' ? 'Abriendo Meta...' : 'Conectar Meta' }}
+            </button>
+          }
+        </div>
+        @if (!status.meta.configured) {
+          <div class="msg warn mt-3">La aplicación de Meta aún no está configurada en el servidor.</div>
+        }
+        @if (status.meta.accounts.length) {
+          <ul class="mt-3">
+            @for (account of status.meta.accounts; track account.id) {
+              <li><span class="badge ok">{{ account.platform }}</span> {{ account.accountName }}</li>
+            }
+          </ul>
+        } @else {
+          <div class="muted mt-3">Sin perfiles conectados</div>
+        }
+      </article>
+
+      <article class="stat">
+        <div class="between">
+          <div>
+            <h2>TikTok</h2>
+            <p class="muted">Conecta el perfil de TikTok Business para preparar publicaciones desde el CRM.</p>
+          </div>
+          @if (status.tiktok.accounts.length) {
+            <button class="btn danger small" (click)="desconectar('tiktok', 'TikTok')">Desconectar</button>
+          } @else {
+            <button class="btn primary" (click)="conectar('tiktok')" [disabled]="!status.tiktok.configured || conectando !== ''">
+              {{ conectando === 'tiktok' ? 'Abriendo TikTok...' : 'Conectar TikTok' }}
+            </button>
+          }
+        </div>
+        @if (!status.tiktok.configured) {
+          <div class="msg warn mt-3">La aplicación de TikTok aún no está configurada en el servidor.</div>
+        }
+        @if (status.tiktok.accounts.length) {
+          <ul class="mt-3">
+            @for (account of status.tiktok.accounts; track account.id) {
+              <li><span class="badge ok">TIKTOK</span> {{ account.accountName }}</li>
+            }
+          </ul>
+        } @else {
+          <div class="muted mt-3">Sin perfiles conectados</div>
+        }
+      </article>
+    </div>
+    <p class="muted mt-4">La conexión habilita el acceso autorizado a las cuentas. La publicación de contenido multimedia se habilitará en el siguiente paso.</p>
+  }
+</section>

@@ -15,6 +15,12 @@
     box-shadow: inset -12px 0 12px -12px rgba(38, 50, 56, 0.18);
   }
 
+  // Foco visible para recorrer la tabla con teclado cuando se desborda
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ls-focus-ring);
+  }
+
 }
 table.tbl {
   width: 100%;
@@ -129,7 +135,6 @@ table.tbl {
 
 }
 // --- paginación compacta ---------------------------------------------
-.paginador,
 .pagination-bar {
   display: flex;
   align-items: center;

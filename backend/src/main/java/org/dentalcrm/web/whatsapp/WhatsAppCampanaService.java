@@ -73,8 +73,13 @@ public class WhatsAppCampanaService {
             String nombre = (paciente.getNombres() + " " + paciente.getApellidos()).trim();
             try {
                 if (contenido != null) {
-                    provider.enviarDocumento(sesion.getSesionId(), paciente.getTelefono(), nombreArchivo,
-                            mime, contenido, mensaje);
+                    if (mime != null && mime.toLowerCase().startsWith("image/")) {
+                        provider.enviarImagen(sesion.getSesionId(), paciente.getTelefono(), nombreArchivo,
+                                mime, contenido, mensaje);
+                    } else {
+                        provider.enviarDocumento(sesion.getSesionId(), paciente.getTelefono(), nombreArchivo,
+                                mime, contenido, mensaje);
+                    }
                 } else {
                     provider.enviarMensaje(sesion.getSesionId(), paciente.getTelefono(), mensaje);
                 }

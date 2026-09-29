@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Api } from '../core/api';
 import { Bloqueo, Cita } from '../core/models';
@@ -22,6 +22,9 @@ interface DiaDatos {
   standalone: true,
 })
 export class CalendarioComponent {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @Input() modo: 'semana' | 'mes' = 'semana';
   @Input() set fecha(v: string) {
     this.ancla = v;
@@ -46,8 +49,6 @@ export class CalendarioComponent {
   private horariosDia?: Set<number>;
   private reqSeq = 0;
 
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
-
   cargar(): void {
     if (!this.ancla || !this.odontologo) {
       this.dias = [];
@@ -58,14 +59,23 @@ export class CalendarioComponent {
     this.cargando = true;
     this.cdr.markForCheck();
     if (!this.horariosDia) {
-      this.api.get<{ id: number; diaSemana: number; estado?: string }[]>(`/horarios?odontologoId=${this.odontologo}`).subscribe({
-        next: (r) => {
-          this.horariosDia = new Set(r.filter((h) => h.estado === 'ACTIVO').map((h) => h.diaSemana));
-          this.construir();
-          this.cdr.markForCheck();
-        },
-        error: () => { this.construir(); this.cdr.markForCheck(); },
-      });
+      this.api
+        .get<{ id: number; diaSemana: number; estado?: string }[]>(
+          `/horarios?odontologoId=${this.odontologo}`,
+        )
+        .subscribe({
+          next: (r) => {
+            this.horariosDia = new Set(
+              r.filter((h) => h.estado === 'ACTIVO').map((h) => h.diaSemana),
+            );
+            this.construir();
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.construir();
+            this.cdr.markForCheck();
+          },
+        });
     }
     const rango = this.rango();
     this.api
@@ -90,14 +100,18 @@ export class CalendarioComponent {
           this.cdr.markForCheck();
         },
       });
-    this.api.get<Bloqueo[]>(`/agenda/bloqueos?odontologoId=${this.odontologo}&desde=${rango.desde}&hasta=${rango.hasta}`).subscribe({
-      next: (r) => {
-        this.bloqueos = r;
-        this.construir();
-        this.cdr.markForCheck();
-      },
-      error: () => this.cdr.markForCheck(),
-    });
+    this.api
+      .get<Bloqueo[]>(
+        `/agenda/bloqueos?odontologoId=${this.odontologo}&desde=${rango.desde}&hasta=${rango.hasta}`,
+      )
+      .subscribe({
+        next: (r) => {
+          this.bloqueos = r;
+          this.construir();
+          this.cdr.markForCheck();
+        },
+        error: () => this.cdr.markForCheck(),
+      });
   }
 
   private rango(): { desde: string; hasta: string } {
@@ -170,7 +184,9 @@ export class CalendarioComponent {
     const fecha = new Date(iso + 'T12:00:00');
     const dia = ((fecha.getDay() + 6) % 7) + 1;
     const inactivo = this.horariosDia ? !this.horariosDia.has(dia) && !otroMes : false;
-    const citas = (porFecha.get(iso) ?? []).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+    const citas = (porFecha.get(iso) ?? []).sort((a, b) =>
+      a.horaInicio.localeCompare(b.horaInicio),
+    );
     return { iso, numero, enOtroMes: otroMes, citas, bloqueado: bloqueadas.has(iso), inactivo };
   }
 
@@ -201,7 +217,10 @@ export class CalendarioComponent {
   }
 
   private nombreEstado(estado: string): string {
-    return (estado || '').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return (estado || '')
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   private iso(d: Date): string {
@@ -217,6 +236,8 @@ export class CalendarioComponent {
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return a?.status === 400 || a?.status === 409 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a?.status === 400 || a?.status === 409
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
   }
 }

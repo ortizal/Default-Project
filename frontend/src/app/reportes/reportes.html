@@ -3,12 +3,12 @@
 
     <div class="toolbar">
       <div class="form-field">
-        <label class="label">Desde</label>
-        <input class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()" />
+        <label class="label" for="lf1">Desde</label>
+        <input id="lf1" class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()" >
       </div>
       <div class="form-field">
-        <label class="label">Hasta</label>
-        <input class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar()" />
+        <label class="label" for="lf2">Hasta</label>
+        <input id="lf2" class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar()" >
       </div>
       <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
     </div>
@@ -25,7 +25,7 @@
     }
     <div class="grid cols-2 mt-4">
       <div class="card m-0">
-        <div class="card-header"><h3 class="card-title">Citas por odontólogo</h3></div>
+        <div class="card-header"><h2 class="card-title">Citas por odontólogo</h2></div>
         @if (e?.citasPorOdontologo) {
           <table class="tbl">
             <tbody>
@@ -43,7 +43,7 @@
         }
       </div>
       <div class="card m-0">
-        <div class="card-header"><h3 class="card-title">Servicios más solicitados</h3></div>
+        <div class="card-header"><h2 class="card-title">Servicios más solicitados</h2></div>
         @if (e?.serviciosMasSolicitados) {
           <table class="tbl">
             <tbody>
@@ -60,7 +60,7 @@
         }
       </div>
       <div class="card m-0">
-        <div class="card-header"><h3 class="card-title">Citas por estado</h3></div>
+        <div class="card-header"><h2 class="card-title">Citas por estado</h2></div>
         @if (e?.porEstado) {
           <table class="tbl">
             <tbody>
@@ -74,7 +74,7 @@
         }
       </div>
       <div class="card m-0">
-        <div class="card-header"><h3 class="card-title">Confirmaciones por fuente</h3></div>
+        <div class="card-header"><h2 class="card-title">Confirmaciones por fuente</h2></div>
         @if (e?.confirmacionesPorFuente) {
           <table class="tbl">
             <tbody>
@@ -89,7 +89,7 @@
       </div>
     </div>
     <div class="card mt-4">
-      <div class="card-header"><h3 class="card-title">Citas por día (último mes)</h3></div>
+      <div class="card-header"><h2 class="card-title">Citas por día (último mes)</h2></div>
       @if (e?.citasPorDia && e!.citasPorDia.length) {
         <div class="flex chart-bars">
           @for (s of e!.citasPorDia; track s.fecha) {

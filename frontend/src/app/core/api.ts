@@ -1,4 +1,4 @@
-import { ApplicationRef, Injectable, NgZone } from '@angular/core';
+import { ApplicationRef, Injectable, NgZone, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
 
@@ -10,13 +10,11 @@ const DEFAULT: ApiConfig = { apiUrl: '/api/v1' };
 
 @Injectable({ providedIn: 'root' })
 export class Api {
-  private cfg: ApiConfig = { ...DEFAULT };
+  private http = inject(HttpClient);
+  private zone = inject(NgZone);
+  private appRef = inject(ApplicationRef);
 
-  constructor(
-    private http: HttpClient,
-    private zone: NgZone,
-    private appRef: ApplicationRef,
-  ) {}
+  private cfg: ApiConfig = { ...DEFAULT };
 
   async init(): Promise<void> {
     try {
@@ -58,18 +56,21 @@ export class Api {
   private inZone<T>(source: Observable<T>): Observable<T> {
     return new Observable<T>((subscriber) => {
       const sub = source.subscribe({
-        next: (value) => this.zone.run(() => {
-          subscriber.next(value);
-          this.scheduleTick();
-        }),
-        error: (err) => this.zone.run(() => {
-          subscriber.error(err);
-          this.scheduleTick();
-        }),
-        complete: () => this.zone.run(() => {
-          subscriber.complete();
-          this.scheduleTick();
-        }),
+        next: (value) =>
+          this.zone.run(() => {
+            subscriber.next(value);
+            this.scheduleTick();
+          }),
+        error: (err) =>
+          this.zone.run(() => {
+            subscriber.error(err);
+            this.scheduleTick();
+          }),
+        complete: () =>
+          this.zone.run(() => {
+            subscriber.complete();
+            this.scheduleTick();
+          }),
       });
       return () => sub.unsubscribe();
     });

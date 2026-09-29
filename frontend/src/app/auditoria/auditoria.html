@@ -3,8 +3,8 @@
 
     <div class="card">
       <form class="toolbar" (ngSubmit)="buscar()">
-          <input class="input" [(ngModel)]="q" name="q" placeholder="Buscar acción, módulo o entidad" />
-          <select class="input" [(ngModel)]="modulo" name="modulo" (ngModelChange)="buscar()">
+          <input class="input" [(ngModel)]="q" name="q" aria-label="Buscar acción, módulo o entidad" placeholder="Buscar acción, módulo o entidad" />
+          <select class="input" [(ngModel)]="modulo" name="modulo" aria-label="Módulo" (ngModelChange)="buscar()">
             <option value="">Todos los módulos</option>
             @for (m of modulos; track m) {
               <option [value]="m">{{ m }}</option>
@@ -16,11 +16,17 @@
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando auditoría…">
-        <thead><tr><th></th><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Entidad</th><th>IP</th></tr></thead>
+        <thead><tr><th><span class="visually-hidden">Acciones</span></th><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Entidad</th><th>IP</th></tr></thead>
         <tbody>
           @for (a of rows; track a.id) {
             <tr>
-              <td><button class="btn small" (click)="toggle(a.id)">{{ abierto(a.id) ? '−' : '+' }}</button></td>
+              <td>
+                <button class="btn small" (click)="toggle(a.id)"
+                  [attr.title]="abierto(a.id) ? 'Colapsar detalle' : 'Ver detalle'"
+                  [attr.aria-label]="(abierto(a.id) ? 'Colapsar' : 'Ver') + ' el detalle de la auditoría del ' + a.createdAt">
+                  {{ abierto(a.id) ? '−' : '+' }}
+                </button>
+              </td>
               <td>{{ a.createdAt }}</td>
               <td>{{ a.usuarioId ?? '-' }}</td>
               <td><strong>{{ a.accion }}</strong></td>

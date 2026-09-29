@@ -23,14 +23,16 @@ $ls-dark: mat.define-theme((
   ),
 ));
 
+// Material debe seguir la MISMA preferencia que la paleta LS (src/styles/
+// _dark.scss): el sistema por defecto y, si el usuario eligió a mano en el
+// alternador del topbar, las clases html.theme-dark / html.theme-light.
+// Si no, iconos y superficies de Material quedarían en el tema contrario.
 :root {
   color-scheme: light;
   @include mat.all-component-themes($ls-light);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    @include mat.all-component-themes($ls-dark);
-  }
+html.theme-dark {
+  color-scheme: dark;
+  @include mat.all-component-themes($ls-dark);
 }

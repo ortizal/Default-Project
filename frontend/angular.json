@@ -3,7 +3,8 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "b8ca6193-a3a2-43b5-991a-599ff1a8dc5f"
+    "analytics": "b8ca6193-a3a2-43b5-991a-599ff1a8dc5f",
+    "schematicCollections": ["angular-eslint"]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -20,28 +21,18 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "baseHref": "/dental_crm/",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/theme.scss",
-              "src/styles/styles.scss"
-            ],
+            "styles": ["src/theme.scss", "src/styles/styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/styles",
-                "node_modules"
-              ],
+              "includePaths": ["src/styles", "node_modules"],
               "sass": {
-                "silenceDeprecations": [
-                  "import"
-                ]
+                "silenceDeprecations": ["import"]
               }
             }
           },
@@ -83,6 +74,12 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+          }
         }
       }
     }

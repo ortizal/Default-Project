@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Api } from './api';
 import { LoginResponse } from './models';
@@ -7,12 +7,12 @@ const KEY = 'dentalcrm.auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private api = inject(Api);
+  private router = inject(Router);
+
   private state: LoginResponse | null = null;
 
-  constructor(
-    private api: Api,
-    private router: Router,
-  ) {
+  constructor() {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) this.state = JSON.parse(raw) as LoginResponse;

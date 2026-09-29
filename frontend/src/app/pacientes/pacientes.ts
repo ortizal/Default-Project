@@ -1,18 +1,39 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
-import { Paciente, Page, Tutor, nombreEstado } from '../core/models';
+import { Paciente, Page, Tutor } from '../core/models';
 import { AppDateComponent } from '../core/app-date.component';
 import { withLoading } from '../core/loading';
-import { UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent } from '../ui';
+import {
+  UiPageHeaderComponent,
+  UiButtonComponent,
+  UiTableComponent,
+  UiPaginationComponent,
+  UiBadgeComponent,
+  UiConfirmService,
+} from '../ui';
 
 @Component({
   selector: 'app-pacientes',
   templateUrl: './pacientes.html',
-  imports: [CommonModule, FormsModule, AppDateComponent, UiPageHeaderComponent, UiButtonComponent, UiTableComponent, UiPaginationComponent, UiBadgeComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AppDateComponent,
+    UiPageHeaderComponent,
+    UiButtonComponent,
+    UiTableComponent,
+    UiPaginationComponent,
+    UiBadgeComponent,
+  ],
 })
 export class PacientesComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly confirmacion = inject(UiConfirmService);
+
   items: Paciente[] = [];
   q = '';
   estado = 'ACTIVO';
@@ -20,14 +41,13 @@ export class PacientesComponent implements OnInit {
   size = 15;
   totalPages = 1;
   error = '';
+  exito = '';
   cargando = false;
   showForm = false;
   form: Partial<Paciente> = {};
   tutorPadre: Tutor = { parentesco: 'PADRE', nombres: '' };
   tutorMadre: Tutor = { parentesco: 'MADRE', nombres: '' };
   private reqSeq = 0;
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar(0);
@@ -39,13 +59,19 @@ export class PacientesComponent implements OnInit {
     const params = new URLSearchParams({ page: String(p), size: String(this.size) });
     if (this.q.trim()) params.set('q', this.q.trim());
     if (this.estado) params.set('estado', this.estado);
-    withLoading(this, this.api.get<Page<Paciente>>(`/pacientes?${params.toString()}`), () => seq === this.reqSeq, this.cdr).subscribe({
+    withLoading(
+      this,
+      this.api.get<Page<Paciente>>(`/pacientes?${params.toString()}`),
+      () => seq === this.reqSeq,
+      this.cdr,
+    ).subscribe({
       next: (r) => {
         if (seq !== this.reqSeq) return;
         this.items = r.content;
         this.totalPages = Math.max(r.totalPages ?? 1, 1);
         this.page = Math.min(p, this.totalPages - 1);
-       this.cdr.markForCheck(); },
+        this.cdr.markForCheck();
+      },
       error: (e) => {
         if (seq !== this.reqSeq) return;
         this.error = this.msg(e);
@@ -92,7 +118,10 @@ export class PacientesComponent implements OnInit {
     return edad < 18;
   }
 
+  guardando = false;
+
   guardar(): void {
+    if (this.guardando) return;
     if (!this.form.nombres || !this.form.apellidos) {
       this.error = 'Completa nombres y apellidos (campos obligatorios)';
       this.cdr.markForCheck();
@@ -124,13 +153,22 @@ export class PacientesComponent implements OnInit {
     const req = this.form.id
       ? this.api.put<Paciente>(`/pacientes/${this.form.id}`, body)
       : this.api.post<Paciente>('/pacientes', body);
+    this.guardando = true;
     req.subscribe({
       next: () => {
+        this.guardando = false;
+        this.exito = 'Paciente guardado correctamente';
+        this.error = '';
+        setTimeout(() => {
+          this.exito = '';
+          this.cdr.markForCheck();
+        }, 3000);
         this.showForm = false;
         this.cdr.markForCheck();
         this.cargar(this.page);
       },
       error: (e) => {
+        this.guardando = false;
         this.error = this.msg(e);
         this.cdr.markForCheck();
       },
@@ -144,11 +182,21 @@ export class PacientesComponent implements OnInit {
     return tutores;
   }
 
-  desactivar(p: Paciente): void {
-    if (!confirm('¿Desactivar este paciente?')) return;
+  async desactivar(p: Paciente): Promise<void> {
+    if (
+      !(await this.confirmacion.abrir({
+        titulo: 'Desactivar paciente',
+        mensaje: '¿Desactivar este paciente?',
+        confirmarTexto: 'Desactivar',
+      }))
+    )
+      return;
     this.api.del<void>(`/pacientes/${p.id}`).subscribe({
       next: () => this.cargar(this.page),
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -162,7 +210,14 @@ export class PacientesComponent implements OnInit {
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string; mensaje?: string }; status?: number };
-    if (a?.status === 409 || a?.status === 400) return a.error?.message ?? a.error?.mensaje ?? 'Datos inválidos';
+    if (a?.status === 409 || a?.status === 400)
+      return a.error?.message ?? a.error?.mensaje ?? 'Datos inválidos';
     return 'Error de conexión';
+  }
+
+  /** Escape cierra el modal/drawer mientras esté abierto. */
+  @HostListener('document:keydown.escape')
+  cerrarConEscape(): void {
+    if (this.showForm) this.showForm = false;
   }
 }

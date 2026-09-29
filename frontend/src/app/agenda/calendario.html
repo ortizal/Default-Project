@@ -1,7 +1,7 @@
 
     <div class="cal-head between">
       <button class="btn small" (click)="navegar(-1)">← {{ modo === 'semana' ? 'Semana anterior' : 'Mes anterior' }}</button>
-      <h3>{{ titulo }}</h3>
+      <h2>{{ titulo }}</h2>
       <button class="btn small" (click)="navegar(1)">{{ modo === 'semana' ? 'Siguiente semana' : 'Siguiente mes' }} →</button>
     </div>
     @if (error) {
@@ -12,7 +12,13 @@
       <div class="cal-grid">
         @for (d of dias; track d.iso) {
           <div class="cal-cell" [ngClass]="{ hoy: d.iso === hoy, festivo: d.inactivo, bloqueado: d.bloqueado }">
-            <div class="cal-day" (click)="irDia.emit(d.iso)">
+            <div
+              class="cal-day"
+              role="button"
+              tabindex="0"
+              (click)="irDia.emit(d.iso)"
+              (keydown.enter)="irDia.emit(d.iso)"
+            >
               <strong>{{ d.iso }}</strong>
               @if (d.inactivo) {
                 <span class="badge dim">sin horario</span>
@@ -48,7 +54,10 @@
           <div
             class="cal-cell"
             [ngClass]="{ hoy: d.iso === hoy, otro: d.enOtroMes, festivo: d.inactivo, bloqueado: d.bloqueado }"
+            role="button"
+            tabindex="0"
             (click)="irDia.emit(d.iso)"
+            (keydown.enter)="irDia.emit(d.iso)"
           >
             <div class="cal-day">
               <strong>{{ d.numero }}</strong>

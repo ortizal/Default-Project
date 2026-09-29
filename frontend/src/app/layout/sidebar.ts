@@ -23,6 +23,7 @@ const ICONOS: Record<string, string> = {
   '/reportes': 'insert_chart',
   '/auditoria': 'verified_user',
   '/usuarios': 'account_circle',
+  '/configuracion/consultorio': 'location_on',
 };
 
 @Component({

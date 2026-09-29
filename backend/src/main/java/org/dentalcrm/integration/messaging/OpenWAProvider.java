@@ -145,6 +145,34 @@ public class OpenWAProvider implements MessagingProvider {
     }
 
     @Override
+    public void enviarImagen(String sesionId, String telefono, String nombreArchivo,
+                             String mime, byte[] contenido, String caption) {
+        String idExterno = buscarId(sesionId);
+        if (idExterno == null) {
+            throw new BusinessException("SESION_NO_CONECTADA",
+                    "La sesión '" + sesionId + "' no existe en OpenWA");
+        }
+        String digitos = telefono == null ? "" : telefono.replaceAll("\\D", "");
+        if (digitos.isEmpty()) {
+            throw new BusinessException("TELEFONO_INVALIDO", "El teléfono de destino no es válido");
+        }
+        if (contenido == null || contenido.length == 0) {
+            throw new BusinessException("IMAGEN_VACIA", "La imagen a enviar no tiene contenido");
+        }
+        var body = new java.util.HashMap<String, Object>();
+        body.put("chatId", digitos + "@c.us");
+        body.put("base64", Base64.getEncoder().encodeToString(contenido));
+        body.put("mimetype", mime == null || mime.isBlank() ? "image/jpeg" : mime);
+        body.put("filename", nombreArchivo == null || nombreArchivo.isBlank() ? "imagen.jpg" : nombreArchivo);
+        if (caption != null && !caption.isBlank()) {
+            body.put("caption", caption);
+        }
+        ejecutar(client.post()
+                .uri("/api/sessions/{id}/messages/send-image", idExterno)
+                .bodyValue(body));
+    }
+
+    @Override
     public String nombreDeSesionExterna(String idExterno) {
         if (idExterno == null || idExterno.isBlank()) {
             return null;

@@ -46,7 +46,7 @@
 .stat-card.conectadas .stat-num { color: var(--ls-success); }
 .stat-card.desconectadas .stat-num { color: var(--ls-danger); }
 .stat-card.qr-pendiente .stat-num { color: var(--ls-warning); }
-.stat-card.total .stat-num { color: var(--ls-primary); }
+.stat-card.total .stat-num { color: var(--ls-primary-text); }
 .stat-card.error .stat-num { color: var(--ls-danger); }
 
 /* ---------------------------------------------------------------------

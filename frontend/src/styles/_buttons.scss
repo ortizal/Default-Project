@@ -149,6 +149,7 @@
 .btn.sm,
 .btn.small {
   min-height: $ls-control-h-sm;
+  min-width: $ls-control-h-sm;
   padding: 5px 10px;
   font-size: var(--ls-text-xs);
   gap: 4px;

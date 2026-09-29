@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
 async function login(page: Page) {
-  await page.goto('/');
+  await page.goto('./');
   await page.waitForSelector('input[name="username"]', { timeout: 10000 });
   await page.fill('input[name="username"]', 'admin');
   await page.fill('input[name="password"]', 'admin123');
@@ -10,7 +10,7 @@ async function login(page: Page) {
 }
 
 async function gotoOdontologos(page: Page) {
-  await page.click('a[href="/odontologos"]');
+  await page.click('a[href$="/odontologos"]');
   await page.waitForURL('**/odontologos', { timeout: 10000 });
   await page.waitForSelector('.card', { timeout: 10000 });
 }

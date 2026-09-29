@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -12,13 +12,14 @@ import { UiPageHeaderComponent } from '../ui';
   imports: [CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class ReportesComponent implements OnInit {
+  private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   e: EstadisticasData | null = null;
   error = '';
   cargando = false;
   desde = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
   hasta = new Date().toISOString().slice(0, 10);
-
-  constructor(private readonly api: Api, private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -28,9 +29,20 @@ export class ReportesComponent implements OnInit {
     const params = new URLSearchParams();
     if (this.desde) params.set('desde', this.desde);
     if (this.hasta) params.set('hasta', this.hasta);
-    withLoading(this, this.api.get<EstadisticasData>(`/reportes/estadisticas?${params.toString()}`), undefined, this.cdr).subscribe({
-      next: (r) => { this.e = r; this.cdr.markForCheck(); },
-      error: (e) => { this.error = this.msg(e); this.cdr.markForCheck(); },
+    withLoading(
+      this,
+      this.api.get<EstadisticasData>(`/reportes/estadisticas?${params.toString()}`),
+      undefined,
+      this.cdr,
+    ).subscribe({
+      next: (r) => {
+        this.e = r;
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.error = this.msg(e);
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -56,6 +68,8 @@ export class ReportesComponent implements OnInit {
 
   private msg(e: unknown): string {
     const a = e as { error?: { message?: string }; status?: number };
-    return a?.status === 409 || a?.status === 400 ? (a.error?.message ?? 'Datos inválidos') : 'Error de conexión';
+    return a?.status === 409 || a?.status === 400
+      ? (a.error?.message ?? 'Datos inválidos')
+      : 'Error de conexión';
   }
 }

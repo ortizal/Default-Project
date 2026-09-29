@@ -16,6 +16,30 @@
     rel="stylesheet"
   />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Tema aplicado antes del primer pintado (sin parpadeo). Deja SIEMPRE una
+    // clase en <html>: la guardada por el usuario o la del sistema, que sigue
+    // los cambios de prefers-color-scheme mientras no haya elección propia.
+    (function () {
+      try {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        var guardado = localStorage.getItem('ls-theme');
+        var aplicar = function (tema) {
+          var c = document.documentElement.classList;
+          c.remove('theme-dark', 'theme-light');
+          c.add('theme-' + tema);
+        };
+        aplicar(guardado === 'dark' || guardado === 'light' ? guardado : mq.matches ? 'dark' : 'light');
+        if (guardado !== 'dark' && guardado !== 'light') {
+          mq.addEventListener('change', function (e) {
+            aplicar(e.matches ? 'dark' : 'light');
+          });
+        }
+      } catch (e) {
+        /* sin almacenamiento/matchMedia: queda el tema claro por defecto */
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

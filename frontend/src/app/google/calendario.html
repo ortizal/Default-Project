@@ -21,28 +21,28 @@
         </div>
         <div class="grid2 mt-4">
           <div>
-            <label class="label">Client ID</label>
-            <input class="input" [(ngModel)]="credenciales.clientId" placeholder="google.client-id" />
+            <label class="label" for="lf1">Client ID</label>
+            <input id="lf1" class="input" [(ngModel)]="credenciales.clientId" placeholder="google.client-id" >
           </div>
           <div>
-            <label class="label">Client Secret</label>
-            <input class="input" [(ngModel)]="credenciales.clientSecret" type="password" placeholder="google.client-secret" />
+            <label class="label" for="lf2">Client Secret</label>
+            <input id="lf2" class="input" [(ngModel)]="credenciales.clientSecret" type="password" placeholder="google.client-secret" >
           </div>
           <div>
-            <label class="label">Redirect URI</label>
-            <input class="input" [(ngModel)]="credenciales.redirectUri" placeholder="http://localhost:8080/api/v1/google/callback" />
+            <label class="label" for="lf3">Redirect URI</label>
+            <input id="lf3" class="input" [(ngModel)]="credenciales.redirectUri" placeholder="http://localhost:8080/api/v1/google/callback" >
           </div>
           <div>
-            <label class="label">Auth Base URL</label>
-            <input class="input" [(ngModel)]="credenciales.authBaseUrl" />
+            <label class="label" for="lf4">Auth Base URL</label>
+            <input id="lf4" class="input" [(ngModel)]="credenciales.authBaseUrl" >
           </div>
           <div>
-            <label class="label">OAuth Base URL</label>
-            <input class="input" [(ngModel)]="credenciales.oauthBaseUrl" />
+            <label class="label" for="lf5">OAuth Base URL</label>
+            <input id="lf5" class="input" [(ngModel)]="credenciales.oauthBaseUrl" >
           </div>
           <div>
-            <label class="label">API Base URL</label>
-            <input class="input" [(ngModel)]="credenciales.apiBaseUrl" />
+            <label class="label" for="lf6">API Base URL</label>
+            <input id="lf6" class="input" [(ngModel)]="credenciales.apiBaseUrl" >
           </div>
         </div>
         <div class="flex gap mt-4">
@@ -89,9 +89,9 @@
         }
 
         @if (status.conectada) {
-          <h3 class="mt-4">Calendarios de la cuenta</h3>
+          <h2 class="mt-4">Calendarios de la cuenta</h2>
           <table class="tbl">
-            <thead><tr><th>Calendario</th><th>Zona horaria</th><th></th></tr></thead>
+            <thead><tr><th>Calendario</th><th>Zona horaria</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
             <tbody>
               @for (c of status.calendarios; track c.id) {
                 <tr>
