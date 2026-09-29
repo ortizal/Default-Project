@@ -36,8 +36,10 @@ $focus-ring-width: 3px;
 $focus-ring-opacity: 1;
 $focus-ring-blur: 0;
 
-$link-color: $ls-primary-dark;
-$link-hover-color: $ls-primary-dark;
+// Verde de texto (4,9:1 sobre blanco): Bootstrap lo pasa por funciones Sass,
+// así que aquí va el hex y en typography se fija por variable.
+$link-color: $ls-primary-text;
+$link-hover-color: $ls-primary-text;
 
 // En Bootstrap las fuentes se expresan en rem para que su aritmética
 // interna ($font-size * $line-height + padding) no mezcle unidades.

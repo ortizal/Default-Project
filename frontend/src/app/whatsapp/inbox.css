@@ -76,7 +76,7 @@
 
 .icon-btn:hover {
   border-color: var(--ls-primary);
-  color: var(--ls-primary);
+  color: var(--ls-primary-text);
 }
 
 .sidebar-search {

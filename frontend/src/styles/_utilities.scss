@@ -19,26 +19,11 @@
   gap: var(--ls-space-3);
 
 }
-.gap-1 {
-  gap: var(--ls-space-1);
-}
 .gap-2 {
   gap: var(--ls-space-2);
 }
 .gap-3 {
   gap: var(--ls-space-3);
-
-}
-.flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ls-space-2);
-
-}
-.flex-1 {
-  flex: 1 1 auto;
-  min-width: 0;
 
 }
 .wrap {
@@ -62,12 +47,6 @@
   font-size: var(--ls-text-xs);
 
 }
-.text-lg {
-  font-size: var(--ls-text-lg);
-
-
-
-}
 .text-center {
   text-align: center;
 
@@ -88,21 +67,8 @@
 .mt-3 {
   margin-top: var(--ls-space-3);
 }
-.mb-1 {
-  margin-bottom: var(--ls-space-1);
-}
 .mb-2 {
   margin-bottom: var(--ls-space-2);
-}
-.mb-3 {
-  margin-bottom: var(--ls-space-3);
-}
-.p-2 {
-  padding: var(--ls-space-2);
-}
-.p-3 {
-  padding: var(--ls-space-3);
-
 }
 // ------------------------------------------------------------ display
 
@@ -152,19 +118,6 @@
 // Filete lateral de acento (bloques destacados)
 
 
-// ------------------------------------------------------- accesibilidad
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-
-}
 // ---------------------------------------------------- barra de scroll
 .content::-webkit-scrollbar,
 .sidebar-nav::-webkit-scrollbar {
@@ -233,14 +186,6 @@
   margin-top: var(--ls-space-4);
 
 }
-.mb-4 {
-  margin-bottom: var(--ls-space-4);
-
-}
-.mb-6 {
-  margin-bottom: var(--ls-space-6);
-
-}
 .m-0 {
   margin: 0;
 
@@ -263,10 +208,6 @@
   align-items: center;
 
 }
-.items-end {
-  align-items: flex-end;
-
-}
 // Estados semánticos sobre texto (cifras, etiquetas, enlaces).
 // !important para ganarle a las utilidades de Bootstrap, que fijan el
 // color Sass del tema claro y no siguen los tokens del dark.
@@ -282,11 +223,7 @@
   color: var(--ls-warning) !important;
 
 }
-.text-info {
-  color: var(--ls-info) !important;
-
-}
-// Ocupa todas las columnas de cualquier rejilla (`.grid` o `.form-grid`)
+// Ocupa todas las columnas de cualquier rejilla (`.form-row`, `.grid`)
 .span-all {
   grid-column: 1 / -1;
 

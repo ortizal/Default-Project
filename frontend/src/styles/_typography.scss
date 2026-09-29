@@ -99,13 +99,18 @@ code {
   @include truncate;
 
 }
-// Claves / celdas de datos
-.k {
-  color: var(--ls-muted);
-  font-size: var(--ls-text-sm);
-
-}
 .v {
   font-weight: 500;
 
 }
+
+// Enlaces: el token --ls-primary-text da 4,9:1 sobre blanco y el tema oscuro
+// lo remapea (#a1cb35); el hex fijo de Bootstrap no seguiría el tema.
+a {
+  color: var(--ls-primary-text);
+
+  &:hover {
+    color: var(--ls-primary-text);
+  }
+}
+

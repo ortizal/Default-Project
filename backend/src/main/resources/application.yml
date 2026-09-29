@@ -48,6 +48,15 @@ app:
     telefono: ${CLINICA_TELEFONO:}
   social:
     token-encryption-key: ${APP_SOCIAL_TOKEN_ENCRYPTION_KEY:${JWT_SECRET:}}
+    frontend-url: ${SOCIAL_FRONTEND_URL:http://localhost:4200}
+    meta:
+      client-id: ${META_APP_ID:}
+      client-secret: ${META_APP_SECRET:}
+      redirect-uri: ${META_REDIRECT_URI:http://localhost:8080/api/v1/social/callback/meta}
+    tiktok:
+      client-key: ${TIKTOK_CLIENT_KEY:}
+      client-secret: ${TIKTOK_CLIENT_SECRET:}
+      redirect-uri: ${TIKTOK_REDIRECT_URI:http://localhost:8080/api/v1/social/callback/tiktok}
   mail:
     # SMTP opcional. Sin host no se manda correo: sólo se notifica por WhatsApp.
     host: ${MAIL_HOST:}

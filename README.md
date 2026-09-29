@@ -152,19 +152,21 @@ npm run e2e                    # Playwright; requiere `ng serve` en :4200
 npx ng build --configuration production   # build de producción (sin warnings)
 ```
 
-Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en 10 páginas,
-con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
+Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 19 rutas
+autenticadas, con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
 campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
 Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en claro/oscuro × preferencia
-del sistema/manual), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
+del sistema/manual), `hover.spec.ts` (contraste de los estados `:hover` — axe y
+`contraste.spec.ts` sólo miden el estado base), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
 (diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
 
 ### Sistema de diseño
 
 - **SCSS + Bootstrap 5**, paleta `#A1CB35` / `#F86401` / `#FFFFFF`, escala compacta `sm`.
 - Tokens en `src/theme.scss` y `src/styles/`; plantilla de página común `.content-wrapper`.
-- UI kit reutilizable en `src/app/ui/` (`ui-page-header`, `ui-table`, `ui-pagination`,
-  `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`…).
+- UI kit reutilizable en `src/app/ui/` (8 componentes, todos en uso: `ui-page-header`,
+  `ui-table`, `ui-pagination`, `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`,
+  `ui-confirm-host` + `UiConfirmService`).
 - Material Angular retematizado a la paleta LS; tema oscuro por clase en `<html>`
   con alternador en el topbar (respeta `prefers-color-scheme` mientras no haya elección).
 

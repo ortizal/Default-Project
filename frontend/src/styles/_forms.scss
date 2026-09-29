@@ -64,19 +64,6 @@ textarea.input {
     background: var(--ls-surface-2);
     cursor: default;
   }
-
-  &[aria-invalid="true"],
-  &.invalid,
-  &.error {
-    border-color: var(--ls-danger);
-    background: var(--ls-danger-soft);
-
-    &:focus {
-      box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.25);
-    }
-  }
-
-
 }
 textarea.input {
   min-height: 80px;
@@ -94,20 +81,6 @@ select.input {
 }
 // Mensaje de validación bajo el control (no desplaza el layout)
 
-
-// Mensaje de validación/ayuda usado por ui-input/ui-select/ui-textarea
-.field-msg {
-  margin-top: 5px;
-  font-size: var(--ls-text-xs);
-  line-height: 1.35;
-  color: var(--ls-muted);
-
-  &.error {
-    color: var(--ls-danger);
-    font-weight: 500;
-  }
-
-}
 // ------------------------------------------------------------- field
 .form-field {
   display: flex;
@@ -115,12 +88,11 @@ select.input {
   min-width: 0;
 
 }
-// ---------------------------------------------------------- form-grid
-// Rejilla base de 12 columnas. Cada hijo ocupa 3 columnas (3 por fila)
-// salvo que declare `.col-*`, `.half` o `.full`.
-// `.form-row` es el alias heredado: mismo comportamiento, para que los
-// formularios existentes sean responsive sin tocarlos.
-.form-grid,
+// ---------------------------------------------- rejilla de formularios
+// Rejilla base de 12 columnas: cada hijo ocupa 4 columnas (3 por fila)
+// salvo que declare `.half` o `.full` (o `.span-all` para ocupar la fila).
+// `form-row` es la única clase de rejilla: los formularios existentes
+// ya la usan y son responsive sin tocarlos.
 .form-row {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -131,23 +103,6 @@ select.input {
     min-width: 0;
   }
 
-  > .col-3 {
-    grid-column: span 3;
-  }
-  > .col-4 {
-    grid-column: span 4;
-  }
-  > .col-6,
-  > .half {
-    grid-column: span 6;
-  }
-  > .col-8 {
-    grid-column: span 8;
-  }
-  > .col-12,
-  > .full {
-    grid-column: 1 / -1;
-  }
 
 }
 // Apilado vertical con la escala de 4px (sustituye a margin-top inline)
@@ -157,13 +112,8 @@ select.input {
   gap: $ls-space-2;
 
 }
-.stack-3 {
-  gap: $ls-space-3;
-
-}
 // Tablet: 2 columnas, campos largos a ancho completo
 @include down($bp-lg) {
-  .form-grid,
   .form-row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
 
@@ -171,9 +121,6 @@ select.input {
       grid-column: span 3;
     }
 
-    > .col-6,
-    > .col-8,
-    > .col-12,
     > .half,
     > .full {
       grid-column: 1 / -1;
@@ -183,7 +130,6 @@ select.input {
 
 // Móvil: una columna, controles al 100%
 @include down($bp-md) {
-  .form-grid,
   .form-row {
     grid-template-columns: minmax(0, 1fr);
 
@@ -218,8 +164,7 @@ select.input {
 
 }
 // -------------------------------------------------- barra de filtros
-.toolbar,
-.filter-bar {
+.toolbar {
   display: flex;
   align-items: center;
   gap: $ls-space-2;
@@ -238,17 +183,9 @@ select.input {
   max-width: 100%;
 
 }
-.filtro {
-  display: flex;
-  align-items: center;
-  gap: $ls-space-2;
-  flex-wrap: wrap;
-
-}
 // En móvil la barra de filtros apila controles y botones al 100%
 @include down($bp-md) {
-  .toolbar,
-  .filter-bar {
+  .toolbar {
     .input,
     .buscar {
       width: 100%;
@@ -280,8 +217,7 @@ select.input {
     margin-bottom: 3px;
   }
 
-  .form-row,
-  .form-grid {
+  .form-row {
     gap: $ls-space-2;
   }
 

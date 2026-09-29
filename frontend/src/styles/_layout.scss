@@ -96,23 +96,6 @@ app-sidebar {
     }
   }
 
-  .topbar-user {
-    display: flex;
-    align-items: center;
-    gap: $ls-space-2;
-    font-size: var(--ls-text-sm);
-    color: var(--ls-muted);
-    white-space: nowrap;
-
-    @include md {
-      display: none;
-    }
-
-    strong {
-      color: var(--ls-text);
-      font-weight: 600;
-    }
-  }
 
 
 }
@@ -344,25 +327,6 @@ app-sidebar {
 
     &-actions {
       justify-content: flex-start;
-    }
-  }
-
-}
-// Barra de filtros / acciones secundarias bajo el page-header
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: $ls-space-2;
-  flex-wrap: wrap;
-  margin-bottom: $ls-space-4;
-
-  .filter-bar-spacer {
-    flex: 1 1 auto;
-  }
-
-  @include md {
-    .filter-bar-spacer {
-      display: none;
     }
   }
 

@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/api/v1/webhooks/**").permitAll()
                         .requestMatchers("/api/v1/google/callback").permitAll()
+                        .requestMatchers("/api/v1/social/callback/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/api-docs/**",
                                 "/api/v1/swagger-ui/**",

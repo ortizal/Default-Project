@@ -35,10 +35,10 @@
 
   // Los tonos semánticos se aclaran para superar 4.5:1 sobre las
   // superficies oscuras (badges y .msg usan texto sobre fondo teñido).
-  --ls-success: #66bb6a;
+  --ls-success: #71c074; // 4,7:1 sobre el soft translúcido con la fila en hover
   --ls-info: #4fc3f7;
   --ls-warning: #f59e0b;
-  --ls-danger: #f57c76;
+  --ls-danger: #f68580; // 4,7:1 sobre el soft translúcido con la fila en hover
 
   --ls-success-soft: rgba(102, 187, 106, 0.18);
   --ls-danger-soft: rgba(239, 108, 102, 0.18);
@@ -132,11 +132,6 @@
 
   .btn.outline {
     color: var(--ls-text);
-  }
-
-  .tbl td.cell-tooltip:hover::after {
-    background: #e7ede9;
-    color: #16211c;
   }
 }
 

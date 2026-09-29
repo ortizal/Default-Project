@@ -90,11 +90,13 @@ Angular 22 standalone, TypeScript estricto, build de producción con lazy loadin
   notificaciones, google calendar, reportes, agente, usuarios, auditoría.
 - Sistema de diseño: SCSS + Bootstrap 5, paleta `#A1CB35` / `#F86401` / `#FFFFFF`,
   escala compacta `sm`, tokens en `src/theme.scss` + `src/styles/`, plantilla `.content-wrapper`
-  y UI kit en `src/app/ui/` (`ui-page-header`, `ui-table`, `ui-pagination`, `ui-badge`, `ui-modal`,
-  `ui-button`, `ui-confirm-dialog`…). Material Angular retematizado a la paleta LS; tema oscuro
+  y UI kit en `src/app/ui/` (8 componentes, todos en uso: `ui-page-header`, `ui-table`,
+  `ui-pagination`, `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`, `ui-confirm-host`
+  + `UiConfirmService`). Material Angular retematizado a la paleta LS; tema oscuro
   por clase en `<html>` con alternador en el topbar.
 - QA: `ng lint`, `ng test` (Vitest) y `npm run e2e` (Playwright): axe-core (WCAG A/AA y
-  buenas prácticas), contraste WCAG AA en los 4 modos de tema, responsive, landmarks y
+  buenas prácticas), contraste WCAG AA en los 4 modos de tema (estado base y `:hover`),
+  responsive, landmarks y
   flujos de confirmación.
 - Dev: `npx ng serve --proxy-config proxy.conf.json` (proxy `/api` → `localhost:8080`).
 - Prod: build estático servido por nginx (ver `frontend/Dockerfile`) con `/api` proxy al backend.

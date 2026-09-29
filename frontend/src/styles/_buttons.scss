@@ -94,7 +94,8 @@
   &:hover:not(:disabled) {
     background: var(--ls-primary-dark);
     border-color: var(--ls-primary-dark);
-    color: var(--ls-on-state);
+    // Tinta casi negra sobre #7fa524 (6,36:1); blanco sólo daba 2,87:1
+    color: #0e1712;
   }
 }
 
@@ -118,7 +119,7 @@
   &:hover:not(:disabled) {
     background: var(--ls-primary-soft);
     border-color: var(--ls-primary);
-    color: var(--ls-primary-dark);
+    color: var(--ls-primary-text);
   }
 }
 
@@ -188,7 +189,7 @@
 
   &:hover {
     background: var(--ls-primary-soft);
-    color: var(--ls-primary-dark);
+    color: var(--ls-primary-text);
   }
 
   &:focus-visible {

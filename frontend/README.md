@@ -60,6 +60,7 @@ si ya está corriendo) y un navegador instalado (`npx playwright install chromiu
 npm run e2e                     # toda la suite
 npx playwright test qa          # un solo archivo
 npx playwright test contraste   # contraste WCAG AA en los 4 modos de tema
+npx playwright test hover       # contraste de los estados :hover (claro y oscuro)
 ```
 
 ## Additional Resources
