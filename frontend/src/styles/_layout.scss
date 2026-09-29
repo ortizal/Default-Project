@@ -87,7 +87,15 @@ app-sidebar {
   }
 
   // Toggle claro/oscuro — botón de sólo icono, siempre con label y tooltip
-  .topbar-tema {
+  // Material (MDC) anula el outline y sólo tiñe la capa de estado: se le
+// impone el anillo LS para que el foco por teclado sea visible (WCAG 2.4.7).
+.mat-mdc-icon-button:focus-visible,
+.mat-mdc-button-base:focus-visible {
+  outline: none;
+  box-shadow: var(--ls-focus-ring) !important;
+
+}
+.topbar-tema {
     color: var(--ls-muted);
 
     &:hover,

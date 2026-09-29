@@ -49,7 +49,10 @@ textarea.input {
     border-color: var(--ls-border-strong);
   }
 
-  &:focus {
+  // :focus-within conserva el anillo mientras Chromium navega los segmentos
+  // internos del input nativo de fecha (ahí quita :focus y :focus-visible).
+  &:focus,
+  &:focus-within {
     @include focus-ring;
   }
 

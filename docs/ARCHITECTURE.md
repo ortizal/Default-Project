@@ -96,7 +96,7 @@ Angular 22 standalone, TypeScript estricto, build de producción con lazy loadin
   por clase en `<html>` con alternador en el topbar.
 - QA: `ng lint`, `ng test` (Vitest) y `npm run e2e` (Playwright): axe-core (WCAG A/AA y
   buenas prácticas), contraste WCAG AA en los 4 modos de tema (estado base y `:hover`),
-  responsive, landmarks y
+  anillo de foco por teclado, responsive, landmarks y
   flujos de confirmación.
 - Dev: `npx ng serve --proxy-config proxy.conf.json` (proxy `/api` → `localhost:8080`).
 - Prod: build estático servido por nginx (ver `frontend/Dockerfile`) con `/api` proxy al backend.

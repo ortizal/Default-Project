@@ -157,7 +157,8 @@ autenticadas, con el formulario y el diálogo abiertos, y en tema oscuro), `qa.s
 campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
 Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en claro/oscuro × preferencia
 del sistema/manual), `hover.spec.ts` (contraste de los estados `:hover` — axe y
-`contraste.spec.ts` sólo miden el estado base), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
+`contraste.spec.ts` sólo miden el estado base), `foco.spec.ts` (anillo de foco por
+teclado en las 19 rutas + login, WCAG 2.4.7), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
 (diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
 
 ### Sistema de diseño

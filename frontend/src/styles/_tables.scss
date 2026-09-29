@@ -15,11 +15,6 @@
     box-shadow: inset -12px 0 12px -12px rgba(38, 50, 56, 0.18);
   }
 
-  // Foco visible para recorrer la tabla con teclado cuando se desborda
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--ls-focus-ring);
-  }
 
 }
 table.tbl {
@@ -142,5 +137,15 @@ table.tbl {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+
+}
+
+// El anillo de foco va al final: `.card .tbl-wrap` y `.tbl-wrap.scrollable`
+// (mismo número de clases) se declaran antes y le ganarían el box-shadow.
+.card .tbl-wrap:focus-visible,
+.contenido .tbl-wrap:focus-visible,
+.tbl-wrap:focus-visible {
+  outline: none;
+  box-shadow: var(--ls-focus-ring);
 
 }

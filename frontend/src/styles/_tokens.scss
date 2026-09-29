@@ -83,8 +83,10 @@
   --ls-shadow-md: 0 4px 12px rgba(38, 50, 56, 0.08);
   --ls-shadow-lg: 0 12px 32px rgba(38, 50, 56, 0.14);
 
-  // Foco
-  --ls-focus-ring: 0 0 0 3px rgba(161, 203, 53, 0.38);
+  // Foco — doble banda: la tinta exterior garantiza ≥3:1 contra cualquier
+  // fondo claro (WCAG 1.4.11) y la banda de marca garantiza ≥3:1 sobre los
+  // fondos oscuros (sidebar, modales). El halo verde al 38% sólo daba 1,3:1.
+  --ls-focus-ring: 0 0 0 3px #a1cb35, 0 0 0 6px #263238;
 
 }
 
