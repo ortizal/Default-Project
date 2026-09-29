@@ -46,6 +46,8 @@ app:
     nombre: ${CLINICA_NOMBRE:Clínica Dental}
     direccion: ${CLINICA_DIRECCION:}
     telefono: ${CLINICA_TELEFONO:}
+  social:
+    token-encryption-key: ${APP_SOCIAL_TOKEN_ENCRYPTION_KEY:${JWT_SECRET:}}
   mail:
     # SMTP opcional. Sin host no se manda correo: sólo se notifica por WhatsApp.
     host: ${MAIL_HOST:}
