@@ -152,13 +152,13 @@ npm run e2e                    # Playwright; requiere `ng serve` en :4200
 npx ng build --configuration production   # build de producción (sin warnings)
 ```
 
-Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 20 rutas
+Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 21 rutas
 autenticadas, con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
 campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
-Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en las 20 rutas ×
+Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en las 21 rutas ×
 claro/oscuro × preferencia del sistema/manual), `hover.spec.ts` (contraste de los
-estados `:hover` en las 20 rutas — axe y `contraste.spec.ts` sólo miden el estado
-base), `foco.spec.ts` (anillo de foco por teclado en las 20 rutas + login, WCAG 2.4.7
+estados `:hover` en las 21 rutas — axe y `contraste.spec.ts` sólo miden el estado
+base), `foco.spec.ts` (anillo de foco por teclado en las 21 rutas + login, WCAG 2.4.7
 y contraste del anillo ≥3:1, WCAG 1.4.11), `redes.spec.ts` (validación de la publicación en redes sociales),
 `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
 (diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
