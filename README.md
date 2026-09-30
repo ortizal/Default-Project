@@ -152,13 +152,15 @@ npm run e2e                    # Playwright; requiere `ng serve` en :4200
 npx ng build --configuration production   # build de producción (sin warnings)
 ```
 
-Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 19 rutas
+Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 20 rutas
 autenticadas, con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
 campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
-Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en claro/oscuro × preferencia
-del sistema/manual), `hover.spec.ts` (contraste de los estados `:hover` — axe y
-`contraste.spec.ts` sólo miden el estado base), `foco.spec.ts` (anillo de foco por
-teclado en las 19 rutas + login, WCAG 2.4.7), `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
+Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en las 20 rutas ×
+claro/oscuro × preferencia del sistema/manual), `hover.spec.ts` (contraste de los
+estados `:hover` en las 20 rutas — axe y `contraste.spec.ts` sólo miden el estado
+base), `foco.spec.ts` (anillo de foco por teclado en las 20 rutas + login, WCAG 2.4.7
+y contraste del anillo ≥3:1, WCAG 1.4.11), `redes.spec.ts` (validación de la publicación en redes sociales),
+`theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
 (diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
 
 ### Sistema de diseño
@@ -191,6 +193,7 @@ teclado en las 19 rutas + login, WCAG 2.4.7), `theme.spec.ts` (toggle del topbar
 | `docs/DEPLOYMENT.md` | Ambientes, variables, Docker Compose, nginx, backups |
 | `docs/SECURITY.md` | JWT, RBAC, tenencia, auditoría, endurecimiento |
 | `docs/WHATSAPP.md` | OpenWA: sesiones, webhook, inbox |
+| `docs/SOCIAL.md` | Redes sociales: OAuth Meta/TikTok y publicación |
 | `docs/GOOGLE-CALENDAR.md` | OAuth, calendarios y sincronización |
 | `docs/AUTOMATIONS.md` | Plantillas, eventos y motor de notificaciones |
 | `docs/ADMIN.md` | Manual básico de administración |

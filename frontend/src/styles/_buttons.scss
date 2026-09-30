@@ -146,6 +146,21 @@
   }
 }
 
+// Peligro en contorno: acciones destructivas repetidas por fila (Desactivar,
+// Eliminar…). El rojo sólido en cada línea compite con la información de la
+// tabla; aquí el color queda reservado al texto y al borde.
+.btn.outline.danger {
+  background: transparent;
+  border-color: var(--ls-danger);
+  color: var(--ls-danger);
+
+  &:hover:not(:disabled) {
+    background: var(--ls-danger-soft);
+    border-color: var(--ls-danger);
+    color: var(--ls-danger);
+  }
+}
+
 // ---------------------------------------------------------------- tamaños
 .btn.sm,
 .btn.small {

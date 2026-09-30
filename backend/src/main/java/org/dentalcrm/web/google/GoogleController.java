@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.dentalcrm.domain.google.GoogleCredential;
 import org.dentalcrm.domain.google.GoogleCredentialRepository;
+import org.dentalcrm.service.SocialTokenCipher;
 import org.dentalcrm.web.google.dto.GoogleCalendarioResponse;
 import org.dentalcrm.web.google.dto.GoogleConnectResponse;
 import org.dentalcrm.web.google.dto.GoogleCredentialRequest;
@@ -24,11 +25,17 @@ public class GoogleController {
 
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCredentialRepository credentialRepository;
+    private final GoogleService googleService;
+    private final SocialTokenCipher secretCipher;
 
     public GoogleController(GoogleCalendarService googleCalendarService,
-                             GoogleCredentialRepository credentialRepository) {
+                             GoogleCredentialRepository credentialRepository,
+                             GoogleService googleService,
+                             SocialTokenCipher secretCipher) {
         this.googleCalendarService = googleCalendarService;
         this.credentialRepository = credentialRepository;
+        this.googleService = googleService;
+        this.secretCipher = secretCipher;
     }
 
     @GetMapping("/status")
@@ -89,19 +96,19 @@ public class GoogleController {
     public ResponseEntity<GoogleCredentialResponse> getCredentials() {
         GoogleCredential cred = credentialRepository.findTopByOrderByIdAsc().orElse(null);
         if (cred == null) {
-            return ResponseEntity.ok(new GoogleCredentialResponse(null, "", "", "", "https://accounts.google.com", "https://oauth2.googleapis.com", "https://www.googleapis.com", false));
+            return ResponseEntity.ok(new GoogleCredentialResponse(null, googleService.clientIdConfigurado(), "",
+                googleService.redirectUriConfigurado(), googleService.authBaseUrl(), googleService.oauthBaseUrl(),
+                googleService.apiBaseUrl(), googleService.estaConfigurado(), googleService.clientSecretConfigurado()));
         }
-        boolean configurada = cred.getClientId() != null && !cred.getClientId().isBlank()
-                && cred.getClientSecret() != null && !cred.getClientSecret().isBlank();
         return ResponseEntity.ok(new GoogleCredentialResponse(
                 cred.getId(),
-                cred.getClientId(),
-                cred.getClientSecret(),
-                cred.getRedirectUri(),
-                cred.getAuthBaseUrl(),
-                cred.getOauthBaseUrl(),
-                cred.getApiBaseUrl(),
-                configurada
+            valor(cred.getClientId(), googleService.clientIdConfigurado()),
+            "",
+            valor(cred.getRedirectUri(), googleService.redirectUriConfigurado()),
+            valor(cred.getAuthBaseUrl(), googleService.authBaseUrl()),
+            valor(cred.getOauthBaseUrl(), googleService.oauthBaseUrl()),
+            valor(cred.getApiBaseUrl(), googleService.apiBaseUrl()),
+            googleService.estaConfigurado(), googleService.clientSecretConfigurado()
         ));
     }
 
@@ -111,16 +118,27 @@ public class GoogleController {
     public ResponseEntity<GoogleCredentialResponse> updateCredentials(@Valid @RequestBody GoogleCredentialRequest request) {
         GoogleCredential cred = credentialRepository.findTopByOrderByIdAsc().orElseGet(GoogleCredential::new);
         cred.setClientId(request.clientId());
-        cred.setClientSecret(request.clientSecret());
+        if (request.clientSecret() != null && !request.clientSecret().isBlank()) {
+            cred.setClientSecret("enc:v1:" + secretCipher.encrypt(request.clientSecret().trim()));
+        } else if (cred.getClientSecret() != null && !cred.getClientSecret().isBlank()
+                && !cred.getClientSecret().startsWith("enc:v1:")) {
+            cred.setClientSecret("enc:v1:" + secretCipher.encrypt(cred.getClientSecret()));
+        }
         cred.setRedirectUri(request.redirectUri());
         cred.setAuthBaseUrl(request.authBaseUrl());
         cred.setOauthBaseUrl(request.oauthBaseUrl());
         cred.setApiBaseUrl(request.apiBaseUrl());
         cred = credentialRepository.save(cred);
-        boolean configurada = cred.getClientId() != null && !cred.getClientId().isBlank()
-                && cred.getClientSecret() != null && !cred.getClientSecret().isBlank();
         return ResponseEntity.ok(new GoogleCredentialResponse(
-                cred.getId(), cred.getClientId(), cred.getClientSecret(), cred.getRedirectUri(),
-                cred.getAuthBaseUrl(), cred.getOauthBaseUrl(), cred.getApiBaseUrl(), configurada));
+            cred.getId(), valor(cred.getClientId(), googleService.clientIdConfigurado()), "",
+            valor(cred.getRedirectUri(), googleService.redirectUriConfigurado()),
+            valor(cred.getAuthBaseUrl(), googleService.authBaseUrl()),
+            valor(cred.getOauthBaseUrl(), googleService.oauthBaseUrl()),
+            valor(cred.getApiBaseUrl(), googleService.apiBaseUrl()), googleService.estaConfigurado(),
+            googleService.clientSecretConfigurado()));
+        }
+
+        private String valor(String valor, String fallback) {
+        return valor == null || valor.isBlank() ? fallback : valor;
     }
 }

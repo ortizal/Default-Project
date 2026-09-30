@@ -40,6 +40,10 @@ public class Notificacion {
     @Column(length = 30)
     private String telefono;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private DestinatarioNotificacion destinatario = DestinatarioNotificacion.PACIENTE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plantilla_id")
     private PlantillaMensaje plantilla;

@@ -45,25 +45,24 @@ test.describe('Google Calendar — Pantalla de integraciones', () => {
     expect(fallos).toEqual([]);
   });
 
-  test('El formulario de credenciales es exclusivo del estado "no configurada"', async () => {
+  test('La advertencia de "no configurada" nunca convive con el panel de conexión', async () => {
     await page.goto('google');
     await page.waitForSelector('.card', { timeout: 10000 });
 
     // Esperar a que `/google/status` pinte la pantalla
-    await expect(form().or(page.locator('.stat', { hasText: 'Conexión' })).first()).toBeVisible({
-      timeout: 15000,
-    });
+    const credenciales = page.getByLabel('Client ID');
+    const advertencia = page.locator('.msg.warn');
+    const conexion = page.locator('.stat', { hasText: 'Conexión' });
+    await expect(credenciales.or(conexion).first()).toBeVisible({ timeout: 15000 });
 
-    if (await form().isVisible()) {
-      // No configurada: aparecen los campos y la advertencia, nunca el panel de conexión
-      await expect(page.locator('input[placeholder="google.client-secret"]')).toBeVisible();
-      await expect(page.locator('.msg.warn')).toBeVisible();
-      await expect(page.locator('.stat', { hasText: 'Conexión' })).toHaveCount(0);
+    if (await advertencia.isVisible()) {
+      // Sin credenciales en el servidor: aviso + formulario, nunca conexión
+      await expect(conexion).toHaveCount(0);
+      await expect(page.getByLabel('Client Secret')).toBeVisible();
     } else {
-      // Configurada: no hay formulario y sí el panel de conexión/estado
-      await expect(page.locator('input[placeholder="google.client-secret"]')).toHaveCount(0);
-      await expect(page.locator('.stat', { hasText: 'Conexión' })).toBeVisible();
-      await expect(page.locator('.msg.warn')).toHaveCount(0);
+      // Con credenciales: sin aviso y con el panel de conexión (si hay sesión de Google)
+      await expect(advertencia).toHaveCount(0);
+      await expect(credenciales.or(conexion).first()).toBeVisible();
     }
   });
 

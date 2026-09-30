@@ -13,5 +13,6 @@ public record AutomatizacionRequest(
         @Min(value = 0, message = "minutos_antes debe ser mayor o igual a 0") Integer minutosAntes,
         @NotNull(message = "Debe indicar la plantilla") Long plantillaId,
         @Size(max = 255) String condicion,
-        Boolean activa
+        Boolean activa,
+        String destinatario
 ) {}

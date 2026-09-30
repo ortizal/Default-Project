@@ -70,6 +70,20 @@ class GoogleServiceTest {
     }
 
     @Test
+    void leeClientSecretCifradoGuardado() {
+        org.dentalcrm.service.SocialTokenCipher cipher =
+                new org.dentalcrm.service.SocialTokenCipher("unit-test-key-with-at-least-thirty-two-characters");
+        GoogleCredential cred = new GoogleCredential();
+        cred.setClientId("client-id");
+        cred.setClientSecret("enc:v1:" + cipher.encrypt("client-secret"));
+        GoogleCredentialRepository repository = mock(GoogleCredentialRepository.class);
+        when(repository.findTopByOrderByIdAsc()).thenReturn(Optional.of(cred));
+        GoogleService service = new GoogleService(WebClient.builder(), "a", "b", "c", repository);
+
+        assertTrue(service.estaConfigurado());
+    }
+
+    @Test
     void payloadEventoContieneDatosYCumplePlan() {
         GoogleService s = new GoogleService(WebClient.builder(), "a", "b", "c", credRepo("id", "secret"));
         EventoGoogle e = new EventoGoogle("Cita odontológica - Juan Pérez",

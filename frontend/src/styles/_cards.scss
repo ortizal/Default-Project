@@ -152,7 +152,25 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--ls-primary), var(--ls-secondary));
+  background: var(--ls-primary);
   border-radius: $ls-radius-md $ls-radius-md 0 0;
+
+}
+
+// El filete toma la semántica del valor (éxito / atención / error) para que
+// cada métrica se lea de un vistazo y todas no compartan el mismo degradado.
+.stat:has(.num.text-success)::before,
+.stat-card:has(.num.text-success)::before {
+  background: var(--ls-success);
+
+}
+.stat:has(.num.text-warning)::before,
+.stat-card:has(.num.text-warning)::before {
+  background: var(--ls-warning);
+
+}
+.stat:has(.num.text-danger)::before,
+.stat-card:has(.num.text-danger)::before {
+  background: var(--ls-danger);
 
 }

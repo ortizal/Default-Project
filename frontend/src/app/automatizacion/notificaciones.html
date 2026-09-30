@@ -25,12 +25,13 @@
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando notificaciones…">
-        <thead><tr><th>ID</th><th>Paciente</th><th>Teléfono</th><th>Evento</th><th>Plantilla</th><th>Programada</th><th>Enviada</th><th>Estado</th><th>Errores</th></tr></thead>
+        <thead><tr><th>ID</th><th>Paciente</th><th>Destinatario</th><th>Teléfono</th><th>Evento</th><th>Plantilla</th><th>Programada</th><th>Enviada</th><th>Estado</th><th>Errores</th></tr></thead>
         <tbody>
           @for (n of items; track n.id) {
             <tr>
               <td>{{ n.id }}</td>
               <td>{{ n.pacienteNombre || n.pacienteId }}</td>
+              <td>{{ n.destinatario === 'ODONTOLOGO' ? 'Odontólogo' : 'Paciente' }}</td>
               <td>{{ n.telefono }}</td>
               <td><span class="badge info">{{ n.evento }}</span></td>
               <td>{{ n.plantilla }}</td>
@@ -40,7 +41,7 @@
               <td>{{ n.error || (n.intentos ? 'Intentos: ' + n.intentos : '-') }}</td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="empty">Sin notificaciones.</td></tr>
+            <tr><td colspan="10" class="empty">Sin notificaciones.</td></tr>
           }
         </tbody>
       </ui-table>

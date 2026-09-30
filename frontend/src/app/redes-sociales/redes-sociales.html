@@ -65,6 +65,66 @@
         }
       </article>
     </div>
-    <p class="muted mt-4">La conexión habilita el acceso autorizado a las cuentas. La publicación de contenido multimedia se habilitará en el siguiente paso.</p>
+    <p class="muted mt-4">La conexión habilita el acceso autorizado a las cuentas de la clínica.</p>
   }
 </section>
+
+@if (status) {
+  <section class="card mt-3">
+    <h2>Crear publicación</h2>
+    <p class="muted">Publica novedades de la clínica directamente en Facebook, con texto e imagen opcional.</p>
+
+    @if (!cuentasFacebook.length) {
+      <div class="msg warn mt-3">Conecta una cuenta de Facebook para poder publicar.</div>
+    }
+
+    <label class="field mt-3">
+      <span class="label">Cuenta de destino</span>
+      <select class="input" [(ngModel)]="cuentaPublicacion" [disabled]="!cuentasFacebook.length">
+        <option [ngValue]="null">— Selecciona una cuenta —</option>
+        @for (cuenta of cuentasFacebook; track cuenta.id) {
+          <option [ngValue]="cuenta.id">{{ cuenta.accountName }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="label">Texto de la publicación</span>
+      <textarea class="input" rows="4" maxlength="2200" [(ngModel)]="textoPublicacion"
+                placeholder="Escribe la novedad que quieres compartir"></textarea>
+    </label>
+    <div class="muted">{{ longitudTexto }}/2200 caracteres</div>
+
+    <label class="field mt-3">
+      <span class="label">Imagen (opcional, JPEG/PNG/WebP hasta 5 MB)</span>
+      <input #archivoImagen class="input" type="file" accept="image/jpeg,image/png,image/webp"
+             (change)="seleccionarImagen($event)" />
+    </label>
+    @if (imagenPublicacion) {
+      <div class="between mt-3">
+        <span class="muted">{{ imagenPublicacion.name }} · {{ tamanoImagen }}</span>
+        <button class="btn small" type="button" (click)="quitarImagen()">Quitar imagen</button>
+      </div>
+    }
+
+    @if (cuentasRestringidas.length) {
+      <p class="muted mt-3">
+        Instagram y TikTok todavía no admiten publicación directa: sólo aceptan imágenes con URL pública
+        y el CRM no aloja archivos. Conéctalas para sincronizar perfiles y publica por ahora en Facebook.
+      </p>
+    }
+
+    <div class="mt-3">
+      <button class="btn primary" type="button" (click)="publicar()" [disabled]="!puedePublicar">
+        {{ publicando ? 'Publicando...' : 'Publicar' }}
+      </button>
+    </div>
+
+    @if (exitoPublicacion) {
+      <div class="msg ok mt-3" role="status">{{ exitoPublicacion }}</div>
+    }
+    @if (errorPublicacion) {
+      <div class="msg error mt-3" role="alert">{{ errorPublicacion }}</div>
+    }
+  </section>
+}

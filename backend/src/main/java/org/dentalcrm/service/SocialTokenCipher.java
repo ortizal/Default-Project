@@ -41,6 +41,19 @@ public class SocialTokenCipher {
         }
     }
 
+    public String decrypt(String value) {
+        if (value == null || value.isBlank()) return value;
+        try {
+            byte[] raw = Base64.getDecoder().decode(value);
+            if (raw.length <= NONCE_BYTES) throw new IllegalArgumentException("token demasiado corto");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(TAG_BITS, raw, 0, NONCE_BYTES));
+            return new String(cipher.doFinal(raw, NONCE_BYTES, raw.length - NONCE_BYTES), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new BusinessException("SOCIAL_TOKEN_ERROR", "No se pudo leer el token protegido de la red social");
+        }
+    }
+
     private SecretKeySpec key() throws Exception {
         if (configuredKey == null || configuredKey.length() < 32) {
             throw new IllegalStateException("SOCIAL_TOKEN_ENCRYPTION_KEY debe tener al menos 32 caracteres");

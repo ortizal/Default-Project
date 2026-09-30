@@ -10,10 +10,11 @@ import org.dentalcrm.domain.social.SocialProvider;
 import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.multitenant.TenantContext;
 import org.dentalcrm.service.SocialTokenCipher;
+import org.dentalcrm.web.configuracion.IntegracionesConfiguracionService;
+import org.dentalcrm.web.configuracion.IntegracionesConfiguracionService.SocialRuntime;
 import org.dentalcrm.web.social.dto.SocialAccountResponse;
 import org.dentalcrm.web.social.dto.SocialProviderStatusResponse;
 import org.dentalcrm.web.social.dto.SocialStatusResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,53 +33,41 @@ import java.util.List;
 public class SocialService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final String META_SCOPE = "pages_show_list,instagram_basic,pages_read_engagement";
-    private static final String TIKTOK_SCOPE = "user.info.basic,user.info.profile";
+    private static final String META_SCOPE = "pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic";
+    private static final String TIKTOK_SCOPE = "user.info.basic,user.info.profile,video.publish";
 
     private final SocialAccountRepository accountRepository;
     private final SocialOAuthRequestRepository requestRepository;
     private final SocialTokenCipher tokenCipher;
     private final WebClient webClient;
-    private final String metaClientId;
-    private final String metaClientSecret;
-    private final String metaRedirectUri;
-    private final String tiktokClientKey;
-    private final String tiktokClientSecret;
-    private final String tiktokRedirectUri;
+    private final IntegracionesConfiguracionService integracionesConfig;
     private final String frontendUrl;
 
     public SocialService(SocialAccountRepository accountRepository,
                          SocialOAuthRequestRepository requestRepository,
                          SocialTokenCipher tokenCipher,
                          WebClient.Builder builder,
-                         @Value("${app.social.meta.client-id:}") String metaClientId,
-                         @Value("${app.social.meta.client-secret:}") String metaClientSecret,
-                         @Value("${app.social.meta.redirect-uri:}") String metaRedirectUri,
-                         @Value("${app.social.tiktok.client-key:}") String tiktokClientKey,
-                         @Value("${app.social.tiktok.client-secret:}") String tiktokClientSecret,
-                         @Value("${app.social.tiktok.redirect-uri:}") String tiktokRedirectUri,
-                         @Value("${app.social.frontend-url:http://localhost:4200}") String frontendUrl) {
+                         IntegracionesConfiguracionService integracionesConfig,
+                         @org.springframework.beans.factory.annotation.Value("${app.social.frontend-url:http://localhost:4200}") String frontendUrl) {
         this.accountRepository = accountRepository;
         this.requestRepository = requestRepository;
         this.tokenCipher = tokenCipher;
         this.webClient = builder.clone().build();
-        this.metaClientId = metaClientId;
-        this.metaClientSecret = metaClientSecret;
-        this.metaRedirectUri = metaRedirectUri;
-        this.tiktokClientKey = tiktokClientKey;
-        this.tiktokClientSecret = tiktokClientSecret;
-        this.tiktokRedirectUri = tiktokRedirectUri;
+        this.integracionesConfig = integracionesConfig;
         this.frontendUrl = frontendUrl;
     }
 
     @Transactional(readOnly = true)
     public SocialStatusResponse status() {
-        return new SocialStatusResponse(providerStatus(SocialProvider.META), providerStatus(SocialProvider.TIKTOK));
+        SocialRuntime config = integracionesConfig.redesSociales();
+        return new SocialStatusResponse(providerStatus(SocialProvider.META, config),
+            providerStatus(SocialProvider.TIKTOK, config));
     }
 
     @Transactional
     public String iniciarConexion(SocialProvider provider) {
-        if (!estaConfigurado(provider)) {
+        SocialRuntime config = integracionesConfig.redesSociales();
+        if (!estaConfigurado(provider, config)) {
             throw new BusinessException("SOCIAL_NOT_CONFIGURED", "La integración solicitada no está configurada en el servidor");
         }
 
@@ -96,16 +85,16 @@ public class SocialService {
 
         if (provider == SocialProvider.META) {
             return UriComponentsBuilder.fromUriString("https://www.facebook.com/v21.0/dialog/oauth")
-                    .queryParam("client_id", metaClientId)
-                    .queryParam("redirect_uri", metaRedirectUri)
+                    .queryParam("client_id", config.metaClientId())
+                    .queryParam("redirect_uri", config.metaRedirectUri())
                     .queryParam("response_type", "code")
                     .queryParam("scope", META_SCOPE)
                     .queryParam("state", state)
                     .build().encode().toUriString();
         }
         return UriComponentsBuilder.fromUriString("https://www.tiktok.com/v2/auth/authorize/")
-                .queryParam("client_key", tiktokClientKey)
-                .queryParam("redirect_uri", tiktokRedirectUri)
+            .queryParam("client_key", config.tikTokClientKey())
+            .queryParam("redirect_uri", config.tikTokRedirectUri())
                 .queryParam("response_type", "code")
                 .queryParam("scope", TIKTOK_SCOPE)
                 .queryParam("state", state)
@@ -127,8 +116,12 @@ public class SocialService {
         if (code == null || code.isBlank()) {
             throw new BusinessException("SOCIAL_AUTH_ERROR", "El proveedor no devolvió un código de autorización");
         }
-        if (provider == SocialProvider.META) completarMeta(code);
-        else completarTikTok(code);
+        SocialRuntime config = integracionesConfig.redesSociales();
+        if (!estaConfigurado(provider, config)) {
+            throw new BusinessException("SOCIAL_NOT_CONFIGURED", "La integración solicitada ya no está configurada");
+        }
+        if (provider == SocialProvider.META) completarMeta(code, config);
+        else completarTikTok(code, config);
         requestRepository.delete(request);
     }
 
@@ -142,25 +135,27 @@ public class SocialService {
         }
     }
 
-    private SocialProviderStatusResponse providerStatus(SocialProvider provider) {
+    private SocialProviderStatusResponse providerStatus(SocialProvider provider, SocialRuntime config) {
         List<SocialAccountResponse> accounts = platforms(provider).stream()
                 .flatMap(platform -> accountRepository.findByPlatformOrderByAccountName(platform).stream())
                 .map(account -> new SocialAccountResponse(account.getId(), account.getPlatform(), account.getAccountName()))
                 .toList();
-        return new SocialProviderStatusResponse(estaConfigurado(provider), accounts);
+        return new SocialProviderStatusResponse(estaConfigurado(provider, config), accounts);
     }
 
-    private boolean estaConfigurado(SocialProvider provider) {
+    private boolean estaConfigurado(SocialProvider provider, SocialRuntime config) {
         if (provider == SocialProvider.META) {
-            return presente(metaClientId) && presente(metaClientSecret) && presente(metaRedirectUri);
+            return presente(config.metaClientId()) && presente(config.metaClientSecret())
+                    && presente(config.metaRedirectUri());
         }
-        return presente(tiktokClientKey) && presente(tiktokClientSecret) && presente(tiktokRedirectUri);
+        return presente(config.tikTokClientKey()) && presente(config.tikTokClientSecret())
+                && presente(config.tikTokRedirectUri());
     }
 
-    private void completarMeta(String code) {
+    private void completarMeta(String code, SocialRuntime config) {
         JsonNode token = webClient.get().uri(UriComponentsBuilder.fromUriString("https://graph.facebook.com/v21.0/oauth/access_token")
-                        .queryParam("client_id", metaClientId).queryParam("client_secret", metaClientSecret)
-                        .queryParam("redirect_uri", metaRedirectUri).queryParam("code", code).build().encode().toUri())
+                        .queryParam("client_id", config.metaClientId()).queryParam("client_secret", config.metaClientSecret())
+                        .queryParam("redirect_uri", config.metaRedirectUri()).queryParam("code", code).build().encode().toUri())
                 .retrieve().bodyToMono(JsonNode.class).block();
         String accessToken = token == null ? null : token.path("access_token").asText(null);
         if (!presente(accessToken)) throw new BusinessException("SOCIAL_AUTH_ERROR", "Meta no devolvió un token válido");
@@ -187,13 +182,13 @@ public class SocialService {
         }
     }
 
-    private void completarTikTok(String code) {
+    private void completarTikTok(String code, SocialRuntime config) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("client_key", tiktokClientKey);
-        form.add("client_secret", tiktokClientSecret);
+        form.add("client_key", config.tikTokClientKey());
+        form.add("client_secret", config.tikTokClientSecret());
         form.add("code", code);
         form.add("grant_type", "authorization_code");
-        form.add("redirect_uri", tiktokRedirectUri);
+        form.add("redirect_uri", config.tikTokRedirectUri());
         JsonNode token = webClient.post().uri("https://open.tiktokapis.com/v2/oauth/token/")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(form))

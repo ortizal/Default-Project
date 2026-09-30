@@ -220,6 +220,7 @@ export interface Automatizacion {
   id: number;
   nombre: string;
   evento: string;
+  destinatario: string;
   minutosAntes: number;
   plantillaId: number;
   plantillaNombre: string;
@@ -235,6 +236,7 @@ export interface Notificacion {
   pacienteId: number;
   pacienteNombre?: string;
   telefono: string;
+  destinatario?: string;
   evento: string;
   plantilla: string;
   mensaje: string;
@@ -321,6 +323,7 @@ export interface GoogleCredential {
   oauthBaseUrl: string;
   apiBaseUrl: string;
   configurada: boolean;
+  clientSecretConfigurado?: boolean;
 }
 
 export interface GoogleConnect {

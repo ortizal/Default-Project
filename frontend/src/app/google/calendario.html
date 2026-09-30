@@ -14,11 +14,14 @@
       @if (cargando && !status) {
         <div class="empty"><span class="spinner"></span> Cargando estado de Google…</div>
       }
-      @if (status && !status.configurada && credenciales) {
-        <div class="msg warn">
-          La integración con Google no está configurada. Configura las credenciales OAuth
-          para habilitar Google Calendar.
-        </div>
+      @if (status && credenciales) {
+        @if (!status.configurada) {
+          <div class="msg warn">
+            La integración con Google no está configurada. Configura las credenciales OAuth
+            para habilitar Google Calendar.
+          </div>
+        }
+        <h2 class="mt-4">Credenciales OAuth</h2>
         <div class="grid2 mt-4">
           <div>
             <label class="label" for="lf1">Client ID</label>
@@ -26,7 +29,10 @@
           </div>
           <div>
             <label class="label" for="lf2">Client Secret</label>
-            <input id="lf2" class="input" [(ngModel)]="credenciales.clientSecret" type="password" placeholder="google.client-secret" >
+            <input id="lf2" class="input" [(ngModel)]="credenciales.clientSecret" type="password" autocomplete="new-password" placeholder="{{ credenciales.clientSecretConfigurado ? 'Guardado; deja vacío para conservarlo' : 'Client Secret' }}" >
+            @if (credenciales.clientSecretConfigurado) {
+              <small class="muted">El secreto está guardado y no se vuelve a mostrar.</small>
+            }
           </div>
           <div>
             <label class="label" for="lf3">Redirect URI</label>

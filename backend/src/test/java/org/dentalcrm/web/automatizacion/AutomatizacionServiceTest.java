@@ -2,6 +2,7 @@ package org.dentalcrm.web.automatizacion;
 
 import org.dentalcrm.domain.automatizacion.*;
 import org.dentalcrm.domain.cita.Cita;
+import org.dentalcrm.domain.odontologo.Odontologo;
 import org.dentalcrm.domain.paciente.Paciente;
 import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
@@ -57,6 +58,7 @@ class AutomatizacionServiceTest {
         a.setId(id);
         a.setNombre("Regla " + id);
         a.setEvento(evento);
+        a.setDestinatario(DestinatarioNotificacion.PACIENTE);
         a.setMinutosAntes(evento == EventoAutomatizacion.CITA_PROXIMA ? 1440 : 0);
         a.setPlantilla(plantilla(1L));
         a.setActiva(true);
@@ -79,6 +81,12 @@ class AutomatizacionServiceTest {
         return p;
     }
 
+    private Odontologo odontologo(String telefono) {
+        Odontologo d = new Odontologo();
+        d.setTelefono(telefono);
+        return d;
+    }
+
     @Test
     void crearAsignaEventoPlantillaYActiva() {
         when(plantillaRepository.findById(1L)).thenReturn(Optional.of(plantilla(1L)));
@@ -89,10 +97,11 @@ class AutomatizacionServiceTest {
         });
 
         AutomatizacionResponse r = servicio.crear(new AutomatizacionRequest(
-                "Recordatorio", "CITA_PROXIMA", 1440, 1L, null, null));
+            "Recordatorio", "CITA_PROXIMA", 1440, 1L, null, null, "PACIENTE"));
 
         assertEquals(7L, r.id());
         assertEquals("CITA_PROXIMA", r.evento());
+        assertEquals("PACIENTE", r.destinatario());
         assertEquals(1440, r.minutosAntes());
         assertEquals(Boolean.TRUE, r.activa());
         verify(auditService).registrar(eq("CREAR_AUTOMATIZACION"), eq("AUTOMATIZACIONES"), eq("AUTOMATIZACION"), eq(7L));
@@ -103,13 +112,26 @@ class AutomatizacionServiceTest {
         when(plantillaRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(BusinessException.class, () -> servicio.crear(new AutomatizacionRequest(
-                "R", "CITA_CREADA", 0, 99L, null, true)));
+            "R", "CITA_CREADA", 0, 99L, null, true, null)));
+    }
+
+    @Test
+    void actualizarSinDestinatarioConservaElDestinatarioExistente() {
+        Automatizacion a = automatizacion(8L, EventoAutomatizacion.CITA_CREADA);
+        a.setDestinatario(DestinatarioNotificacion.ODONTOLOGO);
+        when(automatizacionRepository.findById(8L)).thenReturn(Optional.of(a));
+        when(plantillaRepository.findById(1L)).thenReturn(Optional.of(plantilla(1L)));
+
+        AutomatizacionResponse response = servicio.actualizar(8L,
+                new AutomatizacionRequest("Aviso", "CITA_CREADA", 0, 1L, null, true, null));
+
+        assertEquals("ODONTOLOGO", response.destinatario());
     }
 
     @Test
     void crearRechazaEventoInvalido() {
         BusinessException ex = assertThrows(BusinessException.class, () -> servicio.crear(new AutomatizacionRequest(
-                "R", "NO_EXISTE", 0, 1L, null, true)));
+            "R", "NO_EXISTE", 0, 1L, null, true, null)));
 
         assertEquals("EVENTO_INVALIDO", ex.getCode());
     }
@@ -139,5 +161,25 @@ class AutomatizacionServiceTest {
         assertEquals(2, n);
         verify(notificacionRepository, times(2)).save(any(Notificacion.class));
         verify(variableResolver).variables(c);
+    }
+
+    @Test
+    void generarParaOdontologoUsaSuTelefonoYConservaPacienteDeLaCita() {
+        Paciente p = paciente(1L);
+        Cita c = cita(100L, p);
+        c.setDoctor(odontologo("+593991112233"));
+        Automatizacion regla = automatizacion(4L, EventoAutomatizacion.CITA_CREADA);
+        regla.setDestinatario(DestinatarioNotificacion.ODONTOLOGO);
+        when(automatizacionRepository.findByActivaTrueAndEvento(EventoAutomatizacion.CITA_CREADA))
+                .thenReturn(List.of(regla));
+        when(variableResolver.renderizar(anyString(), anyMap())).thenReturn("Nueva cita");
+
+        assertEquals(1, servicio.generar(c, EventoAutomatizacion.CITA_CREADA));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository).save(captor.capture());
+        assertEquals("+593991112233", captor.getValue().getTelefono());
+        assertEquals(DestinatarioNotificacion.ODONTOLOGO, captor.getValue().getDestinatario());
+        assertSame(p, captor.getValue().getPaciente());
     }
 }

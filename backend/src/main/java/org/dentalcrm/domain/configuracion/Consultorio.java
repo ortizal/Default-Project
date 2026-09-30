@@ -26,6 +26,15 @@ public class Consultorio {
     @Column(nullable = false, length = 150)
     private String nombre;
 
+    @Column(name = "razon_social", length = 200)
+    private String razonSocial;
+
+    @Column(length = 13)
+    private String ruc;
+
+    @Column(name = "correo_electronico", length = 190)
+    private String correoElectronico;
+
     @Column(length = 500)
     private String direccion;
 
@@ -37,6 +46,12 @@ public class Consultorio {
 
     @Column(name = "horario_atencion", length = 500)
     private String horarioAtencion;
+
+    @Column(name = "firma_digital", columnDefinition = "bytea")
+    private byte[] firmaDigital;
+
+    @Column(name = "firma_digital_nombre", length = 255)
+    private String firmaDigitalNombre;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;

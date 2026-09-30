@@ -12,13 +12,14 @@
         <div class="msg error">{{ error }}</div>
       }
       <ui-table [loading]="cargando" loadingText="Cargando automatizaciones…">
-        <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Minutos antes</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Destinatario</th><th>Anticipación (min)</th><th>Plantilla</th><th>Condición</th><th>Activa</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
         <tbody>
           @for (a of items; track a.id) {
             <tr>
               <td>{{ a.id }}</td>
               <td>{{ a.nombre }}</td>
               <td><span class="badge info">{{ a.evento }}</span></td>
+              <td>{{ a.destinatario === 'ODONTOLOGO' ? 'Odontólogo' : 'Paciente' }}</td>
               <td>{{ a.minutosAntes }}</td>
               <td>{{ a.plantillaNombre }}</td>
               <td>{{ a.condicion || '-' }}</td>
@@ -36,7 +37,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="empty">Sin automatizaciones.</td></tr>
+            <tr><td colspan="9" class="empty">Sin automatizaciones.</td></tr>
           }
         </tbody>
       </ui-table>
@@ -57,8 +58,13 @@
               <option [value]="ev">{{ ev }}</option>
             }
           </select>
+          <label class="label" for="lfdest">Destinatario *</label>
+          <select id="lfdest" class="input" [(ngModel)]="form.destinatario">
+            <option value="PACIENTE">Paciente</option>
+            <option value="ODONTOLOGO">Odontólogo asignado a la cita</option>
+          </select>
           <div class="form-row">
-            <div><label class="label" for="lf3">Minutos antes *</label><input id="lf3" class="input" type="number" min="0" [(ngModel)]="form.minutosAntes" ></div>
+            <div><label class="label" for="lf3">Anticipación (minutos) *</label><input id="lf3" class="input" type="number" min="0" [(ngModel)]="form.minutosAntes" ><small>0 = inmediato; 120 = 2 horas; 1440 = 1 día. Se usa con CITA_PROXIMA.</small></div>
             <div>
               <label class="label" for="lf4">Plantilla *</label>
               <select id="lf4" class="input" [(ngModel)]="form.plantillaId">

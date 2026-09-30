@@ -33,6 +33,10 @@ public class Automatizacion {
     @Column(name = "minutos_antes", nullable = false)
     private Integer minutosAntes = 0;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private DestinatarioNotificacion destinatario = DestinatarioNotificacion.PACIENTE;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plantilla_id", nullable = false)
     private PlantillaMensaje plantilla;

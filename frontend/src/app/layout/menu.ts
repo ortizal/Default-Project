@@ -50,6 +50,7 @@ export const MENU: MenuSection[] = [
       { path: '/auditoria', label: 'Auditoría' },
       { path: '/usuarios', label: 'Usuarios' },
       { path: '/configuracion/consultorio', label: 'Datos del consultorio' },
+      { path: '/configuracion/integraciones', label: 'Configuración de integraciones' },
     ],
   },
 ];

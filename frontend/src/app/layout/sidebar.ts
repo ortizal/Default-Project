@@ -15,6 +15,7 @@ const ICONOS: Record<string, string> = {
   '/whatsapp/inbox': 'chat',
   '/whatsapp/campana': 'campaign',
   '/whatsapp/sesiones': 'smart_toy',
+  '/redes-sociales': 'share',
   '/plantillas': 'description',
   '/notificaciones': 'notifications',
   '/automatizaciones': 'bolt',
@@ -24,6 +25,7 @@ const ICONOS: Record<string, string> = {
   '/auditoria': 'verified_user',
   '/usuarios': 'account_circle',
   '/configuracion/consultorio': 'location_on',
+  '/configuracion/integraciones': 'settings',
 };
 
 @Component({

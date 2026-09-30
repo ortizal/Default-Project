@@ -60,11 +60,13 @@ public class AutomatizacionService {
     @Transactional
     public AutomatizacionResponse crear(AutomatizacionRequest request) {
         EventoAutomatizacion evento = validarEvento(request.evento());
+        DestinatarioNotificacion destinatario = validarDestinatario(request.destinatario());
         PlantillaMensaje plantilla = plantillaOError(request.plantillaId());
         Automatizacion a = new Automatizacion();
         a.setNombre(request.nombre().trim());
         a.setEvento(evento);
         a.setMinutosAntes(request.minutosAntes());
+        a.setDestinatario(destinatario);
         a.setPlantilla(plantilla);
         a.setCondicion(request.condicion());
         a.setActiva(request.activa() == null || request.activa());
@@ -79,6 +81,9 @@ public class AutomatizacionService {
         a.setNombre(request.nombre().trim());
         a.setEvento(validarEvento(request.evento()));
         a.setMinutosAntes(request.minutosAntes());
+        if (request.destinatario() != null && !request.destinatario().isBlank()) {
+            a.setDestinatario(validarDestinatario(request.destinatario()));
+        }
         a.setPlantilla(plantillaOError(request.plantillaId()));
         a.setCondicion(request.condicion());
         a.setActiva(request.activa() == null || request.activa());
@@ -145,15 +150,18 @@ public class AutomatizacionService {
     }
 
     private int generarPara(Cita cita, EventoAutomatizacion evento, Map<String, String> variables) {
-        String telefono = cita.getPaciente().getTelefono();
         int creadas = 0;
         Instant ahora = Instant.now();
         for (Automatizacion a : automatizacionRepository.findByActivaTrueAndEvento(evento)) {
+            String telefono = a.getDestinatario() == DestinatarioNotificacion.ODONTOLOGO
+                ? cita.getDoctor().getTelefono()
+                : cita.getPaciente().getTelefono();
             Notificacion n = new Notificacion();
             n.setCita(cita);
             n.setAutomatizacion(a);
             n.setPaciente(cita.getPaciente());
             n.setTelefono(telefono);
+            n.setDestinatario(a.getDestinatario());
             n.setPlantilla(a.getPlantilla());
             n.setMensajeGenerado(variableResolver.renderizar(a.getPlantilla().getContenido(), variables));
             n.setProgramadaAt(programadaPara(a, cita, ahora));
@@ -179,6 +187,17 @@ public class AutomatizacionService {
             return EventoAutomatizacion.valueOf(evento);
         } catch (IllegalArgumentException e) {
             throw new BusinessException("EVENTO_INVALIDO", "Evento inválido: debe ser uno de " + List.of(EventoAutomatizacion.values()));
+        }
+    }
+
+    private DestinatarioNotificacion validarDestinatario(String destinatario) {
+        if (destinatario == null || destinatario.isBlank()) {
+            return DestinatarioNotificacion.PACIENTE;
+        }
+        try {
+            return DestinatarioNotificacion.valueOf(destinatario.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("DESTINATARIO_INVALIDO", "Destinatario inválido: debe ser PACIENTE u ODONTOLOGO");
         }
     }
 

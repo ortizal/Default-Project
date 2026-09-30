@@ -29,6 +29,7 @@ export const routes: Routes = [
       { path: 'auditoria', loadComponent: () => import('./auditoria/auditoria').then((m) => m.AuditoriaComponent) },
       { path: 'usuarios', loadComponent: () => import('./usuarios/usuarios').then((m) => m.UsuariosComponent) },
       { path: 'configuracion/consultorio', loadComponent: () => import('./configuracion/consultorio').then((m) => m.ConsultorioComponent) },
+      { path: 'configuracion/integraciones', loadComponent: () => import('./configuracion/integraciones').then((m) => m.IntegracionesConfiguracionComponent) },
     ],
   },
   { path: '**', redirectTo: '' },

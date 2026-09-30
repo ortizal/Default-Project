@@ -8,5 +8,6 @@ public record GoogleCredentialResponse(
         String authBaseUrl,
         String oauthBaseUrl,
         String apiBaseUrl,
-        Boolean configurada
+        Boolean configurada,
+        Boolean clientSecretConfigurado
 ) {}

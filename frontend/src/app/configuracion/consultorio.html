@@ -21,6 +21,19 @@
           <input class="input" name="nombre" [(ngModel)]="form.nombre" required maxlength="150" />
         </label>
         <label class="field">
+          <span class="label">Razón social</span>
+          <input class="input" name="razonSocial" [(ngModel)]="form.razonSocial" maxlength="200" />
+        </label>
+        <label class="field">
+          <span class="label">RUC</span>
+          <input class="input" name="ruc" [(ngModel)]="form.ruc" inputmode="numeric" pattern="[0-9]{13}" maxlength="13" />
+          <small class="muted">13 dígitos</small>
+        </label>
+        <label class="field">
+          <span class="label">Correo electrónico</span>
+          <input class="input" name="correoElectronico" [(ngModel)]="form.correoElectronico" type="email" maxlength="190" />
+        </label>
+        <label class="field">
           <span class="label">Teléfono</span>
           <input class="input" name="telefono" [(ngModel)]="form.telefono" type="tel" maxlength="30" />
         </label>
@@ -43,6 +56,31 @@
           Abrir enlace de ubicación
         </a>
       }
+
+      <section class="signature-section" aria-labelledby="signature-title">
+        <h2 id="signature-title">Firma digital</h2>
+        @if (form.firmaDigitalCargada) {
+          <p class="muted">Archivo guardado: {{ form.firmaDigitalNombre }}</p>
+        } @else {
+          <p class="muted">No hay una firma digital cargada.</p>
+        }
+        <label class="field">
+          <span class="label">Archivo PKCS#12 (.p12)</span>
+          <input class="input" type="file" accept=".p12,application/x-pkcs12" (change)="seleccionarFirma($event)" />
+        </label>
+        <div class="signature-actions">
+          @if (firmaSeleccionada) {
+            <button class="btn" type="button" (click)="cargarFirma()" [disabled]="firmaSubiendo">
+              {{ firmaSubiendo ? 'Cargando...' : 'Cargar ' + firmaSeleccionada.name }}
+            </button>
+          }
+          @if (form.firmaDigitalCargada) {
+            <button class="btn danger" type="button" (click)="eliminarFirma()" [disabled]="firmaSubiendo">
+              Eliminar firma
+            </button>
+          }
+        </div>
+      </section>
 
       <div class="form-actions">
         <button class="btn primary" type="submit" [disabled]="guardando">

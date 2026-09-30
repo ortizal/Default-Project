@@ -8,6 +8,7 @@ public record AutomatizacionResponse(
         Long id,
         String nombre,
         String evento,
+        String destinatario,
         Integer minutosAntes,
         Long plantillaId,
         String plantillaNombre,
@@ -18,7 +19,7 @@ public record AutomatizacionResponse(
 ) {
     public static AutomatizacionResponse from(Automatizacion a) {
         return new AutomatizacionResponse(
-                a.getId(), a.getNombre(), a.getEvento().name(), a.getMinutosAntes(),
+            a.getId(), a.getNombre(), a.getEvento().name(), a.getDestinatario().name(), a.getMinutosAntes(),
                 a.getPlantilla().getId(), a.getPlantilla().getNombre(),
                 a.getCondicion(), a.getActiva(),
                 a.getCreatedAt(), a.getUpdatedAt());

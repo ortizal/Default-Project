@@ -364,12 +364,7 @@ public class AgenteConversacionalService {
 
     private String mensajePasoAgendamiento(String paso, Map<String, Object> ctx) {
         return switch (paso) {
-            case "SERVICIO" -> {
-                List<Servicio> servicios = serviciosActivos();
-                yield servicios.isEmpty()
-                        ? "Aún no tenemos servicios activos. Escribe 'hablar con una persona' para más ayuda."
-                        : preguntaServicio(servicios, null);
-            }
+            case "SERVICIO" -> preguntaOdontologo(odontologosActivos(), null);
             case "DOCTOR" -> preguntaOdontologo(odontologosActivos(), null);
             case "FECHA" -> preguntaFecha(null);
             case "HORA" -> {
@@ -383,14 +378,12 @@ public class AgenteConversacionalService {
                                 + ") o la hora con dos puntos (ej: 10:00).";
             }
             case "CREAR" -> {
-                Long servicioId = idDeContexto(ctx.get("servicioId"));
                 Long doctorId = idDeContexto(ctx.get("doctorId"));
                 LocalDate fecha = fechaDeTexto(ctx.get("fecha"));
                 Object hora = ctx.get("hora");
-                yield servicioId == null || doctorId == null || fecha == null || hora == null
+                yield idDeContexto(ctx.get("servicioId")) == null || doctorId == null || fecha == null || hora == null
                         ? null
-                        : "Perfecto ✨ ¿Confirmo tu cita?\n• Servicio: " + nombreServicio(servicioId)
-                                + "\n• Odontólogo: " + nombreDoctor(doctorId)
+                    : "Perfecto ✨ ¿Confirmo tu cita?\n• Odontólogo: " + nombreDoctor(doctorId)
                                 + "\n• Fecha: " + formatearFecha(fecha)
                                 + "\n• Hora: " + hora + "\nResponde 'sí' para confirmarla.";
             }
@@ -871,14 +864,11 @@ public class AgenteConversacionalService {
         }
 
         if (c.get("servicioId") == null) {
-            c.put("paso", "SERVICIO");
-            guardar(conversacion, Intencion.AGENDAR_CITA, c);
             if (servicios.isEmpty()) {
+                guardar(conversacion, Intencion.AGENDAR_CITA, c);
                 return respuesta("Aún no tenemos servicios activos. Escribe 'hablar con una persona' para más ayuda.", Intencion.AGENDAR_CITA);
             }
-            return respuesta(preguntaServicio(servicios,
-                    "SERVICIO".equals(paso) ? "No entendí \"" + recortar(t) + "\" como un servicio." : null),
-                    Intencion.AGENDAR_CITA);
+            c.put("servicioId", servicios.get(0).getId());
         }
 
         if (c.get("doctorId") == null) {
@@ -926,8 +916,7 @@ public class AgenteConversacionalService {
 
         c.put("paso", "CREAR");
         guardar(conversacion, Intencion.AGENDAR_CITA, c);
-        return respuesta("Perfecto ✨ ¿Confirmo tu cita?\n• Servicio: " + nombreServicio(servicioId)
-                + "\n• Odontólogo: " + nombreDoctor(doctorId)
+        return respuesta("Perfecto ✨ ¿Confirmo tu cita?\n• Odontólogo: " + nombreDoctor(doctorId)
                 + "\n• Fecha: " + formatearFecha(fecha)
                 + "\n• Hora: " + hora + "\nResponde 'sí' para confirmarla.", Intencion.AGENDAR_CITA);
     }
@@ -1062,8 +1051,7 @@ public class AgenteConversacionalService {
                     "Agendada por el agente de IA (WhatsApp)"));
             log.info("Agente: cita {} creada para el paciente {}", cita.id(), paciente.getId());
             limpiarContexto(conversacion, Intencion.AGENDAR_CITA);
-            return respuesta("¡Listo! ✅ Tu cita quedó agendada:\n• Servicio: " + cita.servicioNombre()
-                    + "\n• Odontólogo: " + cita.doctorNombre()
+                return respuesta("¡Listo! ✅ Tu cita quedó agendada:\n• Odontólogo: " + cita.doctorNombre()
                     + "\n• Fecha: " + formatearFecha(cita.fecha())
                     + "\n• Hora: " + cita.horaInicio()
                     + "\nTe esperamos 😊 Si no puedes asistir, avísanos por este chat.", Intencion.AGENDAR_CITA);
@@ -1427,6 +1415,7 @@ public class AgenteConversacionalService {
     }
 
     private RespuestaAgente reiniciar(Conversacion conversacion) {
+        mensajeRepository.deleteByConversacion_Id(conversacion.getId());
         conversacion.setIntencion(null);
         conversacion.setContextoAgente(null);
         conversacionRepository.save(conversacion);

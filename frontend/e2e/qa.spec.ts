@@ -21,6 +21,8 @@ const PAGINAS = [
   'auditoria',
   'usuarios',
   'configuracion/consultorio',
+  'configuracion/integraciones',
+  'redes-sociales',
 ];
 const ANCHOS = [360, 480, 768, 1280];
 

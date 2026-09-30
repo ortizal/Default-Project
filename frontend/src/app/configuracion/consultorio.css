@@ -44,6 +44,24 @@ textarea.input {
   margin-top: 16px;
 }
 
+.signature-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ls-border);
+}
+
+.signature-section h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.signature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

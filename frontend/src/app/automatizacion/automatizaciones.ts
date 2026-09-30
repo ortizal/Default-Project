@@ -68,6 +68,7 @@ export class AutomatizacionesComponent implements OnInit {
     this.form = {
       nombre: '',
       evento: EVENTOS[0],
+      destinatario: 'PACIENTE',
       minutosAntes: 0,
       plantillaId: undefined,
       condicion: '',
@@ -106,6 +107,7 @@ export class AutomatizacionesComponent implements OnInit {
     const body = {
       nombre: this.form.nombre,
       evento: this.form.evento,
+      destinatario: this.form.destinatario ?? 'PACIENTE',
       minutosAntes: this.form.minutosAntes ?? 0,
       plantillaId: Number(this.form.plantillaId),
       condicion: this.form.condicion || null,

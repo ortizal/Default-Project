@@ -35,7 +35,7 @@
               <td><span class="badge" [ngClass]="h.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ h.estado }}</span></td>
               <td class="flex">
                 <button class="btn small" (click)="editar(h)">Editar</button>
-                <button class="btn small danger" (click)="eliminar(h)">Eliminar</button>
+                <button class="btn small outline danger" (click)="eliminar(h)">Eliminar</button>
               </td>
             </tr>
           } @empty {
@@ -71,7 +71,7 @@
               <td>{{ rangoExcepcion(e) }}</td>
               <td>{{ e.motivo || '—' }}</td>
               <td class="flex">
-                <button class="btn small danger" (click)="eliminarExcepcion(e)">Eliminar</button>
+                <button class="btn small outline danger" (click)="eliminarExcepcion(e)">Eliminar</button>
               </td>
             </tr>
           } @empty {

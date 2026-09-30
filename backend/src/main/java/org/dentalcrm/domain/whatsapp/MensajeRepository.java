@@ -16,5 +16,7 @@ public interface MensajeRepository extends JpaRepository<Mensaje, Long> {
 
     long countByConversacion_Id(Long conversacionId);
 
+    long deleteByConversacion_Id(Long conversacionId);
+
     long countByEstado(EstadoMensaje estado);
 }

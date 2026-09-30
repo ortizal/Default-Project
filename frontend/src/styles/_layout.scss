@@ -219,6 +219,14 @@ app-sidebar {
       border-left-color: var(--ls-primary);
       font-weight: 600;
     }
+
+    // Sobre el sidebar oscuro el outline de tema (verde oscuro) sólo daba
+    // 2,66:1: el foco usa un borde interior lima (WCAG 1.4.11 en los dos
+    // temas) y así no lo recorta el scroll del menú.
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--ls-primary);
+    }
   }
 
   .sidebar-footer {

@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+
+.integration-settings {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.integration-section {
+  padding: 22px 0;
+  border-bottom: 1px solid var(--ls-border);
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  margin: 0 0 5px;
+  font-size: 1.2rem;
+}
+
+.section-heading p {
+  margin: 0;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.field,
+.field-wide {
+  display: block;
+  min-width: 0;
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-wide {
+    grid-column: auto;
+  }
+
+  .section-heading {
+    flex-wrap: wrap;
+  }
+}

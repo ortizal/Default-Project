@@ -22,6 +22,8 @@ const PAGINAS = [
   'auditoria',
   'usuarios',
   'configuracion/consultorio',
+  'configuracion/integraciones',
+  'redes-sociales',
 ];
 
 // WCAG A/AA más las buenas prácticas de axe (landmarks, orden de encabezados,

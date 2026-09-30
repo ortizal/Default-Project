@@ -33,6 +33,31 @@ Códigos típicos: `HORA_PASADA`, `HORARIO_NO_DISPONIBLE`, `DOBLE_RESERVA`, `BLO
 
 ## Catálogos
 
+### Configuración del consultorio
+
+`GET/PUT /configuracion/consultorio` permite administrar nombre, razón social, RUC, correo,
+dirección, teléfono, ubicación y horario. La firma se administra por separado con
+`PUT /configuracion/consultorio/firma-digital` como `multipart/form-data` (`archivo`, `.p12`, hasta
+5 MB) y se elimina con `DELETE /configuracion/consultorio/firma-digital`. La respuesta expone solo
+el nombre del archivo y si existe una firma guardada; el contenido no se descarga por la API.
+El contenido se cifra con AES-GCM en la base de datos. Configura `APP_FIRMA_DIGITAL_ENCRYPTION_KEY`
+con al menos 32 caracteres y conserva esa clave para poder usar la firma posteriormente.
+
+### Integraciones
+
+`GET /configuracion/integraciones` muestra el estado y los valores no secretos de OpenWA y SMTP.
+Meta/Facebook-Instagram y TikTok también se gestionan en esta pantalla. Se actualizan con `PUT`
+en `/configuracion/integraciones/openwa`, `/correo`, `/meta` y `/tiktok`; `GET` en la ruta base
+devuelve estado/valores públicos y `DELETE` en cada ruta elimina el override y vuelve a `.env`.
+Los secretos se cifran con AES-GCM y nunca se devuelven; omitirlos al guardar conserva el valor
+actual. Los cambios se aplican inmediatamente. Requiere `PERMISO_CONFIGURACION`.
+
+Las credenciales OAuth de Google se editan en `/google`. Su `clientSecret` también se cifra y la API
+solo informa si está configurado; deja el campo vacío para conservarlo.
+
+Base de datos, puertos, JWT, CORS y claves maestras siguen siendo configuración de despliegue en
+`.env`; no se modifican desde el panel.
+
 ### Pacientes
 
 | Método | Ruta |
@@ -116,6 +141,10 @@ Estados: `PENDIENTE` → `CONFIRMADA` → `REALIZADA` | `NO_ASISTIO` | `CANCELAD
 Eventos válidos: `CITA_CREADA`, `CITA_PROXIMA`, `CITA_CONFIRMADA`, `CITA_ATENDIDA`,
 `CITA_CANCELADA`, `NO_ASISTIO`. Variables de plantilla: `{{paciente}}`, `{{odontologo}}`,
 `{{servicio}}`, `{{fecha}}`, `{{hora}}`, `{{clinica}}`, `{{direccion}}`, `{{telefono}}`.
+Las automatizaciones aceptan `destinatario: PACIENTE|ODONTOLOGO`; las reglas de `CITA_PROXIMA`
+usan `minutosAntes` (por ejemplo, 1440 para 24 horas o 120 para 2 horas). Al confirmar una cita
+se regeneran sus recordatorios pendientes. Los avisos para el odontólogo usan el teléfono del
+odontólogo asignado.
 
 ## Agente IA
 
@@ -153,4 +182,16 @@ Eventos válidos: `CITA_CREADA`, `CITA_PROXIMA`, `CITA_CONFIRMADA`, `CITA_ATENDI
 
 `UsuarioUpdateRequest`: `{email, nombres, apellidos, telefono, estado, nuevaPassword?, roles[]}`.
 Módulos de auditoría: `PACIENTES`, `ODONTOLOGOS`, `SERVICIOS`, `HORARIOS`, `AGENDA`, `CITAS`,
-`USUARIOS`, `WHATSAPP`, `AUTOMATIZACIONES`, `AGENTE_IA`, `GOOGLE_CALENDAR`.
+`USUARIOS`, `WHATSAPP`, `AUTOMATIZACIONES`, `AGENTE_IA`, `GOOGLE_CALENDAR`, `REDES_SOCIALES`.
+
+## Redes sociales
+
+| Método | Ruta |
+|---|---|
+| GET | `/social/status` · GET `/social/{provider}/connect` · DELETE `/social/{provider}/disconnect` |
+| GET | `/social/callback/{provider}` (sin permiso, sólo OAuth) |
+| POST | `/social/publish` (`multipart/form-data`: `cuentaId`, `texto`, `imagen?`) |
+
+`POST /social/publish` acepta sólo **Facebook** con texto (1–2200 caracteres) e imagen opcional
+(JPEG/PNG/WebP, ≤5 MB); Instagram y TikTok devuelven `SOCIAL_URL_PUBLICA_REQUERIDA` porque sólo
+aceptan imágenes servidas desde una URL pública. Ver `docs/SOCIAL.md` para el detalle completo.

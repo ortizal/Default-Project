@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Api } from '../core/api';
 import { UiPageHeaderComponent, UiConfirmService } from '../ui';
@@ -24,10 +25,18 @@ interface SocialConnectResponse {
   authUrl: string;
 }
 
+interface SocialPublishResponse {
+  publicacionId: string;
+}
+
+const MAX_TEXTO = 2200;
+const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
+const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
+
 @Component({
   selector: 'app-redes-sociales',
   templateUrl: './redes-sociales.html',
-  imports: [CommonModule, UiPageHeaderComponent],
+  imports: [CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class RedesSocialesComponent implements OnInit {
   private readonly api = inject(Api);
@@ -35,11 +44,20 @@ export class RedesSocialesComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly confirmacion = inject(UiConfirmService);
 
+  @ViewChild('archivoImagen') archivoImagen?: ElementRef<HTMLInputElement>;
+
   status?: SocialStatus;
   error = '';
   aviso = '';
   cargando = false;
   conectando = '';
+
+  cuentaPublicacion: number | null = null;
+  textoPublicacion = '';
+  imagenPublicacion: File | null = null;
+  publicando = false;
+  exitoPublicacion = '';
+  errorPublicacion = '';
 
   ngOnInit(): void {
     const resultado = this.route.snapshot.queryParamMap.get('social');
@@ -90,6 +108,91 @@ export class RedesSocialesComponent implements OnInit {
       next: () => this.cargar(),
       error: () => {
         this.error = `No se pudo desconectar ${nombre}.`;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  get cuentasFacebook(): SocialAccount[] {
+    return this.status?.meta.accounts.filter((cuenta) => cuenta.platform === 'FACEBOOK') ?? [];
+  }
+
+  get cuentasRestringidas(): SocialAccount[] {
+    const meta = this.status?.meta.accounts.filter((cuenta) => cuenta.platform === 'INSTAGRAM') ?? [];
+    return [...meta, ...(this.status?.tiktok.accounts ?? [])];
+  }
+
+  get longitudTexto(): number {
+    return this.textoPublicacion.length;
+  }
+
+  get textoValido(): boolean {
+    const texto = this.textoPublicacion.trim();
+    return texto.length > 0 && texto.length <= MAX_TEXTO;
+  }
+
+  get puedePublicar(): boolean {
+    return this.cuentaPublicacion !== null && this.textoValido && !this.publicando;
+  }
+
+  get tamanoImagen(): string {
+    if (!this.imagenPublicacion) return '';
+    const mb = this.imagenPublicacion.size / (1024 * 1024);
+    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.ceil(this.imagenPublicacion.size / 1024)} KB`;
+  }
+
+  seleccionarImagen(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0] ?? null;
+    this.errorPublicacion = '';
+    this.imagenPublicacion = null;
+    if (!archivo) return;
+    if (!TIPOS_IMAGEN.includes(archivo.type)) {
+      this.errorPublicacion = 'La imagen debe estar en formato JPEG, PNG o WebP.';
+      input.value = '';
+      this.cdr.markForCheck();
+      return;
+    }
+    if (archivo.size > MAX_IMAGEN_BYTES) {
+      this.errorPublicacion = 'La imagen no puede superar 5 MB.';
+      input.value = '';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.imagenPublicacion = archivo;
+    this.cdr.markForCheck();
+  }
+
+  quitarImagen(): void {
+    this.imagenPublicacion = null;
+    this.errorPublicacion = '';
+    if (this.archivoImagen) this.archivoImagen.nativeElement.value = '';
+    this.cdr.markForCheck();
+  }
+
+  publicar(): void {
+    if (!this.puedePublicar || this.cuentaPublicacion === null) return;
+
+    const datos = new FormData();
+    datos.append('cuentaId', String(this.cuentaPublicacion));
+    datos.append('texto', this.textoPublicacion.trim());
+    if (this.imagenPublicacion) datos.append('imagen', this.imagenPublicacion);
+
+    this.errorPublicacion = '';
+    this.exitoPublicacion = '';
+    this.publicando = true;
+    this.api.post<SocialPublishResponse>('/social/publish', datos).subscribe({
+      next: ({ publicacionId }) => {
+        this.publicando = false;
+        this.exitoPublicacion = `Publicación enviada correctamente (id ${publicacionId}).`;
+        this.textoPublicacion = '';
+        this.imagenPublicacion = null;
+        if (this.archivoImagen) this.archivoImagen.nativeElement.value = '';
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.publicando = false;
+        this.errorPublicacion = e?.error?.message ?? 'No se pudo publicar en la red social.';
         this.cdr.markForCheck();
       },
     });

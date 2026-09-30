@@ -3,16 +3,21 @@ package org.dentalcrm.web.social;
 import org.dentalcrm.domain.social.SocialProvider;
 import org.dentalcrm.multitenant.TenantContext;
 import org.dentalcrm.web.social.dto.SocialConnectResponse;
+import org.dentalcrm.web.social.dto.SocialPublishResponse;
 import org.dentalcrm.web.social.dto.SocialStatusResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import java.net.URI;
 
 @RestController
@@ -20,15 +25,25 @@ import java.net.URI;
 public class SocialController {
 
     private final SocialService socialService;
+    private final SocialPublishService socialPublishService;
 
-    public SocialController(SocialService socialService) {
+    public SocialController(SocialService socialService, SocialPublishService socialPublishService) {
         this.socialService = socialService;
+        this.socialPublishService = socialPublishService;
     }
 
     @GetMapping("/status")
     @PreAuthorize("hasAuthority('PERMISO_REDES_SOCIALES')")
     public ResponseEntity<SocialStatusResponse> status() {
         return ResponseEntity.ok(socialService.status());
+    }
+
+    @PostMapping(value = "/publish", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('PERMISO_REDES_SOCIALES')")
+    public ResponseEntity<SocialPublishResponse> publicar(@RequestParam("cuentaId") Long cuentaId,
+                                                          @RequestParam("texto") String texto,
+                                                          @RequestPart(value = "imagen", required = false) MultipartFile imagen) {
+        return ResponseEntity.ok(socialPublishService.publicar(cuentaId, texto, imagen));
     }
 
     @GetMapping("/{provider}/connect")

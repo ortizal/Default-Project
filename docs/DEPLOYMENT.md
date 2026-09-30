@@ -31,11 +31,27 @@ variables del `.env` correspondiente.
 | `GOOGLE_CLIENT_ID` | — | para Google Calendar |
 | `GOOGLE_CLIENT_SECRET` | — | idem |
 | `GOOGLE_REDIRECT_URI` | `https://crm.miclina.com/api/v1/google/callback` | idem |
+| `META_APP_ID` / `META_APP_SECRET` | — | opcional (panel o `.env`) |
+| `META_REDIRECT_URI` | `https://crm.miclina.com/api/v1/social/callback/meta` | OAuth Meta |
+| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` | — | opcional (panel o `.env`) |
+| `TIKTOK_REDIRECT_URI` | `https://crm.miclina.com/api/v1/social/callback/tiktok` | OAuth TikTok |
 | `CLINICA_NOMBRE` / `CLINICA_DIRECCION` / `CLINICA_TELEFONO` | — | variables de plantillas |
+| `APP_INTEGRACIONES_ENCRYPTION_KEY` | `openssl rand -base64 48` | recomendada para secretos del panel |
+| `APP_FIRMA_DIGITAL_ENCRYPTION_KEY` | `openssl rand -base64 48` | recomendada para firma `.p12` |
 
 ## Credenciales por módulo
 
 Cada módulo externo tiene sus propias variables en `.env`. Ningún secreto se hardcodea.
+
+OpenWA, SMTP y OAuth de Google también pueden editarse desde el panel de administración; esos cambios
+se guardan por consultorio y se aplican inmediatamente. Las claves API, contraseñas y secretos OAuth
+se cifran con AES-GCM y nunca se devuelven al navegador. Se recomienda definir claves de cifrado
+estables de al menos 32 caracteres y mantener una copia segura: cambiarlas sin migrar los datos
+cifrados impediría recuperar las credenciales almacenadas.
+
+Base de datos, puertos, JWT, CORS y claves maestras permanecen en `.env` y requieren configuración
+de despliegue. El botón **Usar valores de .env** elimina el override del consultorio, no modifica el
+archivo `.env`.
 
 ### Base de datos + Seguridad
 | Variable | Generar con | Obligatoria |
@@ -67,7 +83,7 @@ Las credenciales NO se generan automáticamente. Se crean en [Google Cloud Conso
 ## Scripts
 
 - `./scripts/secrets.sh` — genera los secretos locales faltantes (BD, JWT, OpenWA). **No genera** las credenciales de Google (requieren Google Cloud Console).
-- `./scripts/deploy.sh` — valida las variables obligatorias. `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` son opcionales si se configurarán desde el panel de administración.
+- `./scripts/deploy.sh` — si `.env` no existe, lo crea desde `.env.example`, solicita el usuario y contraseña de PostgreSQL (Enter genera una contraseña segura) y completa los secretos faltantes. Si `.env` ya existe, no lo modifica y valida que contenga los valores obligatorios. `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` son opcionales si se configurarán desde el panel de administración.
 
 Copia `.env.example` → `.env` y edita. Nunca comitear `.env`.
 

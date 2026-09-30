@@ -10,19 +10,26 @@ import { test, expect, Page } from '@playwright/test';
 
 const RUTAS = [
   'dashboard',
+  'reportes',
   'pacientes',
   'odontologos',
   'servicios',
-  'usuarios',
-  'citas',
+  'horarios',
   'agenda',
-  'reportes',
-  'notificaciones',
+  'citas',
+  'whatsapp/sesiones',
   'whatsapp/inbox',
+  'whatsapp/campana',
   'plantillas',
   'automatizaciones',
-  'configuracion/consultorio',
+  'notificaciones',
+  'agente',
   'google',
+  'auditoria',
+  'usuarios',
+  'configuracion/consultorio',
+  'configuracion/integraciones',
+  'redes-sociales',
 ];
 
 const SELECTORES = [

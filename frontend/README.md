@@ -62,6 +62,7 @@ npx playwright test qa          # un solo archivo
 npx playwright test contraste   # contraste WCAG AA en los 4 modos de tema
 npx playwright test hover       # contraste de los estados :hover (claro y oscuro)
 npx playwright test foco       # anillo de foco por teclado (WCAG 2.4.7)
+npx playwright test redes     # validación del formulario de publicación social
 ```
 
 ## Additional Resources

@@ -2,7 +2,7 @@ package org.dentalcrm.integration.messaging;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.dentalcrm.exception.BusinessException;
-import org.springframework.beans.factory.annotation.Value;
+import org.dentalcrm.web.configuracion.IntegracionesConfiguracionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -19,24 +19,15 @@ public class OpenWAProvider implements MessagingProvider {
 
     private static final String NOMBRE = "OPENWA";
 
-    private final WebClient client;
-    private final String url;
-    private final String apiKey;
-    private final String webhookUrl;
-    private final String webhookSecret;
+    private final WebClient.Builder builder;
+    private final IntegracionesConfiguracionService configuracionService;
     private final Duration timeout;
 
     public OpenWAProvider(WebClient.Builder builder,
-                          @Value("${app.openwa.url}") String url,
-                          @Value("${app.openwa.api-key}") String apiKey,
-                          @Value("${app.openwa.webhook-url:}") String webhookUrl,
-                          @Value("${app.openwa.webhook-secret:}") String webhookSecret,
-                          @Value("${app.openwa.timeout-seconds:10}") long timeoutSeconds) {
-        this.client = builder.clone().baseUrl(url).build();
-        this.url = url;
-        this.apiKey = apiKey;
-        this.webhookUrl = webhookUrl;
-        this.webhookSecret = webhookSecret;
+                          IntegracionesConfiguracionService configuracionService,
+                          @org.springframework.beans.factory.annotation.Value("${app.openwa.timeout-seconds:10}") long timeoutSeconds) {
+        this.builder = builder;
+        this.configuracionService = configuracionService;
         this.timeout = Duration.ofSeconds(timeoutSeconds);
     }
 
@@ -47,7 +38,9 @@ public class OpenWAProvider implements MessagingProvider {
 
     @Override
     public boolean estaConfigurado() {
-        return url != null && !url.isBlank() && apiKey != null && !apiKey.isBlank();
+        var config = configuracionService.openWa();
+        return config.url() != null && !config.url().isBlank()
+            && config.apiKey() != null && !config.apiKey().isBlank();
     }
 
     @Override
@@ -61,18 +54,18 @@ public class OpenWAProvider implements MessagingProvider {
         registrarWebhook(idExterno);
 
         // El start responde 400 si la sesión ya estaba iniciada; se tolera.
-        ejecutarTolerante(client.post().uri("/api/sessions/{id}/start", idExterno), 400, 409);
+        ejecutarTolerante(cliente().post().uri("/api/sessions/{id}/start", idExterno), 400, 409);
 
         // Esperar brevemente a que la sesión produzca el QR (initializing -> qr_ready).
         for (int intento = 0; intento < 6; intento++) {
             JsonNode sesion = ejecutarTolerante(
-                    client.get().uri("/api/sessions/{id}", idExterno), 404);
+                    cliente().get().uri("/api/sessions/{id}", idExterno), 404);
             String estado = sesion == null ? "initializing" : sesion.path("status").asText("initializing");
             if ("ready".equalsIgnoreCase(estado)) {
                 return new ResultadoConexion("CONECTADA", "Sesión ya vinculada", null, null);
             }
             JsonNode qr = ejecutarTolerante(
-                    client.get().uri("/api/sessions/{id}/qr", idExterno), 400, 404);
+                    cliente().get().uri("/api/sessions/{id}/qr", idExterno), 400, 404);
             if (qr != null && qr.hasNonNull("qrCode")) {
                 return new ResultadoConexion("CONECTANDO", "Escanea el código QR", qr.get("qrCode").asText(), null);
             }
@@ -97,7 +90,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (idExterno == null) {
             return;
         }
-        ejecutarTolerante(client.post().uri("/api/sessions/{id}/stop", idExterno), 400, 404, 409);
+        ejecutarTolerante(cliente().post().uri("/api/sessions/{id}/stop", idExterno), 400, 404, 409);
     }
 
     @Override
@@ -111,7 +104,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (digitos.isEmpty()) {
             throw new BusinessException("TELEFONO_INVALIDO", "El teléfono de destino no es válido");
         }
-        ejecutar(client.post()
+        ejecutar(cliente().post()
                 .uri("/api/sessions/{id}/messages/send-text", idExterno)
                 .bodyValue(Map.of("chatId", digitos + "@c.us", "text", texto)));
     }
@@ -139,7 +132,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (caption != null && !caption.isBlank()) {
             body.put("caption", caption);
         }
-        ejecutar(client.post()
+        ejecutar(cliente().post()
                 .uri("/api/sessions/{id}/messages/send-document", idExterno)
                 .bodyValue(body));
     }
@@ -167,7 +160,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (caption != null && !caption.isBlank()) {
             body.put("caption", caption);
         }
-        ejecutar(client.post()
+        ejecutar(cliente().post()
                 .uri("/api/sessions/{id}/messages/send-image", idExterno)
                 .bodyValue(body));
     }
@@ -177,7 +170,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (idExterno == null || idExterno.isBlank()) {
             return null;
         }
-        JsonNode sesion = ejecutarTolerante(client.get()
+        JsonNode sesion = ejecutarTolerante(cliente().get()
                 .uri("/api/sessions/{id}", idExterno), 404);
         return sesion == null ? null : sesion.path("name").asText(null);
     }
@@ -196,7 +189,7 @@ public class OpenWAProvider implements MessagingProvider {
         if (idExterno != null) {
             return idExterno;
         }
-        JsonNode creada = ejecutarTolerante(client.post()
+        JsonNode creada = ejecutarTolerante(cliente().post()
                 .uri("/api/sessions")
                 .bodyValue(Map.of("name", nombre)), 409);
         return creada == null ? null : creada.path("id").asText(null);
@@ -204,7 +197,7 @@ public class OpenWAProvider implements MessagingProvider {
 
     private String buscarId(String nombre) {
         String objetivo = normalizarNombre(nombre);
-        JsonNode lista = ejecutar(client.get().uri("/api/sessions"));
+        JsonNode lista = ejecutar(cliente().get().uri("/api/sessions"));
         if (lista != null && lista.isArray()) {
             for (JsonNode nodo : lista) {
                 if (objetivo.equalsIgnoreCase(normalizarNombre(nodo.path("name").asText("")))) {
@@ -216,16 +209,19 @@ public class OpenWAProvider implements MessagingProvider {
     }
 
     private String estadoBruto(String idExterno) {
-        JsonNode sesion = ejecutarTolerante(client.get()
+        JsonNode sesion = ejecutarTolerante(cliente().get()
                 .uri("/api/sessions/{id}", idExterno), 404);
         return sesion == null ? "ERROR" : sesion.path("status").asText("ERROR");
     }
 
     private void registrarWebhook(String idExterno) {
+        var config = configuracionService.openWa();
+        String webhookUrl = config.webhookUrl();
+        String webhookSecret = config.webhookSecret();
         if (webhookUrl == null || webhookUrl.isBlank()) {
             return;
         }
-        JsonNode lista = ejecutar(client.get().uri("/api/sessions/{id}/webhooks", idExterno));
+        JsonNode lista = ejecutar(cliente().get().uri("/api/sessions/{id}/webhooks", idExterno));
         if (lista != null && lista.isArray()) {
             for (JsonNode nodo : lista) {
                 if (webhookUrl.equals(nodo.path("url").asText(""))) {
@@ -240,7 +236,19 @@ public class OpenWAProvider implements MessagingProvider {
         if (webhookSecret != null && !webhookSecret.isBlank()) {
             body.put("secret", webhookSecret);
         }
-        ejecutar(client.post().uri("/api/sessions/{id}/webhooks", idExterno).bodyValue(body));
+        ejecutar(cliente().post().uri("/api/sessions/{id}/webhooks", idExterno).bodyValue(body));
+    }
+
+    private WebClient cliente() {
+        var config = configuracionService.openWa();
+        if (config.url() == null || config.url().isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "OPENWA_NO_CONFIGURADO", "La URL de OpenWA no está configurada");
+        }
+        WebClient.Builder configurado = builder.clone().baseUrl(config.url());
+        if (config.apiKey() != null && !config.apiKey().isBlank()) {
+            configurado.defaultHeader("X-API-Key", config.apiKey());
+        }
+        return configurado.build();
     }
 
     private String normalizarNombre(String sesionId) {
@@ -267,8 +275,7 @@ public class OpenWAProvider implements MessagingProvider {
 
     private JsonNode ejecutar(WebClient.RequestHeadersSpec<?> spec) {
         try {
-            return spec.headers(h -> h.set("X-API-Key", apiKey))
-                    .accept(MediaType.APPLICATION_JSON)
+            return spec.accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .block(timeout);

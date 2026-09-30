@@ -370,7 +370,7 @@ class AgenteConversacionalServiceTest {
     }
 
     @Test
-    void agendamientoPideServicioCuandoFalta() {
+        void agendamientoNoPreguntaServicioYContinuaConOdontologo() {
         Conversacion conv = conversacion();
         conv.setPaciente(paciente());
         when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
@@ -380,8 +380,10 @@ class AgenteConversacionalServiceTest {
 
         AgenteConversacionalService.RespuestaAgente r = servicio.procesar(conv, "quiero una cita", null);
 
-        assertTrue(r.mensaje().contains("¿Qué servicio"));
-        assertTrue(conv.getContextoAgente().contains("SERVICIO"));
+        assertFalse(r.mensaje().contains("¿Qué servicio"));
+        assertTrue(r.mensaje().contains("¿Para qué día"));
+        assertTrue(conv.getContextoAgente().contains("doctorId"));
+        assertTrue(conv.getContextoAgente().contains("servicioId"));
     }
 
     @Test
@@ -421,6 +423,7 @@ class AgenteConversacionalServiceTest {
         assertTrue(r.mensaje().toLowerCase().contains("reinicié"));
         assertNull(conv.getIntencion());
         assertNull(conv.getContextoAgente());
+        verify(mensajeRepository).deleteByConversacion_Id(conv.getId());
     }
 
     @Test
@@ -447,6 +450,7 @@ class AgenteConversacionalServiceTest {
         assertTrue(r.mensaje().toLowerCase().contains("reinicié"));
         assertNull(conv.getIntencion());
         assertNull(conv.getContextoAgente());
+        verify(mensajeRepository).deleteByConversacion_Id(conv.getId());
         assertFalse(r.transferirHumano());
     }
 
@@ -680,22 +684,26 @@ class AgenteConversacionalServiceTest {
     }
 
     @Test
-    void numeroDeServicioFueraDeRangoExplicaElErrorYRepiteLaPregunta() {
+    void numeroDeOdontologoFueraDeRangoExplicaElErrorYRepiteLaPregunta() {
         Conversacion conv = conversacion();
         conv.setPaciente(paciente());
+        Odontologo otroDoctor = doctorPerez();
+        otroDoctor.setId(11L);
+        otroDoctor.setNombres("Ana");
+        otroDoctor.setApellidos("Vega");
         when(servicioRepository.findByEstadoOrderByNombreAsc("ACTIVO"))
                 .thenReturn(List.of(servicioLimpieza()));
         when(odontologoRepository.findTop5ByEstadoOrderByNombresAsc("ACTIVO"))
-                .thenReturn(List.of(doctorPerez()));
+                .thenReturn(List.of(doctorPerez(), otroDoctor));
 
         AgenteConversacionalService.RespuestaAgente pregunta = servicio.procesar(conv, "quiero una cita", null);
-        assertTrue(pregunta.mensaje().contains("¿Qué servicio"));
-        assertTrue(pregunta.mensaje().contains("1. Limpieza Dental"));
+        assertTrue(pregunta.mensaje().contains("¿Con qué odontólogo"));
+        assertTrue(conv.getContextoAgente().contains("servicioId"));
 
-        AgenteConversacionalService.RespuestaAgente error = servicio.procesar(conv, "2", null);
-        assertTrue(error.mensaje().contains("No entendí \"2\" como un servicio."));
-        assertTrue(error.mensaje().contains("¿Qué servicio"));
-        assertTrue(conv.getContextoAgente().contains("SERVICIO"));
+        AgenteConversacionalService.RespuestaAgente error = servicio.procesar(conv, "3", null);
+        assertTrue(error.mensaje().contains("No entendí \"3\" como un odontólogo."));
+        assertTrue(error.mensaje().contains("¿Con qué odontólogo"));
+        assertTrue(conv.getContextoAgente().contains("DOCTOR"));
 
         AgenteConversacionalService.RespuestaAgente dia = servicio.procesar(conv, "1", null);
         assertTrue(dia.mensaje().contains("¿Para qué día"));

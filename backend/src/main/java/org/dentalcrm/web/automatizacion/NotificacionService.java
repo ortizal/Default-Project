@@ -97,7 +97,8 @@ public class NotificacionService {
     public void onCitaConfirmada(CitaConfirmadaEvent e) {
         cancelarActivasDeCita(e.citaId(), "Cita confirmada");
         Cita cita = citaOError(e.citaId());
-        int n = automatizacionService.generar(cita, EventoAutomatizacion.CITA_CONFIRMADA);
+        int n = automatizacionService.generar(cita,
+            EventoAutomatizacion.CITA_CONFIRMADA, EventoAutomatizacion.CITA_PROXIMA);
         log.info("Cita {} confirmada: {} notificaciones generadas", e.citaId(), n);
     }
 
@@ -156,7 +157,7 @@ public class NotificacionService {
     @Transactional
     protected void procesar(Notificacion n) {
         if (n.getTelefono() == null || n.getTelefono().isBlank()) {
-            fallar(n, "El paciente no tiene teléfono");
+            fallar(n, "El destinatario no tiene teléfono");
             return;
         }
         var sesion = sesionConectada();

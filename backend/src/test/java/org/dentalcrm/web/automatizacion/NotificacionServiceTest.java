@@ -5,6 +5,7 @@ import org.dentalcrm.domain.automatizacion.EventoAutomatizacion;
 import org.dentalcrm.domain.automatizacion.Notificacion;
 import org.dentalcrm.domain.automatizacion.NotificacionRepository;
 import org.dentalcrm.domain.cita.Cita;
+import org.dentalcrm.domain.cita.CitaConfirmadaEvent;
 import org.dentalcrm.domain.cita.CitaModificadaEvent;
 import org.dentalcrm.domain.cita.CitaRepository;
 import org.dentalcrm.domain.paciente.Paciente;
@@ -165,6 +166,18 @@ class NotificacionServiceTest {
 
         assertEquals(EstadoNotificacion.CANCELADA, pendiente.getEstado());
         verify(notificacionRepository).save(pendiente);
+    }
+
+    @Test
+    void confirmarLaCitaRegeneraLaConfirmacionYLosRecordatorios() {
+        Cita cita = citaConPaciente();
+        when(citaRepository.findById(100L)).thenReturn(Optional.of(cita));
+        when(notificacionRepository.activasDeCita(100L)).thenReturn(List.of());
+
+        servicio.onCitaConfirmada(new CitaConfirmadaEvent(100L));
+
+        verify(automatizacionService).generar(same(cita),
+                eq(EventoAutomatizacion.CITA_CONFIRMADA), eq(EventoAutomatizacion.CITA_PROXIMA));
     }
 
     // ------------------------------------------------------------------

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.dentalcrm.domain.google.GoogleCredential;
 import org.dentalcrm.domain.google.GoogleCredentialRepository;
 import org.dentalcrm.exception.BusinessException;
+import org.dentalcrm.service.SocialTokenCipher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,34 +39,81 @@ public class GoogleService {
     private final WebClient apiClient;
     private final WebClient oauthClient;
     private final GoogleCredentialRepository credentialRepository;
+    private final SocialTokenCipher secretCipher;
+    private final String environmentClientId;
+    private final String environmentClientSecret;
+    private final String environmentRedirectUri;
 
     private final String authBaseUrl;
     private final String oauthBaseUrl;
     private final String apiBaseUrl;
 
+    @Autowired
     public GoogleService(WebClient.Builder builder,
                          @Value("${app.google.auth-base-url}") String authBaseUrl,
                          @Value("${app.google.oauth-base-url}") String oauthBaseUrl,
                          @Value("${app.google.api-base-url}") String apiBaseUrl,
-                         GoogleCredentialRepository credentialRepository) {
+                         GoogleCredentialRepository credentialRepository,
+                         SocialTokenCipher secretCipher,
+                         @Value("${app.google.client-id:}") String environmentClientId,
+                         @Value("${app.google.client-secret:}") String environmentClientSecret,
+                         @Value("${app.google.redirect-uri:}") String environmentRedirectUri) {
         this.apiClient = builder.clone().baseUrl(apiBaseUrl).build();
         this.oauthClient = builder.clone().baseUrl(oauthBaseUrl).build();
         this.authBaseUrl = authBaseUrl;
         this.oauthBaseUrl = oauthBaseUrl;
         this.apiBaseUrl = apiBaseUrl;
         this.credentialRepository = credentialRepository;
+        this.secretCipher = secretCipher;
+        this.environmentClientId = environmentClientId;
+        this.environmentClientSecret = environmentClientSecret;
+        this.environmentRedirectUri = environmentRedirectUri;
+    }
+
+    public GoogleService(WebClient.Builder builder, String authBaseUrl, String oauthBaseUrl,
+                         String apiBaseUrl, GoogleCredentialRepository credentialRepository) {
+        this(builder, authBaseUrl, oauthBaseUrl, apiBaseUrl, credentialRepository,
+                new SocialTokenCipher("unit-test-key-with-at-least-thirty-two-characters"), "", "", "");
+    }
+
+    public String clientIdConfigurado() {
+        String stored = credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getClientId).orElse("");
+        return stored == null || stored.isBlank() ? environmentClientId : stored;
     }
 
     private String clientId() {
-        return credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getClientId).orElse("");
+        return clientIdConfigurado();
+    }
+
+    public boolean clientSecretConfigurado() {
+        return !clientSecret().isBlank();
     }
 
     private String clientSecret() {
-        return credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getClientSecret).orElse("");
+        String stored = credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getClientSecret).orElse("");
+        if (stored == null || stored.isBlank()) return environmentClientSecret;
+        return stored.startsWith("enc:v1:") ? secretCipher.decrypt(stored.substring("enc:v1:".length())) : stored;
+    }
+
+    public String redirectUriConfigurado() {
+        String stored = credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getRedirectUri).orElse("");
+        return stored == null || stored.isBlank() ? environmentRedirectUri : stored;
     }
 
     private String redirectUri() {
-        return credentialRepository.findTopByOrderByIdAsc().map(GoogleCredential::getRedirectUri).orElse("");
+        return redirectUriConfigurado();
+    }
+
+    public String authBaseUrl() {
+        return authBaseUrl;
+    }
+
+    public String oauthBaseUrl() {
+        return oauthBaseUrl;
+    }
+
+    public String apiBaseUrl() {
+        return apiBaseUrl;
     }
 
     public boolean estaConfigurado() {

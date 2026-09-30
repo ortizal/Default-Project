@@ -1,0 +1,159 @@
+<ui-page-header title="Configuración de integraciones" subtitle="Los cambios se aplican inmediatamente y los secretos guardados nunca se muestran." />
+
+@if (error) {
+  <div class="msg error" role="alert">{{ error }}</div>
+}
+@if (exito) {
+  <div class="msg ok" role="status">{{ exito }}</div>
+}
+
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando integraciones...</div>
+} @else {
+  <div class="integration-settings">
+    <section class="integration-section" aria-labelledby="openwa-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="openwa-title">WhatsApp / OpenWA</h2>
+          <p class="muted">Conexión del servicio y configuración de webhooks.</p>
+        </div>
+        <span class="badge" [ngClass]="config?.openWa?.configurado ? 'ok' : 'warn'">
+          {{ config?.openWa?.configurado ? 'Configurado' : 'Incompleto' }}
+        </span>
+      </div>
+      <form class="field-grid" (ngSubmit)="guardarOpenWa()">
+        <label class="field field-wide">
+          <span class="label">URL de OpenWA *</span>
+          <input class="input" name="openwaUrl" [(ngModel)]="openwa.url" type="url" required maxlength="500" />
+        </label>
+        <label class="field field-wide">
+          <span class="label">API key</span>
+          <input class="input" name="openwaApiKey" [(ngModel)]="openwa.apiKey" type="password" autocomplete="new-password" />
+          <small class="muted">{{ config?.openWa?.apiKeyConfigurada ? 'Hay una clave guardada. Déjalo vacío para conservarla.' : 'No hay una clave configurada.' }}</small>
+        </label>
+        <label class="field field-wide">
+          <span class="label">URL del webhook</span>
+          <input class="input" name="openwaWebhookUrl" [(ngModel)]="openwa.webhookUrl" type="url" maxlength="1000" />
+        </label>
+        <label class="field field-wide">
+          <span class="label">Secreto del webhook</span>
+          <input class="input" name="openwaWebhookSecret" [(ngModel)]="openwa.webhookSecret" type="password" autocomplete="new-password" />
+          <small class="muted">{{ config?.openWa?.webhookSecretConfigurado ? 'Hay un secreto guardado. Déjalo vacío para conservarlo.' : 'No hay un secreto configurado.' }}</small>
+        </label>
+        <div class="section-actions field-wide">
+          <button class="btn primary" type="submit" [disabled]="guardando !== ''">
+            {{ guardando === 'openwa' ? 'Guardando...' : 'Guardar OpenWA' }}
+          </button>
+          <button class="btn" type="button" (click)="usarValoresOpenWa()" [disabled]="guardando !== ''">Usar valores de .env</button>
+          <span class="muted">{{ config?.openWa?.usaValoresEntorno ? 'Usando valores del entorno' : 'Hay valores guardados para este consultorio' }}</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="integration-section" aria-labelledby="correo-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="correo-title">Correo SMTP</h2>
+          <p class="muted">Configuración del remitente para notificaciones por correo.</p>
+        </div>
+        <span class="badge" [ngClass]="config?.correo?.configurado ? 'ok' : 'warn'">
+          {{ config?.correo?.configurado ? 'Configurado' : 'Incompleto' }}
+        </span>
+      </div>
+      <form class="field-grid" (ngSubmit)="guardarCorreo()">
+        <label class="field">
+          <span class="label">Servidor SMTP</span>
+          <input class="input" name="mailHost" [(ngModel)]="correo.host" maxlength="255" />
+        </label>
+        <label class="field">
+          <span class="label">Puerto</span>
+          <input class="input" name="mailPort" [(ngModel)]="correo.puerto" type="number" min="1" max="65535" />
+        </label>
+        <label class="field">
+          <span class="label">Usuario</span>
+          <input class="input" name="mailUsername" [(ngModel)]="correo.usuario" autocomplete="username" maxlength="255" />
+        </label>
+        <label class="field">
+          <span class="label">Contraseña SMTP</span>
+          <input class="input" name="mailPassword" [(ngModel)]="correo.password" type="password" autocomplete="new-password" />
+          <small class="muted">{{ config?.correo?.passwordConfigurada ? 'Hay una contraseña guardada. Déjala vacía para conservarla.' : 'No hay una contraseña configurada.' }}</small>
+        </label>
+        <label class="field field-wide">
+          <span class="label">Correo remitente</span>
+          <input class="input" name="mailFrom" [(ngModel)]="correo.remitente" type="email" maxlength="255" />
+        </label>
+        <div class="section-actions field-wide">
+          <button class="btn primary" type="submit" [disabled]="guardando !== ''">
+            {{ guardando === 'correo' ? 'Guardando...' : 'Guardar correo' }}
+          </button>
+          <button class="btn" type="button" (click)="usarValoresCorreo()" [disabled]="guardando !== ''">Usar valores de .env</button>
+          <span class="muted">{{ config?.correo?.usaValoresEntorno ? 'Usando valores del entorno' : 'Hay valores guardados para este consultorio' }}</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="integration-section" aria-labelledby="meta-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="meta-title">Meta: Facebook e Instagram</h2>
+          <p class="muted">Credenciales OAuth de la aplicación configurada en Meta for Developers.</p>
+        </div>
+        <span class="badge" [ngClass]="config?.meta?.configurado ? 'ok' : 'warn'">
+          {{ config?.meta?.configurado ? 'Configurado' : 'Incompleto' }}
+        </span>
+      </div>
+      <form class="field-grid" (ngSubmit)="guardarMeta()">
+        <label class="field">
+          <span class="label">App ID</span>
+          <input class="input" name="metaClientId" [(ngModel)]="meta.clientId" maxlength="255" />
+        </label>
+        <label class="field">
+          <span class="label">App Secret</span>
+          <input class="input" name="metaClientSecret" [(ngModel)]="meta.clientSecret" type="password" autocomplete="new-password" />
+          <small class="muted">{{ config?.meta?.clientSecretConfigurado ? 'Guardado; déjalo vacío para conservarlo.' : 'No hay un secreto configurado.' }}</small>
+        </label>
+        <label class="field field-wide">
+          <span class="label">URL de retorno OAuth</span>
+          <input class="input" name="metaRedirectUri" [(ngModel)]="meta.redirectUri" type="url" maxlength="1000" />
+        </label>
+        <div class="section-actions field-wide">
+          <button class="btn primary" type="submit" [disabled]="guardando !== ''">{{ guardando === 'meta' ? 'Guardando...' : 'Guardar Meta' }}</button>
+          <button class="btn" type="button" (click)="usarValoresMeta()" [disabled]="guardando !== ''">Usar valores de .env</button>
+          <span class="muted">{{ config?.meta?.usaValoresEntorno ? 'Usando valores del entorno' : 'Hay valores guardados para este consultorio' }}</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="integration-section" aria-labelledby="tiktok-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="tiktok-title">TikTok</h2>
+          <p class="muted">Credenciales OAuth de la aplicación de TikTok for Developers.</p>
+        </div>
+        <span class="badge" [ngClass]="config?.tikTok?.configurado ? 'ok' : 'warn'">
+          {{ config?.tikTok?.configurado ? 'Configurado' : 'Incompleto' }}
+        </span>
+      </div>
+      <form class="field-grid" (ngSubmit)="guardarTikTok()">
+        <label class="field">
+          <span class="label">Client Key</span>
+          <input class="input" name="tikTokClientKey" [(ngModel)]="tikTok.clientKey" maxlength="255" />
+        </label>
+        <label class="field">
+          <span class="label">Client Secret</span>
+          <input class="input" name="tikTokClientSecret" [(ngModel)]="tikTok.clientSecret" type="password" autocomplete="new-password" />
+          <small class="muted">{{ config?.tikTok?.clientSecretConfigurado ? 'Guardado; déjalo vacío para conservarlo.' : 'No hay un secreto configurado.' }}</small>
+        </label>
+        <label class="field field-wide">
+          <span class="label">URL de retorno OAuth</span>
+          <input class="input" name="tikTokRedirectUri" [(ngModel)]="tikTok.redirectUri" type="url" maxlength="1000" />
+        </label>
+        <div class="section-actions field-wide">
+          <button class="btn primary" type="submit" [disabled]="guardando !== ''">{{ guardando === 'tiktok' ? 'Guardando...' : 'Guardar TikTok' }}</button>
+          <button class="btn" type="button" (click)="usarValoresTikTok()" [disabled]="guardando !== ''">Usar valores de .env</button>
+          <span class="muted">{{ config?.tikTok?.usaValoresEntorno ? 'Usando valores del entorno' : 'Hay valores guardados para este consultorio' }}</span>
+        </div>
+      </form>
+    </section>
+  </div>
+}

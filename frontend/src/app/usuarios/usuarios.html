@@ -33,7 +33,12 @@
               <td><ui-badge [tone]="u.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ u.estado }}</ui-badge></td>
               <td class="flex">
                 <button class="btn small" (click)="editar(u)">Editar</button>
-                <button class="btn small danger" (click)="cambiarEstado(u)">{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
+                <button
+                  class="btn small"
+                  [class.outline]="u.estado === 'ACTIVO'"
+                  [class.danger]="u.estado === 'ACTIVO'"
+                  (click)="cambiarEstado(u)"
+                >{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
               </td>
             </tr>
           } @empty {

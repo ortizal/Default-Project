@@ -1,6 +1,28 @@
 import { test, expect, Page } from '@playwright/test';
 
-const PAGINAS = ['dashboard', 'pacientes', 'odontologos', 'citas', 'agenda', 'reportes'];
+const PAGINAS = [
+  'dashboard',
+  'reportes',
+  'pacientes',
+  'odontologos',
+  'servicios',
+  'horarios',
+  'agenda',
+  'citas',
+  'whatsapp/sesiones',
+  'whatsapp/inbox',
+  'whatsapp/campana',
+  'plantillas',
+  'automatizaciones',
+  'notificaciones',
+  'agente',
+  'google',
+  'auditoria',
+  'usuarios',
+  'configuracion/consultorio',
+  'configuracion/integraciones',
+  'redes-sociales',
+];
 
 async function login(page: Page) {
   await page.goto('./');
