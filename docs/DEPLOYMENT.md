@@ -85,6 +85,8 @@ Las credenciales NO se generan automáticamente. Se crean en [Google Cloud Conso
 - `./scripts/secrets.sh` — genera los secretos locales faltantes (BD, JWT, OpenWA). **No genera** las credenciales de Google (requieren Google Cloud Console).
 - `./scripts/deploy.sh` — si `.env` no existe, lo crea desde `.env.example`, solicita el usuario y contraseña de PostgreSQL (Enter genera una contraseña segura) y completa los secretos faltantes. Si `.env` ya existe, no lo modifica y valida que contenga los valores obligatorios. `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` son opcionales si se configurarán desde el panel de administración.
 
+El despliegue usa `OPENWA_MODE=auto` por defecto: detecta un OpenWA sano en `localhost:2785` y lo reutiliza, o levanta el incluido si no hay uno. Usa `OPENWA_MODE=external` para forzar uno externo (por defecto accesible desde el backend como `http://host.docker.internal:2785`) o `OPENWA_MODE=bundled` para levantar siempre el contenedor del proyecto. En modo externo, `OPENWA_API_KEY` debe coincidir con la clave del gateway existente.
+
 Copia `.env.example` → `.env` y edita. Nunca comitear `.env`.
 
 ## Docker Compose (producción local)

@@ -42,6 +42,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       DATABASE_URL: jdbc:postgresql://postgres:5433/${DATABASE_NAME:-dentalcrm}
@@ -82,6 +84,7 @@ services:
       # Opcional: exponer también el backend vía nginx (api ya proxy a backend:8080)
 
   openwa:
+    profiles: ["bundled-openwa"]
     image: rmyndharis/openwa:0.23.4
     container_name: dentalcrm-openwa
     restart: unless-stopped

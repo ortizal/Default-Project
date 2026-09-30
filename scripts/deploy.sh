@@ -66,14 +66,71 @@ for v in DATABASE_PASSWORD JWT_SECRET OPENWA_API_KEY OPENWA_WEBHOOK_SECRET; do
     fi
 done
 
+env_value() {
+    awk -F= -v key="$1" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$ENV_FILE"
+}
+
+openwa_mode="${OPENWA_MODE:-$(env_value OPENWA_MODE)}"
+openwa_mode="${openwa_mode:-auto}"
+openwa_url="${OPENWA_URL:-$(env_value OPENWA_URL)}"
+openwa_url="${openwa_url:-http://openwa:2785}"
+openwa_running=0
+if curl -fsS --max-time 2 http://127.0.0.1:2785/api/health >/dev/null 2>&1; then
+    openwa_running=1
+fi
+openwa_port_in_use=0
+if command -v ss >/dev/null 2>&1 && ss -H -ltn | awk '$4 ~ /:2785$/ { found = 1 } END { exit !found }'; then
+    openwa_port_in_use=1
+fi
+
+case "$openwa_mode" in
+    auto)
+        if [ "$openwa_running" -eq 1 ]; then
+            openwa_mode="external"
+            if [ "$openwa_url" = "http://openwa:2785" ]; then
+                openwa_url="http://host.docker.internal:2785"
+            fi
+            echo "OpenWA existente detectado en el host; se usará sin crear otro contenedor."
+        elif [ "$openwa_port_in_use" -eq 1 ]; then
+            echo "El puerto 2785 está ocupado, pero /api/health no respondió como OpenWA." >&2
+            echo "Libera el puerto o configura OPENWA_MODE=external y OPENWA_URL en $ENV_FILE." >&2
+            exit 1
+        else
+            openwa_mode="bundled"
+            echo "No se detectó OpenWA en el host; se usará el contenedor incluido."
+        fi
+        ;;
+    external)
+        if [ "$openwa_url" = "http://openwa:2785" ]; then
+            openwa_url="http://host.docker.internal:2785"
+        fi
+        echo "Modo OpenWA externo: $openwa_url"
+        ;;
+    bundled)
+        echo "Modo OpenWA incluido en Docker."
+        ;;
+    *)
+        echo "OPENWA_MODE debe ser auto, external o bundled." >&2
+        exit 1
+        ;;
+esac
+
+export OPENWA_URL="$openwa_url"
+
 export DOCKER_BUILDKIT=1
-echo "== docker compose down =="
-docker compose down || true
 echo "== docker compose up --build -d =="
-docker compose up --build -d
+if [ "$openwa_mode" = "bundled" ]; then
+    docker compose --profile bundled-openwa up --build -d
+else
+    docker compose up --build -d
+fi
 
 echo "== esperando salud backend/openwa =="
-ok_b=0; ok_w=0
+ok_b=0
+ok_w=0
+if [ "$openwa_mode" = "external" ]; then
+    ok_w=1
+fi
 for i in $(seq 1 60); do
     if [ "$ok_b" -eq 0 ] && curl -sf http://localhost:8080/actuator/health | grep -q '"UP"'; then
         ok_b=1; echo "  backend   UP (tras ${i}s)"
