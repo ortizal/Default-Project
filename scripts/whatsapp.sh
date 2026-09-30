@@ -9,9 +9,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-FRONTEND_PORT="${FRONTEND_PORT:-$(awk -F= '$1 == "FRONTEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
-FRONTEND_PORT="${FRONTEND_PORT:-8081}"
-BACKEND="${BACKEND_URL:-http://127.0.0.1:${FRONTEND_PORT}}"
+BACKEND_PORT="${BACKEND_PORT:-$(awk -F= '$1 == "BACKEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
+BACKEND_PORT="${BACKEND_PORT:-18082}"
+BACKEND="${BACKEND_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 OPENWA="${OPENWA_PUBLIC_URL:-http://localhost:2785}"
 TOKEN_FILE="${TMPDIR:-/tmp}/dentalcrm_token_${USER}"
 

@@ -4,11 +4,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-frontend_port="${FRONTEND_PORT:-$(awk -F= '$1 == "FRONTEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
-frontend_port="${frontend_port:-8081}"
-published_frontend="$(docker compose port frontend 80 2>/dev/null | head -n 1 || true)"
-frontend="${FRONTEND_URL:-http://${published_frontend:-127.0.0.1:${frontend_port}}}"
-backend="${BACKEND_URL:-$frontend}"
+backend_port="${BACKEND_PORT:-$(awk -F= '$1 == "BACKEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
+backend_port="${backend_port:-18082}"
+backend="${BACKEND_URL:-http://127.0.0.1:${backend_port}}"
+frontend="${FRONTEND_URL:-${FRONTEND_PUBLIC_URL:-http://localhost/dental_crm}}"
 openwa="${OPENWA_PUBLIC_URL:-http://localhost:2785}"
 api="$backend/api/v1"
 

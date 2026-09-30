@@ -87,35 +87,40 @@ Las credenciales NO se generan automáticamente. Se crean en [Google Cloud Conso
 
 El despliegue usa `OPENWA_MODE=auto` por defecto: detecta un OpenWA sano en `localhost:2785` y lo reutiliza, o levanta el incluido si no hay uno. Usa `OPENWA_MODE=external` para forzar uno externo (por defecto accesible desde el backend como `http://host.docker.internal:2785`) o `OPENWA_MODE=bundled` para levantar siempre el contenedor del proyecto. En modo externo, `OPENWA_API_KEY` debe coincidir con la clave del gateway existente.
 
-Para servidores con Nginx nativo, el backend no publica el puerto `8080` al host: solo es accesible dentro de Compose. El frontend se publica por defecto en `127.0.0.1:8081`; configura el sitio Nginx para hacer proxy a `http://127.0.0.1:8081`. Ejemplo dentro del `server` HTTPS de tu sitio:
+Para servidores con Nginx nativo, `deploy.sh` compila Angular y copia los assets a `FRONTEND_ROOT` (por defecto `/var/www/dentalcrm`); el contenedor frontend queda opcional en el perfil `docker-frontend`. El backend sigue en Docker y se publica solo en loopback `127.0.0.1:18082` (`BACKEND_PORT`), no directamente a Internet. El bloque del sitio `alan-tek.com` está agregado en el archivo `control-servidor` que acompaña al proyecto. Las rutas configuradas son:
 
 ```nginx
-location / {
-  proxy_pass http://127.0.0.1:8081;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
+location = /dental_crm { return 301 /dental_crm/; }
+location /dental_crm/api/ {
+    rewrite ^/dental_crm/api/(.*)$ /api/$1 break;
+    proxy_pass http://127.0.0.1:18082;
+}
+location /dental_crm/ {
+    alias /var/www/dentalcrm/;
+    index index.html;
+    try_files $uri $uri/ /dental_crm/index.html;
 }
 ```
 
-`deploy.sh` busca automáticamente un puerto libre entre `8081` y `8099` si el configurado está ocupado e imprime el puerto elegido. Si usa uno distinto, actualiza el upstream de Nginx. En producción, configura `OPENWA_WEBHOOK_URL` y `GOOGLE_REDIRECT_URI` con el dominio público HTTPS, por ejemplo `https://crm.ejemplo.com/api/v1/webhooks/whatsapp` y `https://crm.ejemplo.com/api/v1/google/callback`.
+El build se guarda en `/var/www/dentalcrm/assets/config.json` con API `/dental_crm/api/v1`. Asegúrate de que Nginx pueda leer el directorio. Después de copiar el bloque a `/etc/nginx/sites-available/control-servidor`, ejecuta `sudo nginx -t && sudo systemctl reload nginx`. En `.env`, usa `FRONTEND_PUBLIC_URL=https://alan-tek.com/dental_crm`, `GOOGLE_REDIRECT_URI=https://alan-tek.com/dental_crm/api/v1/google/callback`, `META_REDIRECT_URI=https://alan-tek.com/dental_crm/api/v1/social/callback/meta`, `TIKTOK_REDIRECT_URI=https://alan-tek.com/dental_crm/api/v1/social/callback/tiktok` y `OPENWA_WEBHOOK_URL=https://alan-tek.com/dental_crm/api/v1/webhooks/whatsapp` cuando deban ser accesibles desde fuera.
 
 Copia `.env.example` → `.env` y edita. Nunca comitear `.env`.
 
-## Docker Compose (producción local)
+## Docker Compose (opcional)
 
 ```bash
 cp .env.example .env
 # edita .env: JWT_SECRET, DATABASE_PASSWORD, dominios, credenciales de Google
-docker compose up --build -d
+docker compose up --build -d backend postgres redis
+# Para servir frontend con Nginx en Docker en vez del Nginx nativo:
+docker compose --profile docker-frontend up --build -d
 ```
 
 Servicios:
 
 - **postgres** (`postgres:17-alpine`): volumen `postgres_data`, healthcheck.
 - **backend** (build `./backend`): Java 21, Flyway aplica migraciones al arrancar.
-- **frontend** (build `./frontend`): build de producción → nginx que sirve los estáticos y
+- **frontend** (perfil `docker-frontend`): opción alternativa que sirve los estáticos y
   hace proxy `/api` → `backend:8080`.
 - **redis** (`redis:7-alpine`): reservado (sesiones/cola; aún sin uso en la app).
 - **openwa** (`rmyndharis/openwa:0.23.4`, puerto 2785): gateway WhatsApp
@@ -125,8 +130,8 @@ Servicios:
 Verificación:
 
 ```bash
-curl http://localhost:8080/actuator/health   # {"status":"UP"}
-curl http://localhost/api/v1/ping            # vía nginx/frontend
+curl http://127.0.0.1:18082/actuator/health  # {"status":"UP"}
+curl https://alan-tek.com/dental_crm/api/v1/ping # vía Nginx nativo
 curl http://localhost:2785/api/health        # {"status":"ok",...}
 ```
 

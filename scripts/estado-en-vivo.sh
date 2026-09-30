@@ -5,13 +5,10 @@ cd "$(dirname "$0")/.."
 
 OUT="docs/ESTADO_EN_VIVO.md"
 FECHA="$(date -u +'%Y-%m-%d %H:%M UTC')"
-FRONTEND_PORT_V="${FRONTEND_PORT:-$(awk -F= '$1 == "FRONTEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
-FRONTEND_PORT_V="${FRONTEND_PORT_V:-8081}"
-FRONTEND_BIND_V="${FRONTEND_BIND_ADDRESS:-$(awk -F= '$1 == "FRONTEND_BIND_ADDRESS" {print $2; exit}' .env 2>/dev/null)}"
-FRONTEND_BIND_V="${FRONTEND_BIND_V:-127.0.0.1}"
-FRONTEND_PUBLISHED_V="$(docker compose port frontend 80 2>/dev/null | head -n 1 || true)"
-FRONTEND_URL_V="${FRONTEND_PUBLIC_URL:-http://${FRONTEND_PUBLISHED_V:-${FRONTEND_BIND_V}:${FRONTEND_PORT_V}}}"
-BACKEND_URL_V="${BACKEND_PUBLIC_URL:-$FRONTEND_URL_V}"
+BACKEND_PORT_V="${BACKEND_PORT:-$(awk -F= '$1 == "BACKEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
+BACKEND_PORT_V="${BACKEND_PORT_V:-18082}"
+BACKEND_URL_V="${BACKEND_PUBLIC_URL:-http://127.0.0.1:${BACKEND_PORT_V}}"
+FRONTEND_URL_V="${FRONTEND_PUBLIC_URL:-http://localhost/dental_crm}"
 OPENWA_URL_V="${OPENWA_PUBLIC_URL:-http://localhost:2785}"
 
 lineas_contenedores="$( { docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}' 2>/dev/null \

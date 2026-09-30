@@ -18,7 +18,8 @@ export class Api {
 
   async init(): Promise<void> {
     try {
-      const r = await firstValueFrom(this.http.get<Partial<ApiConfig>>('/assets/config.json'));
+      const configUrl = new URL('assets/config.json', document.baseURI).toString();
+      const r = await firstValueFrom(this.http.get<Partial<ApiConfig>>(configUrl));
       if (r?.apiUrl) this.cfg = { ...DEFAULT, ...r };
     } catch {
       this.cfg = { ...DEFAULT };

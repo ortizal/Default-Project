@@ -117,32 +117,41 @@ esac
 
 export OPENWA_URL="$openwa_url"
 
-frontend_port="${FRONTEND_PORT:-$(env_value FRONTEND_PORT)}"
-frontend_port="${frontend_port:-8081}"
-frontend_bind="${FRONTEND_BIND_ADDRESS:-$(env_value FRONTEND_BIND_ADDRESS)}"
-frontend_bind="${frontend_bind:-127.0.0.1}"
-port_in_use() {
-    ss -H -ltn | awk -v port="$1" '$4 ~ (":" port "$") { found = 1 } END { exit !found }'
-}
-if command -v ss >/dev/null 2>&1 && port_in_use "$frontend_port"; then
-    requested_port="$frontend_port"
-    frontend_port=""
-    for candidate in $(seq 8081 8099); do
-        if ! port_in_use "$candidate"; then
-            frontend_port="$candidate"
-            break
-        fi
-    done
-    if [ -z "$frontend_port" ]; then
-        echo "El puerto frontend $requested_port está ocupado y no se encontró uno libre entre 8081 y 8099." >&2
-        echo "Define FRONTEND_PORT en $ENV_FILE y vuelve a intentar." >&2
-        exit 1
-    fi
-    echo "El puerto frontend $requested_port está ocupado; se usará temporalmente $frontend_port."
+backend_port="${BACKEND_PORT:-$(env_value BACKEND_PORT)}"
+backend_port="${backend_port:-18082}"
+backend_bind="${BACKEND_BIND_ADDRESS:-$(env_value BACKEND_BIND_ADDRESS)}"
+backend_bind="${backend_bind:-127.0.0.1}"
+if command -v ss >/dev/null 2>&1 && ss -H -ltn | awk -v port="$backend_port" '$4 ~ (":" port "$") { found = 1 } END { exit !found }'; then
+    echo "El puerto backend $backend_port está ocupado. Libéralo o configura BACKEND_PORT en $ENV_FILE y actualiza el upstream de Nginx." >&2
+    exit 1
 fi
-export FRONTEND_PORT="$frontend_port"
-export FRONTEND_BIND_ADDRESS="$frontend_bind"
-echo "Frontend publicado en http://${frontend_bind}:${frontend_port} (Nginx nativo puede proxyear a esta dirección)."
+export BACKEND_PORT="$backend_port"
+export BACKEND_BIND_ADDRESS="$backend_bind"
+
+frontend_root="${FRONTEND_ROOT:-$(env_value FRONTEND_ROOT)}"
+frontend_root="${frontend_root:-/var/www/dentalcrm}"
+if ! command -v npm >/dev/null 2>&1; then
+    echo "No se encontró npm. Instala Node.js/npm en el servidor para compilar el frontend estático." >&2
+    exit 1
+fi
+echo "== compilando frontend para Nginx nativo =="
+umask 022
+npm --prefix frontend ci
+npm --prefix frontend run build -- --configuration production
+frontend_dist="frontend/dist/dental-crm-frontend/browser"
+if [ ! -f "$frontend_dist/index.html" ]; then
+    echo "No se encontró el build Angular en $frontend_dist." >&2
+    exit 1
+fi
+install -d -m 755 "$frontend_root"
+cp -a "$frontend_dist"/. "$frontend_root"/
+printf '{\n  "apiUrl": "/dental_crm/api/v1"\n}\n' > "$frontend_root/assets/config.json"
+chmod 644 "$frontend_root/assets/config.json"
+echo "Frontend estático instalado en $frontend_root."
+echo "Nginx debe servir /dental_crm/ y proxyear /dental_crm/api/ a ${backend_bind}:${backend_port}."
+
+echo "== retirando frontend Docker anterior (si existe) =="
+docker compose --profile docker-frontend rm --stop --force frontend || true
 
 export DOCKER_BUILDKIT=1
 echo "== docker compose up --build -d =="
@@ -152,14 +161,14 @@ else
     docker compose up --build -d
 fi
 
-echo "== esperando salud frontend/backend y OpenWA =="
+echo "== esperando salud backend y OpenWA =="
 ok_b=0
 ok_w=0
 if [ "$openwa_mode" = "external" ]; then
     ok_w=1
 fi
 for i in $(seq 1 60); do
-    if [ "$ok_b" -eq 0 ] && curl -sf "http://127.0.0.1:${frontend_port}/api/v1/ping" >/dev/null; then
+    if [ "$ok_b" -eq 0 ] && curl -sf "http://127.0.0.1:${backend_port}/actuator/health" | grep -q '"UP"'; then
         ok_b=1; echo "  backend   UP (tras ${i}s)"
     fi
     if [ "$ok_w" -eq 0 ] && curl -sf http://localhost:2785/api/health >/dev/null; then
