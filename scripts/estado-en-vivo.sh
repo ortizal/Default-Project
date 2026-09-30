@@ -5,9 +5,14 @@ cd "$(dirname "$0")/.."
 
 OUT="docs/ESTADO_EN_VIVO.md"
 FECHA="$(date -u +'%Y-%m-%d %H:%M UTC')"
-BACKEND_URL_V="${BACKEND_PUBLIC_URL:-http://localhost:8080}"
+FRONTEND_PORT_V="${FRONTEND_PORT:-$(awk -F= '$1 == "FRONTEND_PORT" {print $2; exit}' .env 2>/dev/null)}"
+FRONTEND_PORT_V="${FRONTEND_PORT_V:-8081}"
+FRONTEND_BIND_V="${FRONTEND_BIND_ADDRESS:-$(awk -F= '$1 == "FRONTEND_BIND_ADDRESS" {print $2; exit}' .env 2>/dev/null)}"
+FRONTEND_BIND_V="${FRONTEND_BIND_V:-127.0.0.1}"
+FRONTEND_PUBLISHED_V="$(docker compose port frontend 80 2>/dev/null | head -n 1 || true)"
+FRONTEND_URL_V="${FRONTEND_PUBLIC_URL:-http://${FRONTEND_PUBLISHED_V:-${FRONTEND_BIND_V}:${FRONTEND_PORT_V}}}"
+BACKEND_URL_V="${BACKEND_PUBLIC_URL:-$FRONTEND_URL_V}"
 OPENWA_URL_V="${OPENWA_PUBLIC_URL:-http://localhost:2785}"
-FRONTEND_URL_V="${FRONTEND_PUBLIC_URL:-http://localhost}"
 
 lineas_contenedores="$( { docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}' 2>/dev/null \
     | grep -E 'dentalcrm|openwa' || true; } )"
@@ -45,14 +50,14 @@ probe() { # $1=url -> ok|no
     echo
     echo '| Servicio | Estado |'
     echo '|---|---|'
-    printf '| backend  (%s) | %s |\n' "$BACKEND_URL_V/actuator/health" "$(probe "$BACKEND_URL_V/actuator/health")"
+    printf '| backend  (%s) | %s |\n' "$BACKEND_URL_V/api/v1/ping" "$(probe "$BACKEND_URL_V/api/v1/ping")"
     printf '| openwa   (%s) | %s |\n' "$OPENWA_URL_V/api/health" "$(probe "$OPENWA_URL_V/api/health")"
     printf '| frontend (%s) | %s |\n' "$FRONTEND_URL_V/api/v1/ping" "$(probe "$FRONTEND_URL_V/api/v1/ping")"
     echo
     echo '## Enlaces'
     echo
     echo "- CRM: $FRONTEND_URL_V"
-    echo "- API: $BACKEND_URL_V"
+    echo "- API: $BACKEND_URL_V/api/v1"
     echo "- Swagger: $BACKEND_URL_V/api/v1/swagger-ui.html"
     echo "- Dashboard OpenWA (QR): $OPENWA_URL_V"
     echo "- Webhook WhatsApp: $BACKEND_URL_V/api/v1/webhooks/whatsapp"

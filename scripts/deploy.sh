@@ -117,6 +117,33 @@ esac
 
 export OPENWA_URL="$openwa_url"
 
+frontend_port="${FRONTEND_PORT:-$(env_value FRONTEND_PORT)}"
+frontend_port="${frontend_port:-8081}"
+frontend_bind="${FRONTEND_BIND_ADDRESS:-$(env_value FRONTEND_BIND_ADDRESS)}"
+frontend_bind="${frontend_bind:-127.0.0.1}"
+port_in_use() {
+    ss -H -ltn | awk -v port="$1" '$4 ~ (":" port "$") { found = 1 } END { exit !found }'
+}
+if command -v ss >/dev/null 2>&1 && port_in_use "$frontend_port"; then
+    requested_port="$frontend_port"
+    frontend_port=""
+    for candidate in $(seq 8081 8099); do
+        if ! port_in_use "$candidate"; then
+            frontend_port="$candidate"
+            break
+        fi
+    done
+    if [ -z "$frontend_port" ]; then
+        echo "El puerto frontend $requested_port está ocupado y no se encontró uno libre entre 8081 y 8099." >&2
+        echo "Define FRONTEND_PORT en $ENV_FILE y vuelve a intentar." >&2
+        exit 1
+    fi
+    echo "El puerto frontend $requested_port está ocupado; se usará temporalmente $frontend_port."
+fi
+export FRONTEND_PORT="$frontend_port"
+export FRONTEND_BIND_ADDRESS="$frontend_bind"
+echo "Frontend publicado en http://${frontend_bind}:${frontend_port} (Nginx nativo puede proxyear a esta dirección)."
+
 export DOCKER_BUILDKIT=1
 echo "== docker compose up --build -d =="
 if [ "$openwa_mode" = "bundled" ]; then
@@ -125,14 +152,14 @@ else
     docker compose up --build -d
 fi
 
-echo "== esperando salud backend/openwa =="
+echo "== esperando salud frontend/backend y OpenWA =="
 ok_b=0
 ok_w=0
 if [ "$openwa_mode" = "external" ]; then
     ok_w=1
 fi
 for i in $(seq 1 60); do
-    if [ "$ok_b" -eq 0 ] && curl -sf http://localhost:8080/actuator/health | grep -q '"UP"'; then
+    if [ "$ok_b" -eq 0 ] && curl -sf "http://127.0.0.1:${frontend_port}/api/v1/ping" >/dev/null; then
         ok_b=1; echo "  backend   UP (tras ${i}s)"
     fi
     if [ "$ok_w" -eq 0 ] && curl -sf http://localhost:2785/api/health >/dev/null; then
