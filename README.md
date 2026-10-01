@@ -103,9 +103,9 @@ docker compose up --build -d
 ```
 
 - Frontend (nginx): http://localhost → login con `admin` / `admin123`
-- Backend: http://localhost:8080
-  - Swagger: http://localhost:8080/api/v1/swagger-ui.html
-  - Health: http://localhost:8080/actuator/health
+- Backend (publicado por Docker en loopback): http://localhost:18082
+  - Swagger: http://localhost:18082/api/v1/swagger-ui.html
+  - Health: http://localhost:18082/actuator/health
 - Ver `docs/DEPLOYMENT.md` y `docker/README.md` para ambientes, nginx/TLS y backups.
 
 ## Ejecución sin Docker (desarrollo)
@@ -124,7 +124,7 @@ mvn spring-boot:run
 
 - [x] Cliente Angular 22 standalone (Node 24), compilación de producción OK, componentes lazy por módulo
 - [x] Login JWT + interceptor con `Authorization: Bearer` + guard de autenticación; logout y manejo de 401 (redirige a login)
-- [x] `ApiService` con URL base por entorno (`public/assets/config.json`, por defecto `/api/v1`); proxy de desarrollo a `localhost:8080`
+- [x] `ApiService` con URL base por entorno (`public/assets/config.json`, por defecto `/api/v1`); proxy de desarrollo a `localhost:18082` (puerto `BACKEND_PORT` publicado por Docker)
 - [x] Layout con sidebar agrupada (Operación / Comunicación / Automatización / Gestión) y usuario/rol activo
 - [x] Módulos: pacientes, odontólogos, servicios, horarios (por odontólogo), agenda del día con pestañas Día/Semana/Mes (calendario semanal y mensual con citas por día, bloqueos y días sin horario marcados; clic en un día lleva a la vista del día), citas (filtros por rango/estado/doctor + confirmar/atender/cancelar/no asistió), WhatsApp (sesiones + inbox con envío y cambio de estado), plantillas, automatizaciones (eventos válidos del backend), notificaciones, reportes (dashboard + estadísticas), supervisión del agente IA (transferir/activar) y usuarios (CRUD con roles)
 - [x] Google Calendar: estado de conexión, iniciar OAuth (`/google/connect`), selección de calendario, sincronización manual y desconexión (permiso `INTEGRACIONES`)
@@ -137,7 +137,7 @@ mvn spring-boot:run
 ```bash
 cd frontend
 npm install
-npx ng serve --proxy-config proxy.conf.json   # proxy /api -> http://localhost:8080
+npx ng serve --proxy-config proxy.conf.json   # proxy /api -> http://localhost:18082 (backend Docker)
 # abrir http://localhost:4200/dental_crm (usuario admin / admin123)
 # compilación de producción:
 npx ng build --configuration production

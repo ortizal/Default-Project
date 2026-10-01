@@ -42,7 +42,8 @@ fi
 # Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
 # Alternativamente, se pueden configurar desde el panel admin en /google
 # sección "Credenciales OAuth" (sin necesidad de reiniciar el backend).
-# Redirigir a: http://localhost:8080/api/v1/google/callback
+# Redirigir a (dev): http://localhost:4200/api/v1/google/callback
+#             (prod): https://alan-tek.com/dental_crm/api/v1/google/callback
 if ! grep -qE '^GOOGLE_CLIENT_ID=.+' "$ENV_FILE"; then
     echo "  ADVERTENCIA: GOOGLE_CLIENT_ID no configurado (crear en Google Cloud Console o desde el panel admin)"
 fi

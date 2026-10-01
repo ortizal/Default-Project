@@ -98,7 +98,7 @@ Angular 22 standalone, TypeScript estricto, build de producción con lazy loadin
   buenas prácticas), contraste WCAG AA en los 4 modos de tema (estado base y `:hover`),
   anillo de foco por teclado, responsive, landmarks y
   flujos de confirmación.
-- Dev: `npx ng serve --proxy-config proxy.conf.json` (proxy `/api` → `localhost:8080`).
+- Dev: `npx ng serve --proxy-config proxy.conf.json` (proxy `/api` → `localhost:18082`, el backend publicado por Docker).
 - Prod: build estático servido por nginx (ver `frontend/Dockerfile`) con `/api` proxy al backend.
 
 ## Flujo de una cita

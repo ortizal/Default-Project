@@ -11,6 +11,9 @@
       @if (error) {
         <div class="msg error">{{ error }}</div>
       }
+      @if (exito) {
+        <div class="msg ok">{{ exito }}</div>
+      }
       @if (cargando && !status) {
         <div class="empty"><span class="spinner"></span> Cargando estado de Google…</div>
       }
@@ -36,7 +39,7 @@
           </div>
           <div>
             <label class="label" for="lf3">Redirect URI</label>
-            <input id="lf3" class="input" [(ngModel)]="credenciales.redirectUri" placeholder="http://localhost:8080/api/v1/google/callback" >
+            <input id="lf3" class="input" [(ngModel)]="credenciales.redirectUri" placeholder="http://localhost:4200/api/v1/google/callback" >
           </div>
           <div>
             <label class="label" for="lf4">Auth Base URL</label>

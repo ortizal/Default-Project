@@ -61,7 +61,18 @@ class GoogleCalendarServiceTest {
         googleService = mock(GoogleService.class);
         servicio = new GoogleCalendarService(accountRepo, calendarioRepo, citaRepo,
             bloqueoRepo, odontologoRepo,
-                googleService, mock(AuditService.class), "America/Guayaquil");
+                googleService, mock(AuditService.class), "America/Guayaquil", "http://localhost:4200/dental_crm");
+    }
+
+    @Test
+    void urlRetornoApuntaAlaSpaConElResultadoDeLaConexion() {
+        assertEquals("http://localhost:4200/dental_crm/google?google=connected", servicio.urlRetorno(true));
+        assertEquals("http://localhost:4200/dental_crm/google?google=error", servicio.urlRetorno(false));
+
+        GoogleCalendarService conBarraFinal = new GoogleCalendarService(accountRepo, calendarioRepo, citaRepo,
+                bloqueoRepo, odontologoRepo, googleService, mock(AuditService.class), "America/Guayaquil",
+                "https://alan-tek.com/dental_crm/");
+        assertEquals("https://alan-tek.com/dental_crm/google?google=connected", conBarraFinal.urlRetorno(true));
     }
 
     @Test

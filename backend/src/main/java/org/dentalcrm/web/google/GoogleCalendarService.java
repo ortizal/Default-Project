@@ -63,6 +63,7 @@ public class GoogleCalendarService {
     private final GoogleService googleService;
     private final AuditService auditService;
     private final String timezone;
+    private final String frontendUrl;
 
     public GoogleCalendarService(GoogleAccountRepository accountRepository,
                                  GoogleCalendarioRepository calendarioRepository,
@@ -71,7 +72,9 @@ public class GoogleCalendarService {
                                  OdontologoRepository odontologoRepository,
                                  GoogleService googleService,
                                  AuditService auditService,
-                                 @Value("${app.timezone}") String timezone) {
+                                 @Value("${app.timezone}") String timezone,
+                                 @Value("${app.frontend.public-url:${FRONTEND_PUBLIC_URL:http://localhost:4200/dental_crm}}")
+                                 String frontendUrl) {
         this.accountRepository = accountRepository;
         this.calendarioRepository = calendarioRepository;
         this.citaRepository = citaRepository;
@@ -80,12 +83,17 @@ public class GoogleCalendarService {
         this.googleService = googleService;
         this.auditService = auditService;
         this.timezone = timezone;
+        this.frontendUrl = frontendUrl;
     }
 
     @Transactional
     public String iniciarConexion() {
         googleService.arrojarSiNoConfigurado();
         return googleService.urlAutenticacion();
+    }
+
+    public String urlRetorno(boolean conectado) {
+        return frontendUrl.replaceAll("/+$", "") + "/google?google=" + (conectado ? "connected" : "error");
     }
 
     @Transactional

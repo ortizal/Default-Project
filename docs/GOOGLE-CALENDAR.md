@@ -4,13 +4,18 @@
 
 1. Crear credenciales OAuth en Google Cloud Console (tipo *Web application*).
 2. Configurar `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URI`
-   (p. ej. `https://crm.miclina.com/api/v1/google/callback`). Añadir ese URI a los *Authorized redirect URIs* de la consola.
+   (producción: `https://alan-tek.com/dental_crm/api/v1/google/callback`; desarrollo local:
+   `http://localhost:4200/api/v1/google/callback`, que llega al backend por el proxy de ng serve).
+   Añadir ese URI a los *Authorized redirect URIs* de la consola.
+   OJO: si la fila de `google_credentials` ya existe (la crea la migración V14 con `localhost:8080`),
+   esa fila tiene prioridad sobre la variable de entorno: cambia el URI desde el panel `/google`.
 3. Una sola cuenta conectada a la vez (las credenciales se guardan en `google_accounts`).
 
 Unico usuario (el que inició sesión) inicia la conexión desde el panel Google Calendar:
 
-- `GET /Calendarapi/v1/google/connect` → `{authUrl}` (URL de autorización).
-- El navegador autoriza y Google vuelve a `/api/v1/google/callback?code=…`, que intercambia el código por tokens y guarda la cuenta.
+- `GET /api/v1/google/connect` → `{authUrl}` (URL de autorización).
+- El navegador autoriza y Google vuelve a `/api/v1/google/callback?code=…`, que intercambia el código por tokens,
+  guarda la cuenta y responde `302` a `{FRONTEND_PUBLIC_URL}/google?google=connected|error` (la SPA muestra el aviso).
 - `DELETE /api/v1/google/disconnect` limpia tokens y datos de sincronización.
 
 ## Calendarios

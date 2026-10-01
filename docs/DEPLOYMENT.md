@@ -76,7 +76,7 @@ Las credenciales NO se generan automáticamente. Se crean en [Google Cloud Conso
 |---|---|---|
 | `GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` | para la app (se puede configurar desde el admin) |
 | `GOOGLE_CLIENT_SECRET` | `your-secret` | idem |
-| `GOOGLE_REDIRECT_URI` | `http://localhost:8080/api/v1/google/callback` | sí |
+| `GOOGLE_REDIRECT_URI` | `https://alan-tek.com/dental_crm/api/v1/google/callback` | sí |
 
 > **Nota:** Las credenciales también se pueden gestionar desde la interfaz admin (ruta `/google`, sección "Credenciales OAuth"). Esto permite cambiarlas sin reiniciar el backend.
 
@@ -227,6 +227,18 @@ Revisa la salida y confirma que:
 - Verifica `*_REDIRECT_URI` y que el dominio esté exactamente registrado en la consola del proveedor.
 - Confirma que el `client_id`/`client_secret` corresponden al proyecto correcto.
 - Revisa que el navegador no esté bloqueando cookies o redirecciones relativas.
+- El callback siempre responde `302` hacia `{FRONTEND_PUBLIC_URL}/google?google=connected|error` (Google) o
+  `{FRONTEND_PUBLIC_URL}/redes-sociales?social=connected|error` (Meta/TikTok). Verifica con:
+  `curl -sI "http://127.0.0.1:18082/api/v1/google/callback?error=access_denied"`.
+- En BD ya creadas la fila de `google_credentials` (migración V14) tiene prioridad sobre
+  `GOOGLE_REDIRECT_URI`: cámbiala desde el panel `/google` → "Credenciales OAuth".
+
+### `ng build` falla con `EACCES` en `frontend/dist`
+
+- Hay archivos o directorios creados por `root` (por `sudo` o un contenedor) dentro de `dist`.
+- Limpia el build sin necesidad de `sudo`:
+  `docker run --rm --user 0:0 -v "$PWD/frontend/dist:/dist" --entrypoint sh dentalcrm-backend -c 'find /dist -mindepth 1 -delete'`
+- Evita ejecutar `ng build`/`npm run build` con `sudo` y vuelve a compilar.
 
 ## Rollback
 

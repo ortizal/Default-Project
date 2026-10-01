@@ -34,7 +34,7 @@ CLINICA_TELEFONO=+593 99 123 4567
 # --- Google Calendar ---
 GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:8080/api/v1/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:4200/api/v1/google/callback
 # URLs internas (por defecto apuntan a Google; se pueden sobreescribir para entorno de pruebas)
 GOOGLE_AUTH_BASE_URL=https://accounts.google.com
 GOOGLE_OAUTH_BASE_URL=https://oauth2.googleapis.com

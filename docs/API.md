@@ -160,7 +160,7 @@ odontólogo asignado.
 |---|---|
 | GET | `/google/status` |
 | GET | `/google/connect` → `{authUrl}` |
-| GET | `/google/callback?code=` | Público (OAuth) |
+| GET | `/google/callback?code=` \| `?error=` | Público (OAuth); intercambia el código y responde `302` a `{FRONTEND_PUBLIC_URL}/google?google=connected\|error` |
 | GET | `/google/calendars` |
 | POST | `/google/calendars/{id}/select` |
 | POST | `/google/sync` → `{creados, actualizados, cancelados, errores, sincronizadas}` |

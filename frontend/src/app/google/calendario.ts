@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Api } from '../core/api';
 import {
   GoogleCalendario,
@@ -22,16 +23,24 @@ export class CalendarioComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   private readonly confirmacion = inject(UiConfirmService);
+  private readonly route = inject(ActivatedRoute);
 
   status?: GoogleStatus;
   syncResult?: GoogleSyncResult;
   error = '';
+  exito = '';
   cargando = false;
   credenciales?: GoogleCredential;
   credGuardando = false;
   credGuardado = false;
 
   ngOnInit(): void {
+    const google = this.route.snapshot.queryParamMap.get('google');
+    if (google === 'connected') {
+      this.exito = 'Cuenta de Google conectada correctamente.';
+    } else if (google === 'error') {
+      this.error = 'No se pudo completar la conexión con Google. Inténtalo de nuevo.';
+    }
     this.cargar();
   }
 

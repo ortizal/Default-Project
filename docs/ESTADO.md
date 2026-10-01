@@ -37,9 +37,9 @@ Volúmenes: `postgres_data`, `redis_data`, `openwa_data` (SQLite de OpenWA en `/
 
 ```
 http://localhost/                      → Frontend (SPA)
-http://localhost:8080                  → Backend API
-http://localhost:8080/api/v1/swagger-ui.html → Swagger UI
-http://localhost:8080/api/v1/webhooks/whatsapp → Webhook WhatsApp (firmado HMAC)
+http://localhost:18082                 → Backend API (publicado por Docker)
+http://localhost:18082/api/v1/swagger-ui.html → Swagger UI
+http://localhost:18082/api/v1/webhooks/whatsapp → Webhook WhatsApp (firmado HMAC)
 http://localhost:2785                  → Dashboard OpenWA (QR, sesiones)
 http://localhost:2785/api              → API del gateway OpenWA
 ```

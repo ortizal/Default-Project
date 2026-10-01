@@ -12,16 +12,22 @@ import org.dentalcrm.web.google.dto.GoogleCredentialRequest;
 import org.dentalcrm.web.google.dto.GoogleCredentialResponse;
 import org.dentalcrm.web.google.dto.GoogleStatusResponse;
 import org.dentalcrm.web.google.dto.GoogleSyncResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/google")
 @Tag(name = "Google Calendar", description = "Integración OAuth 2.0 y sincronización de citas con Google Calendar")
 public class GoogleController {
+
+    private static final Logger log = LoggerFactory.getLogger(GoogleController.class);
 
     private final GoogleCalendarService googleCalendarService;
     private final GoogleCredentialRepository credentialRepository;
@@ -50,6 +56,24 @@ public class GoogleController {
     @Operation(summary = "Iniciar conexión OAuth (devuelve la URL de autorización de Google)")
     public ResponseEntity<GoogleConnectResponse> conectar() {
         return ResponseEntity.ok(new GoogleConnectResponse(googleCalendarService.iniciarConexion()));
+    }
+
+    @GetMapping("/callback")
+    @Operation(summary = "Callback OAuth de Google (intercambia el código por tokens y guarda la cuenta)")
+    public ResponseEntity<Void> callback(@RequestParam(required = false) String code,
+                                         @RequestParam(required = false) String error) {
+        boolean conectado = false;
+        if (error == null || error.isBlank()) {
+            try {
+                googleCalendarService.completarConexion(code);
+                conectado = true;
+            } catch (RuntimeException e) {
+                log.warn("Google OAuth: no se pudo completar la conexión: {}", e.getMessage());
+            }
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(googleCalendarService.urlRetorno(conectado)))
+                .build();
     }
 
     @PostMapping("/disconnect")

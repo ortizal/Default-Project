@@ -26,7 +26,7 @@ docker compose up --build -d
 ```
 
 - Frontend → `http://localhost` (nginx sirve estáticos y proxya `/api` → `backend:8080`).
-- Swagger → `http://localhost:8080/api/v1/swagger-ui.html`.
+- Swagger → `http://localhost:18082/api/v1/swagger-ui.html` (backend publicado por Docker).
 - Dashboard OpenWA → `http://localhost:2785` (inicia sesión con `OPENWA_API_KEY`).
 - Ver `docs/DEPLOYMENT.md` para variables de entorno y ambientes.
 
