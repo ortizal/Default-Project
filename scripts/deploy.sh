@@ -121,7 +121,28 @@ backend_port="${BACKEND_PORT:-$(env_value BACKEND_PORT)}"
 backend_port="${backend_port:-18082}"
 backend_bind="${BACKEND_BIND_ADDRESS:-$(env_value BACKEND_BIND_ADDRESS)}"
 backend_bind="${backend_bind:-127.0.0.1}"
+backend_already_running=0
+if docker ps --format '{{.Names}}' | grep -qx 'dentalcrm-backend'; then
+    backend_already_running=1
+fi
 if command -v ss >/dev/null 2>&1 && ss -H -ltn | awk -v port="$backend_port" '$4 ~ (":" port "$") { found = 1 } END { exit !found }'; then
+    if [ "$backend_already_running" -eq 1 ]; then
+        echo "El backend de este proyecto ya está corriendo en $backend_port; se validará la instancia existente."
+        export BACKEND_PORT="$backend_port"
+        export BACKEND_BIND_ADDRESS="$backend_bind"
+        if curl -fsS "http://127.0.0.1:${backend_port}/actuator/health" | grep -q '"UP"'; then
+            echo "Backend ya desplegado y saludable; no es necesario volver a levantarlo."
+            echo "== comprobando OpenWA =="
+            if curl -fsS http://localhost:2785/api/health >/dev/null; then
+                echo "OpenWA saludable; finalizando despliegue sin cambios."
+                exit 0
+            fi
+            echo "OpenWA no está respondiendo en localhost:2785. Revisa la sesión o el contenedor externo." >&2
+            exit 1
+        fi
+        echo "El backend actual no responde correctamente en $backend_port; libera el puerto o cambia BACKEND_PORT." >&2
+        exit 1
+    fi
     echo "El puerto backend $backend_port está ocupado. Libéralo o configura BACKEND_PORT en $ENV_FILE y actualiza el upstream de Nginx." >&2
     exit 1
 fi
