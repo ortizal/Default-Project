@@ -13,6 +13,7 @@ import org.dentalcrm.domain.google.GoogleAccountRepository;
 import org.dentalcrm.domain.google.GoogleCalendario;
 import org.dentalcrm.domain.google.GoogleCalendarioRepository;
 import org.dentalcrm.domain.odontologo.OdontologoRepository;
+import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.web.google.GoogleService.CalendarioRemoto;
 import org.dentalcrm.web.google.GoogleService.GoogleTokenResponse;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -241,6 +243,25 @@ class GoogleCalendarServiceTest {
         assertEquals(1, resp.cancelados());
         assertEquals(0, resp.errores());
         verify(googleService).eliminarEvento("tok", "primary", "evt-cancelar");
+    }
+
+    @Test
+    void refreshTokenRevocadoLimpiaCuentaYMarcaErrorDeSincronizacion() {
+        GoogleAccount cuenta = cuentaCon(1L);
+        cuenta.setExpiresAt(Instant.now().minusSeconds(600));
+        GoogleCalendario cal = calendario(1L, cuenta, "primary", true);
+        Cita cita = citaCompleta(1L, EstadoCita.PENDIENTE);
+        when(accountRepo.findTopByOrderByIdAsc()).thenReturn(Optional.of(cuenta));
+        when(calendarioRepo.findByCuentaIdAndSeleccionadoTrue(1L)).thenReturn(Optional.of(cal));
+        when(googleService.refrescarToken("ref")).thenThrow(
+                new BusinessException("GOOGLE_API_ERROR", "Error en la llamada a Google (400): {\"error\":\"invalid_grant\"}"));
+        when(citaRepo.findAll()).thenReturn(List.of(cita));
+        when(citaRepo.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        GoogleSyncResponse resp = servicio.sincronizar();
+
+        assertEquals(1, resp.errores());
+        verify(accountRepo).delete(cuenta);
     }
 
     @Test

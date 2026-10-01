@@ -166,3 +166,76 @@ Regla de oro: un backup solo está verificado cuando se ha restaurado al menos u
 1. `git pull`
 2. `docker compose up --build -d`
 3. Flyway valida migraciones nuevas; si hubo breaking changes de BD, ejecutar primero la migración correspondiente.
+
+## Checklist de despliegue inicial
+
+Antes de abrir el sistema a usuarios:
+
+- [ ] `.env` existe en la máquina objetivo y contiene los valores obligatorios.
+- [ ] `DATABASE_PASSWORD`, `JWT_SECRET`, `OPENWA_API_KEY` y `OPENWA_WEBHOOK_SECRET` fueron generados con `openssl` o `scripts/secrets.sh`.
+- [ ] `SPRING_PROFILES_ACTIVE` coincide con el ambiente real (`dev`, `test`, `prod`).
+- [ ] `FRONTEND_PUBLIC_URL`, `GOOGLE_REDIRECT_URI`, `META_REDIRECT_URI`, `TIKTOK_REDIRECT_URI` y `OPENWA_WEBHOOK_URL` usan el dominio público correcto.
+- [ ] La base de datos PostgreSQL está levantada y accesible desde el backend.
+- [ ] Nginx o el balanceador externo apunta al backend correcto y permite el subpath configurado (por ejemplo `/dental_crm`).
+- [ ] El certificado TLS está presente y la configuración de nginx pasa `nginx -t`.
+- [ ] El backend responde en `/actuator/health` y los webhooks de WhatsApp/Google cargan sin errores.
+- [ ] Se prueba al menos un flujo crítico: login, creación de cita, envío de recordatorio y sincronización con Google Calendar o redes sociales si están habilitadas.
+
+## Verificación post-despliegue
+
+```bash
+# backend
+curl -fsS http://127.0.0.1:18082/actuator/health
+curl -fsS http://127.0.0.1:18082/api/v1/ping
+
+# frontend
+curl -I https://alan-tek.com/dental_crm/
+
+# OpenWA
+curl -fsS http://localhost:2785/api/health
+```
+
+Revisa la salida y confirma que:
+
+- `{"status":"UP"}` aparece en el healthcheck del backend.
+- El frontend sirve la SPA sin errores 4xx/5xx.
+- OpenWA responde con el estado correcto y no hay conexiones rechazadas.
+- Los logs de backend no muestran errores de conexión a BD, JWT, OAuth ni webhooks.
+
+## Solución rápida de problemas
+
+### Backend no inicia
+
+- Revisa si `DATABASE_PASSWORD`, `JWT_SECRET` y `DATABASE_URL` están cargados.
+- Comprueba que el contenedor `postgres` está saludable y la BD acepta conexiones.
+- Verifica que el puerto `SERVER_PORT` o el proxy del servicio no esté ocupado.
+
+### Frontend 404 o rutas rotas
+
+- Confirma que `FRONTEND_PUBLIC_URL` coincide con el dominio real.
+- Verifica `try_files` y `alias` en nginx para el subpath.
+- Rebuilda Angular y vuelve a publicar `dist` en el directorio web correcto.
+
+### WhatsApp no recibe mensajes
+
+- Comprueba `OPENWA_MODE` y que el gateway correcto está escuchando en `localhost:2785` o `host.docker.internal:2785`.
+- Asegúrate de que `OPENWA_API_KEY` y `OPENWA_WEBHOOK_SECRET` coinciden con el valor esperado por OpenWA y el backend.
+- Revisa el webhook `OPENWA_WEBHOOK_URL` y confirma que el backend lo recibe sin bloqueo por firewall o Nginx.
+
+### OAuth de Google / Meta / TikTok falla
+
+- Verifica `*_REDIRECT_URI` y que el dominio esté exactamente registrado en la consola del proveedor.
+- Confirma que el `client_id`/`client_secret` corresponden al proyecto correcto.
+- Revisa que el navegador no esté bloqueando cookies o redirecciones relativas.
+
+## Rollback
+
+Si hay un problema crítico tras el despliegue:
+
+1. Detener la versión nueva `docker compose down` o revertir el servicio del host.
+2. Restaurar la última imagen o release estable.
+3. Volver a aplicar la configuración de `.env` validada.
+4. Restaurar la BD desde un backup verificado si hubo un problema con migraciones o datos.
+5. Repetir las verificaciones del healthcheck y del flujo principal antes de reabrir el sistema.
+
+El despliegue debe considerarse exitoso solo cuando la aplicación responde sanamente, los flujos críticos funcionan y el backup más reciente ha sido restaurado al menos una vez en un entorno de prueba.

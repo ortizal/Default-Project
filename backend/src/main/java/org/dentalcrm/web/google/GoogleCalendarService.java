@@ -602,24 +602,40 @@ public class GoogleCalendarService {
     private String accesoValido(GoogleAccount cuenta) {
         if (cuenta.tokenExpirado(MARGEN_TOKEN_SEG)) {
             if (cuenta.getRefreshToken() == null || cuenta.getRefreshToken().isBlank()) {
-                throw new BusinessException("GOOGLE_TOKEN_NO_REFRESCADO",
-                        "El token de acceso expiró y no hay refresh token (reconecte la cuenta)");
+                invalidarCuentaGoogle(cuenta, "El token de acceso expiró y no hay refresh token");
             }
-            GoogleTokenResponse tok = googleService.refrescarToken(cuenta.getRefreshToken());
-            if (tok.accessToken() == null || tok.accessToken().isBlank()) {
-                throw new BusinessException("GOOGLE_TOKEN_REFRESH_FAILED",
-                        "Google rechazó el refresh token (reconecte la cuenta)");
+            try {
+                GoogleTokenResponse tok = googleService.refrescarToken(cuenta.getRefreshToken());
+                if (tok.accessToken() == null || tok.accessToken().isBlank()) {
+                    invalidarCuentaGoogle(cuenta, "Google rechazó el refresh token");
+                }
+                cuenta.setAccessToken(tok.accessToken());
+                if (tok.refreshToken() != null) {
+                    cuenta.setRefreshToken(tok.refreshToken());
+                }
+                cuenta.setExpiresAt(tok.expiresIn() != null
+                        ? Instant.now().plus(tok.expiresIn(), ChronoUnit.SECONDS)
+                        : null);
+                accountRepository.save(cuenta);
+            } catch (BusinessException e) {
+                String detalle = e.getMessage() == null ? "" : e.getMessage();
+                if (detalle.contains("invalid_grant") || detalle.contains("expired") || detalle.contains("revoked")) {
+                    invalidarCuentaGoogle(cuenta, "La sesión de Google expiró o fue revocada");
+                }
+                throw e;
             }
-            cuenta.setAccessToken(tok.accessToken());
-            if (tok.refreshToken() != null) {
-                cuenta.setRefreshToken(tok.refreshToken());
-            }
-            cuenta.setExpiresAt(tok.expiresIn() != null
-                    ? Instant.now().plus(tok.expiresIn(), ChronoUnit.SECONDS)
-                    : null);
-            accountRepository.save(cuenta);
         }
         return cuenta.getAccessToken();
+    }
+
+    private void invalidarCuentaGoogle(GoogleAccount cuenta, String motivo) {
+        if (cuenta.getId() != null) {
+            calendarioRepository.deleteAllByCuentaId(cuenta.getId());
+            accountRepository.delete(cuenta);
+            auditService.registrar("DESCONECTAR_GOOGLE", MODULO, "GOOGLE_ACCOUNT", cuenta.getId());
+        }
+        throw new BusinessException("GOOGLE_TOKEN_RECONEXION_REQUERIDA",
+                motivo + "; vuelva a conectarla desde la sección de integraciones de Google");
     }
 
     private GoogleCalendario calendarioSeleccionado(GoogleAccount cuenta) {
