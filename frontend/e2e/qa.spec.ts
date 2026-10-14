@@ -1,10 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
+import { abrirDesactivar } from './actions';
 
 // Todas las rutas autenticadas del app: cada control se audita en cada pantalla.
 const PAGINAS = [
   'dashboard',
   'reportes',
+  'reportes-clinicos',
   'pacientes',
+  'pacientes/1/historia',
   'odontologos',
   'servicios',
   'horarios',
@@ -23,6 +26,10 @@ const PAGINAS = [
   'configuracion/consultorio',
   'configuracion/integraciones',
   'redes-sociales',
+  'facturacion',
+  'facturacion/cuentas',
+  'facturacion/caja',
+  'facturacion/reportes',
 ];
 const ANCHOS = [360, 480, 768, 1280];
 
@@ -175,8 +182,8 @@ test.describe('QA de accesibilidad y responsive (regresión)', () => {
     await page.keyboard.press('Escape');
     await expect(form).toBeHidden();
 
-    // Diálogo de confirmación del sistema UI
-    await page.locator('button.btn.small.danger:not([disabled])').first().click();
+    // Diálogo de confirmación del sistema UI (menú de acciones de la fila)
+    await abrirDesactivar(page);
     const dialogo = page.locator('[role="dialog"]');
     await expect(dialogo).toBeVisible();
     const cajaDlg = await dialogo.boundingBox();

@@ -21,6 +21,15 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
             """)
     Page<Paciente> buscar(@Param("q") String q, @Param("estado") String estado, Pageable pageable);
 
+    /** Identificadores que casan con el texto de la bandeja (§3.7). */
+    @Query("""
+            SELECT p.id FROM Paciente p
+            WHERE lower(p.nombres) LIKE lower(concat('%', :q, '%'))
+               OR lower(p.apellidos) LIKE lower(concat('%', :q, '%'))
+               OR lower(coalesce(p.cedula, '')) LIKE lower(concat('%', :q, '%'))
+            """)
+    List<Long> idsPorTexto(@Param("q") String q);
+
     Optional<Paciente> findByCedulaIgnoreCase(String cedula);
 
     boolean existsByCedulaIgnoreCaseAndIdNot(String cedula, Long id);
@@ -49,4 +58,16 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     @Query("SELECT COUNT(p) FROM Paciente p WHERE p.createdAt >= :desde")
     long countNuevosDesde(@Param("desde") java.time.Instant desde);
+
+    /** Activos sin ninguna cita futura a partir de la fecha indicada (continuidad, §4.17). */
+    @Query("""
+            SELECT COUNT(p) FROM Paciente p
+            WHERE p.estado = 'ACTIVO'
+              AND NOT EXISTS (SELECT 1 FROM Cita c
+                              WHERE c.paciente = p
+                                AND c.fecha >= :hoy
+                                AND c.estado IN (:estados))
+            """)
+    long countSinProximaCita(@Param("hoy") java.time.LocalDate hoy,
+                             @Param("estados") java.util.Collection<org.dentalcrm.domain.cita.EstadoCita> estados);
 }

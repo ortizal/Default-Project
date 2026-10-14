@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.TreeSet;
 
 @Service
 public class AuthService {
@@ -60,7 +61,7 @@ public class AuthService {
 
         List<String> roles = usuario.getRoles().stream().map(r -> r.getCodigo()).toList();
 
-        return LoginResponse.of(token, expirationMs, userDetails.getUsername(), roles);
+        return LoginResponse.of(token, expirationMs, userDetails.getUsername(), roles, permisosDe(usuario));
     }
 
     public LoginResponse refresh(RefreshRequest request) {
@@ -74,6 +75,16 @@ public class AuthService {
                 usuario.getUsername(), usuario.getPassword(),
                 "ACTIVO".equals(usuario.getEstado()), true, true, true, List.of()), usuario.getTenantId());
         return LoginResponse.of(token, expirationMs, usuario.getUsername(),
-                usuario.getRoles().stream().map(r -> r.getCodigo()).toList());
+                usuario.getRoles().stream().map(r -> r.getCodigo()).toList(), permisosDe(usuario));
+    }
+
+    /**
+     * Códigos de permiso efectivos del usuario (unión de sus roles, ordenados y sin duplicados).
+     * El frontend los usa para el menú dinámico; la autorización real sigue siendo server-side.
+     */
+    private List<String> permisosDe(Usuario usuario) {
+        TreeSet<String> codigos = new TreeSet<>();
+        usuario.getRoles().forEach(rol -> codigos.addAll(rol.getPermisoCodigos()));
+        return List.copyOf(codigos);
     }
 }

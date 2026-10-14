@@ -131,23 +131,22 @@ if command -v ss >/dev/null 2>&1 && ss -H -ltn | awk -v port="$backend_port" '$4
         export BACKEND_PORT="$backend_port"
         export BACKEND_BIND_ADDRESS="$backend_bind"
         if curl -fsS "http://127.0.0.1:${backend_port}/actuator/health" | grep -q '"UP"'; then
-            echo "Backend ya desplegado y saludable; no es necesario volver a levantarlo."
-            echo "== comprobando OpenWA =="
-            if curl -fsS http://localhost:2785/api/health >/dev/null; then
-                echo "OpenWA saludable; finalizando despliegue sin cambios."
-                exit 0
-            fi
-            echo "OpenWA no está respondiendo en localhost:2785. Revisa la sesión o el contenedor externo." >&2
+            echo "Backend actual saludable; se construirá la nueva imagen antes de actualizarlo."
+        else
+            echo "El backend actual no responde correctamente en $backend_port; libera el puerto o cambia BACKEND_PORT." >&2
             exit 1
         fi
-        echo "El backend actual no responde correctamente en $backend_port; libera el puerto o cambia BACKEND_PORT." >&2
+    else
+        echo "El puerto backend $backend_port está ocupado. Libéralo o configura BACKEND_PORT en $ENV_FILE y actualiza el upstream de Nginx." >&2
         exit 1
     fi
-    echo "El puerto backend $backend_port está ocupado. Libéralo o configura BACKEND_PORT en $ENV_FILE y actualiza el upstream de Nginx." >&2
-    exit 1
 fi
 export BACKEND_PORT="$backend_port"
 export BACKEND_BIND_ADDRESS="$backend_bind"
+
+export DOCKER_BUILDKIT=1
+echo "== construyendo imagen backend (el contenedor actual no se modificará si falla) =="
+docker compose build backend
 
 frontend_root="${FRONTEND_ROOT:-$(env_value FRONTEND_ROOT)}"
 frontend_root="${frontend_root:-/var/www/dentalcrm}"
@@ -174,12 +173,15 @@ echo "Nginx debe servir /dental_crm/ y proxyear /dental_crm/api/ a ${backend_bin
 echo "== retirando frontend Docker anterior (si existe) =="
 docker compose --profile docker-frontend rm --stop --force frontend || true
 
-export DOCKER_BUILDKIT=1
-echo "== docker compose up --build -d =="
+echo "== actualizando servicios con la imagen ya construida =="
+if [ "$backend_already_running" -eq 1 ]; then
+    echo "== deteniendo backend anterior tras build exitoso =="
+    docker compose stop backend
+fi
 if [ "$openwa_mode" = "bundled" ]; then
-    docker compose --profile bundled-openwa up --build -d
+    docker compose --profile bundled-openwa up --no-build -d postgres redis backend openwa
 else
-    docker compose up --build -d
+    docker compose up --no-build -d postgres redis backend
 fi
 
 echo "== esperando salud backend y OpenWA =="

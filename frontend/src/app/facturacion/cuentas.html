@@ -1,0 +1,224 @@
+<ui-page-header title="Finanzas — Cuentas" />
+
+<div class="toolbar">
+  <div class="form-field">
+    <label class="label" for="cuentas-buscar">Paciente o cédula</label>
+    <input id="cuentas-buscar" class="input sm" type="text" [(ngModel)]="buscar"
+           (keyup.enter)="cargar()" placeholder="Buscar">
+  </div>
+  <div class="form-field">
+    <label class="label" for="cuentas-estado">Estado</label>
+    <select id="cuentas-estado" class="input sm" [(ngModel)]="estado" (change)="cargar()">
+      @for (e of estados; track e) {
+        <option [value]="e">{{ e ? etiquetaEstadoCuenta($any(e)) : 'Todos' }}</option>
+      }
+    </select>
+  </div>
+  <button class="btn" (click)="cargar()" [disabled]="cargando">Buscar</button>
+</div>
+
+@if (error) {
+  <div class="msg error" data-testid="cuentas-error">{{ error }}</div>
+}
+@if (mensaje) {
+  <div class="msg ok" data-testid="cuentas-mensaje">{{ mensaje }}</div>
+}
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando cuentas…</div>
+}
+
+<div class="grid cols-2 mt-4">
+  <div class="card m-0">
+    <div class="card-header">
+      <h2 class="card-title">Cuentas</h2>
+      <span class="muted text-sm">{{ cuentas.length }} resultados</span>
+    </div>
+    @if (cuentas.length) {
+      <table class="tbl" data-testid="tabla-cuentas">
+        <thead>
+          <tr><th>Paciente</th><th>Cédula</th><th>Estado</th><th class="text-right">Saldo</th><th><span class="visually-hidden">Acciones</span></th></tr>
+        </thead>
+        <tbody>
+          @for (c of cuentas; track c.id) {
+            <tr>
+              <td>{{ c.paciente }}</td>
+              <td>{{ c.cedula || '—' }}</td>
+              <td><ui-badge [tone]="toneEstadoCuenta(c.estado)">{{ etiquetaEstadoCuenta(c.estado) }}</ui-badge></td>
+              <td class="text-right">{{ moneda(c.saldo) }}</td>
+              <td class="text-right">
+                <button
+                  class="btn sm menu-trigger"
+                  [matMenuTriggerFor]="mCta"
+                  [attr.aria-label]="'Ver cuenta de ' + c.paciente"
+                >
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mCta="matMenu">
+                  <button mat-menu-item (click)="abrir(c.pacienteId)">Ver</button>
+                </mat-menu>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Sin cuentas con ese filtro.</div>
+    }
+  </div>
+
+  @if (sel; as c) {
+    <div class="card m-0" data-testid="detalle-cuenta">
+      <div class="card-header">
+        <h2 class="card-title">{{ c.paciente }}</h2>
+        <ui-badge [tone]="toneEstadoCuenta(c.estado)">{{ etiquetaEstadoCuenta(c.estado) }}</ui-badge>
+      </div>
+
+      <div class="grid cols-3">
+        <div class="card stat m-0"><div class="num">{{ moneda(c.saldo) }}</div><div class="lbl">Saldo</div></div>
+        <div class="card stat m-0"><div class="num">{{ moneda(c.totalCargos) }}</div><div class="lbl">Cargos</div></div>
+        <div class="card stat m-0"><div class="num">{{ moneda(c.totalAbonos) }}</div><div class="lbl">Crédito a favor</div></div>
+      </div>
+
+      @if (puedeEmitir && c.estado !== 'ANULADA' && c.totalCargos > 0) {
+        <div class="toolbar mt-4" data-testid="emitir-factura-bloque">
+          <button class="btn primary" type="button" (click)="emitir()"
+                  [disabled]="cargando" data-testid="emitir-factura">Emitir factura</button>
+          @if (comprobante; as f) {
+            <span class="muted text-sm">
+              Última factura: {{ f.numeroComprobante }}
+              <ui-badge [tone]="toneEstadoTributario(f.estadoTributario)">
+                {{ etiquetaEstadoTributario(f.estadoTributario) }}
+              </ui-badge>
+            </span>
+            <a class="btn sm outline" routerLink="/facturacion/comprobantes"
+               data-testid="ir-bandeja">Ver en la bandeja</a>
+          }
+        </div>
+      }
+
+      @if (puedeEscribir) {
+        <div class="toolbar mt-4">
+          @if (!bloqueada) {
+            <button class="btn sm" (click)="cambiarEstado('CERRADA')">Cerrar cuenta</button>
+            @if (c.estado !== 'ANULADA') {
+              <button class="btn sm danger" (click)="cambiarEstado('ANULADA')">Anular cuenta</button>
+            }
+          } @else if (c.estado === 'CERRADA') {
+            <button class="btn sm" (click)="cambiarEstado('ABIERTA')">Reabrir cuenta</button>
+          }
+        </div>
+
+        <div class="card-header mt-4"><h2 class="card-title">Nuevo movimiento</h2></div>
+        <form class="toolbar" (ngSubmit)="agregar()" data-testid="form-movimiento">
+          <div class="form-field">
+            <label class="label" for="mov-tipo">Tipo</label>
+            <select id="mov-tipo" class="input sm" name="tipo" [(ngModel)]="form.tipo">
+              @for (t of tipos; track t) {
+                <option [value]="t">{{ etiquetaMovimiento($any(t)) }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="label" for="mov-concepto">Concepto</label>
+            <input id="mov-concepto" class="input sm" name="concepto" type="text"
+                   [(ngModel)]="form.concepto" required placeholder="Ej. Obturación">
+          </div>
+          @if (esCargo) {
+            <div class="form-field">
+              <label class="label" for="mov-precio">Precio unitario</label>
+              <input id="mov-precio" class="input sm" name="precioUnitario" type="number"
+                     min="0" step="0.01" [(ngModel)]="form.precioUnitario">
+            </div>
+            <div class="form-field">
+              <label class="label" for="mov-cantidad">Cantidad</label>
+              <input id="mov-cantidad" class="input sm" name="cantidad" type="number" min="1"
+                     [(ngModel)]="form.cantidad">
+            </div>
+            <div class="form-field">
+              <label class="label" for="mov-descuento">Descuento %</label>
+              <input id="mov-descuento" class="input sm" name="descuentoPct" type="number"
+                     min="0" max="100" step="0.5" [(ngModel)]="form.descuentoPct">
+            </div>
+          } @else {
+            <div class="form-field">
+              <label class="label" for="mov-monto">Monto</label>
+              <input id="mov-monto" class="input sm" name="total" type="number" min="0.01"
+                     step="0.01" [(ngModel)]="form.total">
+            </div>
+          }
+          @if (requiereFormaPago) {
+            <div class="form-field">
+              <label class="label" for="mov-forma">Forma de pago</label>
+              <select id="mov-forma" class="input sm" name="formaPago" [(ngModel)]="form.formaPago">
+                @for (f of formas; track f) {
+                  <option [value]="f">{{ etiquetaFormaPago($any(f)) }}</option>
+                }
+              </select>
+            </div>
+          }
+          <div class="form-field">
+            <label class="label" for="mov-diente">Pieza</label>
+            <input id="mov-diente" class="input sm" name="diente" type="number" min="11" max="48"
+                   [(ngModel)]="form.diente">
+          </div>
+          <button class="btn primary" type="submit" [disabled]="bloqueada || cargando">Agregar</button>
+        </form>
+      }
+
+      <div class="card-header mt-4">
+        <h2 class="card-title">Movimientos</h2>
+        <span class="muted text-sm">{{ c.cantidadMovimientos }} vigentes</span>
+      </div>
+      @if (c.movimientos.length) {
+        <table class="tbl" data-testid="tabla-movimientos">
+          <thead>
+            <tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Pago</th><th class="text-right">Total</th><th><span class="visually-hidden">Acciones</span></th></tr>
+          </thead>
+          <tbody>
+            @for (m of c.movimientos; track m.id) {
+              <tr [class.muted]="m.anulado">
+                <td>{{ m.fecha }}</td>
+                <td><ui-badge [tone]="toneMovimiento(m.tipo)">{{ etiquetaMovimiento(m.tipo) }}</ui-badge></td>
+                <td>
+                  {{ m.concepto }}
+                  @if (m.anulado) {
+                    <span class="muted text-sm"> · anulado</span>
+                  }
+                  @if (m.origen === 'PROCEDIMIENTO') {
+                    <span class="muted text-sm"> · plan</span>
+                  }
+                </td>
+                <td>{{ etiquetaFormaPago(m.formaPago) }}</td>
+                <td class="text-right">{{ moneda(m.total) }}</td>
+                <td class="text-right">
+                  @if (puedeEscribir && !m.anulado && !bloqueada) {
+                    <button
+                      class="btn sm menu-trigger"
+                      [matMenuTriggerFor]="mMov"
+                      [attr.aria-label]="'Acciones del movimiento ' + m.concepto"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mMov="matMenu">
+                      <button mat-menu-item class="peligro" (click)="anular(m.id)"
+                              [attr.aria-label]="'Anular movimiento ' + m.concepto">Anular</button>
+                    </mat-menu>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">La cuenta todavía no tiene movimientos.</div>
+      }
+    </div>
+  } @else {
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Detalle</h2></div>
+      <div class="empty">Selecciona una cuenta para ver sus movimientos.</div>
+    </div>
+  }
+</div>

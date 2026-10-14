@@ -11,7 +11,9 @@ import { test, expect, Page } from '@playwright/test';
 const RUTAS = [
   'dashboard',
   'reportes',
+  'reportes-clinicos',
   'pacientes',
+  'pacientes/1/historia',
   'odontologos',
   'servicios',
   'horarios',
@@ -30,6 +32,10 @@ const RUTAS = [
   'configuracion/consultorio',
   'configuracion/integraciones',
   'redes-sociales',
+  'facturacion',
+  'facturacion/cuentas',
+  'facturacion/caja',
+  'facturacion/reportes',
 ];
 
 const SELECTORES = [

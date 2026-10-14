@@ -32,8 +32,14 @@
                 </button>
               </td>
               <td class="flex">
-                <button class="btn small" (click)="editar(a)">Editar</button>
-                <button class="btn small danger" (click)="eliminar(a)">Eliminar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mAut" [attr.aria-label]="'Acciones de ' + a.nombre">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mAut="matMenu">
+                  <button mat-menu-item (click)="editar(a)">Editar</button>
+                  <button mat-menu-item class="peligro" (click)="eliminar(a)">Eliminar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

@@ -32,6 +32,7 @@ env
 .env.local
 !.env.example
 *.local
+.modul
 
 # OS
 .DS_Store
@@ -53,3 +54,6 @@ frontend/test-results/
 # Scripts locales
 scripts/*.sh.local
 .smoke/
+frontend/node_modules/
+frontend/.node_modules-root-old/
+frontend/.node_modules-root-old-2/

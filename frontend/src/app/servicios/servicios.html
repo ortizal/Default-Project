@@ -34,8 +34,14 @@
               <td>$ {{ s.precio.toFixed(2) }}</td>
               <td><ui-badge [tone]="s.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ s.estado }}</ui-badge></td>
               <td class="flex">
-                <button class="btn small" (click)="editar(s)">Editar</button>
-                <button class="btn small outline danger" (click)="desactivar(s)" [disabled]="s.estado !== 'ACTIVO'">Desactivar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mServ" [attr.aria-label]="'Acciones de ' + s.nombre">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mServ="matMenu">
+                  <button mat-menu-item (click)="editar(s)">Editar</button>
+                  <button mat-menu-item class="peligro" [disabled]="s.estado !== 'ACTIVO'" (click)="desactivar(s)">Desactivar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

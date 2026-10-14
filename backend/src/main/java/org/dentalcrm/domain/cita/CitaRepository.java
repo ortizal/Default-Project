@@ -159,4 +159,6 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
 
         @EntityGraph(attributePaths = {"paciente", "doctor", "servicio"})
         List<Cita> findByEstadoAndFechaBetween(EstadoCita estado, LocalDate desde, LocalDate hasta);
+
+        long countByEstadoAndFechaBetween(EstadoCita estado, LocalDate desde, LocalDate hasta);
 }

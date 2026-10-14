@@ -5,12 +5,15 @@ import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
-  if (auth.token) {
+  const isLoginRequest = req.url.includes('/auth/login');
+  const esPublica = req.url.includes('/public/');
+  if (auth.token && !isLoginRequest) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${auth.token}` } });
   }
   return next(req).pipe(
     catchError((err) => {
-      if (err.status === 401 && !req.url.includes('/auth/login')) {
+      // Los endpoints públicos (agenda con enlace temporal) nunca cierran sesión.
+      if (err.status === 401 && !isLoginRequest && !esPublica) {
         auth.logout();
       }
       return throwError(() => err);

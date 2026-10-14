@@ -1,0 +1,330 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="toolbar">
+  <span class="card-title">Exámenes periodontales ({{ examenes.length }})</span>
+  @if (escribir) {
+    <ui-button size="sm" variant="primary" (clicked)="nuevoExamen()">+ Nuevo examen</ui-button>
+  }
+  @if (examenes.length > 1) {
+    <ui-button size="sm" (clicked)="abrirComparacion()">Comparar versiones</ui-button>
+  }
+  @if (examen) {
+    <ui-button size="sm" (clicked)="descargarPdf()">Descargar PDF</ui-button>
+  }
+</div>
+
+@if (!examenes.length) {
+  <p class="empty">Este paciente todavía no tiene exámenes periodontales.</p>
+} @else {
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Versión</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Sitios</th>
+          <th scope="col">Piezas</th>
+          <th scope="col">Odontólogo</th>
+          <th scope="col">Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (ex of examenes; track ex.id) {
+          <tr [class.fila-sel]="examen?.id === ex.id">
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(ex)">v{{ ex.version }}</button>
+            </td>
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(ex)">{{ ex.fecha }}</button>
+            </td>
+            <td>{{ ex.sitios }}</td>
+            <td>{{ ex.dientes }}</td>
+            <td>{{ ex.odontologo || '—' }}</td>
+            <td class="obs">{{ ex.observaciones || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (examen; as e) {
+  <section class="detalle-examen" aria-label="Detalle del examen periodontal">
+    <div class="toolbar">
+      <span class="card-title">Examen v{{ e.version }}</span>
+      <span class="muted text-sm">{{ e.fecha }}</span>
+      @if (e.odontologo) {
+        <span class="muted text-sm">{{ e.odontologo }}</span>
+      }
+      <span class="separador"></span>
+      @if (escribir) {
+        <ui-button size="sm" (clicked)="editarExamen()">Editar examen</ui-button>
+      }
+    </div>
+
+    @if (e.observaciones) {
+      <p class="muted text-sm">{{ e.observaciones }}</p>
+    }
+
+    <div class="totales">
+      <span>Sitios medidos: <strong>{{ resumen.sitios }}</strong></span>
+      <span>Promedio de sondaje: <strong>{{ resumen.promedio === null ? '—' : resumen.promedio + ' mm' }}</strong></span>
+      <span>Con sangrado/supuración: <strong>{{ resumen.sangrados }}</strong></span>
+      <span>Piezas con movilidad/furcación: <strong>{{ resumen.piezas }}</strong></span>
+    </div>
+
+    @if (!filas.length) {
+      <p class="empty">Sin mediciones. Usa "Editar mediciones" en una pieza para registrar sondaje, margen, inserción y signos clínicos.</p>
+    } @else {
+      <div class="tbl-wrap">
+        <table class="tbl periodontograma">
+          <thead>
+            <tr>
+              <th scope="col">Diente</th>
+              @for (s of sitios; track s.id) {
+                <th scope="col">{{ s.corto }}</th>
+              }
+              <th scope="col">Mov.</th>
+              <th scope="col">Furc.</th>
+              <th scope="col">Notas</th>
+              @if (escribir) {
+                <th scope="col">Acciones</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filas; track f.diente) {
+              <tr>
+                <th scope="row" class="diente">{{ f.diente }}</th>
+                @for (s of sitios; track s.id) {
+                  <td
+                    [class.alerta]="f.mediciones[s.id]?.sangrado || f.mediciones[s.id]?.supuracion"
+                    [attr.data-diente]="f.diente"
+                    [attr.data-sitio]="s.id"
+                  >
+                    {{ formatoMedicion(f.mediciones[s.id]) }}
+                  </td>
+                }
+                <td>{{ f.pieza?.movilidad ?? '—' }}</td>
+                <td>{{ f.pieza?.furcacion ?? '—' }}</td>
+                <td class="obs">{{ f.pieza?.notas || '—' }}</td>
+                @if (escribir) {
+                  <td class="acciones">
+                    <button
+                      type="button"
+                      class="btn small menu-trigger"
+                      [matMenuTriggerFor]="mPer"
+                      [attr.aria-label]="'Acciones de la pieza ' + f.diente"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mPer="matMenu">
+                      <button mat-menu-item (click)="editarMediciones(f)">Editar mediciones</button>
+                      <button mat-menu-item class="peligro" (click)="eliminarPieza(f)">Eliminar</button>
+                    </mat-menu>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}
+
+<!-- ============================ MODAL EXAMEN ============================ -->
+@if (modalExamen) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Examen periodontal" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoExamen ? 'Editar examen periodontal' : 'Nuevo examen periodontal' }}</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="pe-fecha">Fecha *</label>
+          <input id="pe-fecha" class="input" type="date" [(ngModel)]="formExamen.fecha" />
+        </div>
+        <div class="full">
+          <label class="label" for="pe-obs">Observaciones</label>
+          <textarea id="pe-obs" class="input" [(ngModel)]="formExamen.observaciones"></textarea>
+        </div>
+        @if (!editandoExamen) {
+          <div class="full">
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="formExamen.copiarUltima" />
+              Copiar las mediciones del examen anterior
+            </label>
+          </div>
+        }
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalExamen = false">Cancelar</button>
+        <button type="button" class="btn primary" (click)="guardarExamen()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================= MODAL MEDICIONES ========================== -->
+@if (modalMediciones) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Mediciones periodontales" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Mediciones de la pieza {{ formMed.diente }}</h2>
+      <div class="sub">Sondaje / margen / inserción en milímetros. Marca sangrado (S), placa (P) y supuración (U).</div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th scope="col">Sitio</th>
+              <th scope="col">Sondaje</th>
+              <th scope="col">Margen</th>
+              <th scope="col">Inserción</th>
+              <th scope="col">Sangrado</th>
+              <th scope="col">Placa</th>
+              <th scope="col">Supuración</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of sitios; track s.id) {
+              <tr>
+                <th scope="row">{{ s.label }}</th>
+                <td>
+                  <label class="sr-only" for="med-sondaje-{{ s.id }}">Sondaje {{ s.label }}</label>
+                  <input id="med-sondaje-{{ s.id }}" class="input num" type="number" min="0" max="20" step="0.5" [(ngModel)]="formMed.sitios[s.id].sondajeMm" />
+                </td>
+                <td>
+                  <label class="sr-only" for="med-margen-{{ s.id }}">Margen {{ s.label }}</label>
+                  <input id="med-margen-{{ s.id }}" class="input num" type="number" min="-5" max="10" step="0.5" [(ngModel)]="formMed.sitios[s.id].margenMm" />
+                </td>
+                <td>
+                  <label class="sr-only" for="med-insercion-{{ s.id }}">Inserción {{ s.label }}</label>
+                  <input id="med-insercion-{{ s.id }}" class="input num" type="number" min="0" max="20" step="0.5" [(ngModel)]="formMed.sitios[s.id].insercionMm" />
+                </td>
+                <td>
+                  <label class="sr-only" for="med-sangrado-{{ s.id }}">Sangrado {{ s.label }}</label>
+                  <input id="med-sangrado-{{ s.id }}" type="checkbox" [(ngModel)]="formMed.sitios[s.id].sangrado" />
+                </td>
+                <td>
+                  <label class="sr-only" for="med-placa-{{ s.id }}">Placa {{ s.label }}</label>
+                  <input id="med-placa-{{ s.id }}" type="checkbox" [(ngModel)]="formMed.sitios[s.id].placa" />
+                </td>
+                <td>
+                  <label class="sr-only" for="med-supuracion-{{ s.id }}">Supuración {{ s.label }}</label>
+                  <input id="med-supuracion-{{ s.id }}" type="checkbox" [(ngModel)]="formMed.sitios[s.id].supuracion" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label class="label" for="med-mov">Movilidad (0–3)</label>
+          <select id="med-mov" class="input" [(ngModel)]="formMed.movilidad">
+            @for (g of grados; track g.valor) {
+              <option [value]="g.valor">{{ g.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="med-furc">Furcación (0–3)</label>
+          <select id="med-furc" class="input" [(ngModel)]="formMed.furcacion">
+            @for (g of grados; track g.valor) {
+              <option [value]="g.valor">{{ g.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="med-notas">Notas de la pieza</label>
+          <input id="med-notas" class="input" maxlength="255" [(ngModel)]="formMed.notas" />
+        </div>
+      </div>
+
+      @if (errorMediciones) {
+        <div class="msg error">{{ errorMediciones }}</div>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalMediciones = false">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!!errorMediciones" (click)="guardarMediciones()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================== MODAL COMPARACIÓN ======================== -->
+@if (modalComparar) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Comparación de exámenes periodontales" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Comparar exámenes periodontales</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="cmp-desde">Desde (versión)</label>
+          <select id="cmp-desde" class="input" [(ngModel)]="desde">
+            @for (ex of examenes; track ex.id) {
+              <option [ngValue]="ex.version">v{{ ex.version }} · {{ ex.fecha }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="cmp-hasta">Hasta (versión)</label>
+          <select id="cmp-hasta" class="input" [(ngModel)]="hasta">
+            @for (ex of examenes; track ex.id) {
+              <option [ngValue]="ex.version">v{{ ex.version }} · {{ ex.fecha }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (comparacion; as c) {
+        <div class="totales">
+          <span>Cambios: <strong>{{ c.cambios.length }}</strong></span>
+          <span>Agregados: <strong>{{ c.agregados }}</strong></span>
+          <span>Eliminados: <strong>{{ c.eliminados }}</strong></span>
+        </div>
+        @if (!c.cambios.length) {
+          <p class="empty">Ambos exámenes tienen las mismas mediciones.</p>
+        } @else {
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th scope="col">Diente</th>
+                  <th scope="col">Sitio</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Campo</th>
+                  <th scope="col">Anterior</th>
+                  <th scope="col">Nuevo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ch of c.cambios; track $index) {
+                  <tr>
+                    <td>{{ ch.diente }}</td>
+                    <td>{{ ch.sitio || '—' }}</td>
+                    <td><ui-badge [tone]="toneCambio(ch.tipo)">{{ ch.tipo }}</ui-badge></td>
+                    <td>{{ nombreCampo(ch.campo) }}</td>
+                    <td>{{ ch.anterior ?? '—' }}</td>
+                    <td>{{ ch.nuevo ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalComparar = false">Cerrar</button>
+        <button type="button" class="btn primary" [disabled]="!desde || !hasta" (click)="comparar()">Comparar</button>
+      </div>
+    </div>
+  </div>
+}

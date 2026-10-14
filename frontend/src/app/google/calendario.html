@@ -112,9 +112,13 @@
                   </td>
                   <td class="muted">{{ c.timeZone }}</td>
                   <td>
-                    @if (!c.seleccionado) {
-                      <button class="btn small" (click)="seleccionar(c)">Usar</button>
-                    }
+                    <button class="btn small menu-trigger" [matMenuTriggerFor]="mCal" [attr.aria-label]="'Acciones del calendario ' + c.summary">
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mCal="matMenu">
+                      <button mat-menu-item [disabled]="c.seleccionado" (click)="seleccionar(c)">Usar</button>
+                    </mat-menu>
                   </td>
                 </tr>
               } @empty {

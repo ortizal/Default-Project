@@ -123,14 +123,22 @@
                 <td>
                   <div class="acciones">
                     @if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') {
-                      <button class="btn sm" (click)="confirmar(c)">✓ Confirmar</button>
-                    }
-                    @if (c.estado === 'CONFIRMADA') {
-                      <button class="btn sm" (click)="atender(c)">🩺 Atender</button>
-                      <button class="btn sm" (click)="noAsistio(c)">🚫 No asistió</button>
-                    }
-                    @if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') {
-                      <button class="btn sm danger" (click)="cancelar(c)">✗ Cancelar</button>
+                      <button
+                        class="btn sm menu-trigger"
+                        [matMenuTriggerFor]="mCita"
+                        [attr.aria-label]="'Acciones de la cita de ' + c.pacienteNombre"
+                      >
+                        <mat-icon>menu</mat-icon>
+                        <mat-icon class="caret">arrow_drop_down</mat-icon>
+                      </button>
+                      <mat-menu #mCita="matMenu">
+                        <button mat-menu-item (click)="confirmar(c)">✓ Confirmar</button>
+                        @if (c.estado === 'CONFIRMADA') {
+                          <button mat-menu-item (click)="atender(c)">🩺 Atender</button>
+                          <button mat-menu-item (click)="noAsistio(c)">🚫 No asistió</button>
+                        }
+                        <button mat-menu-item class="peligro" (click)="cancelar(c)">✗ Cancelar</button>
+                      </mat-menu>
                     }
                     @if (c.estado === 'CANCELADA' && c.canceladaMotivo) {
                       <span class="muted text-xs" [title]="c.canceladaMotivo">{{ c.canceladaMotivo }}</span>

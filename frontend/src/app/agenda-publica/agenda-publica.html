@@ -1,0 +1,124 @@
+<main class="agenda-publica">
+  <header class="ap-hero">
+    <div class="ap-logo" aria-hidden="true">🦷</div>
+    <h1 class="ap-title">Little Smile</h1>
+    <p class="ap-subtitulo">Reserva tu cita</p>
+    @if (contexto) {
+      <p class="ap-sub">
+        @if (contexto.paciente) {
+          Hola, <strong>{{ contexto.paciente }}</strong> — elige el día y la hora con
+        } @else {
+          Elige el día y la hora con
+        }
+        <strong>{{ contexto.odontologo }}</strong>@if (contexto.especialidad) { ({{ contexto.especialidad }})}.
+      </p>
+      <p class="ap-ttl muted text-xs">Este enlace caduca en {{ contexto.expiraEnMinutos }} minutos.</p>
+    }
+  </header>
+
+  @if (error) {
+    <div class="msg error" data-testid="agenda-publica-error">
+      <span>{{ error }}</span>
+      @if (token) {
+        <button class="btn sm" type="button" data-testid="agenda-publica-reintentar"
+          (click)="reintentar()">Reintentar</button>
+      }
+    </div>
+  }
+
+  @if (reserva?.estado === 'CREADA' || reserva?.estado === 'REPETIDA') {
+    <section class="ap-exito card" data-testid="agenda-publica-exito">
+      <div class="ap-exito-icono" aria-hidden="true">🎉</div>
+      <h2>{{ reserva?.estado === 'REPETIDA' ? 'Ya tenías esa cita' : '¡Cita reservada!' }}</h2>
+      <p class="ap-exito-mensaje">{{ reserva?.mensaje }}</p>
+      @if (reserva?.cita; as cita) {
+        <ul class="ap-resumen">
+          <li>🦷 {{ cita.servicioNombre }}</li>
+          <li>👨‍⚕️ {{ cita.doctorNombre }}</li>
+          <li>📅 {{ cita.fecha }} — {{ cita.horaInicio }}</li>
+        </ul>
+      }
+      <button class="btn primary" (click)="reiniciar()">Elegir otro horario</button>
+    </section>
+  } @else if (contexto) {
+    <section class="card ap-calendario" data-testid="agenda-publica-calendario">
+      <div class="ap-mes">
+        <button class="btn sm" type="button" (click)="cambiarMes(-1)" [disabled]="mesActual"
+          aria-label="Mes anterior">‹</button>
+        <h2 class="ap-mes-nombre">{{ etiquetaMes }}</h2>
+        <button class="btn sm" type="button" (click)="cambiarMes(1)" [disabled]="!mesSiguientePermitido"
+          aria-label="Mes siguiente">›</button>
+      </div>
+
+      <div class="ap-semana" aria-hidden="true">
+        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+
+      <div class="ap-dias" role="grid" aria-label="Días disponibles">
+        @for (dia of dias; track dia.fecha) {
+          <button
+            type="button"
+            class="ap-dia"
+            [ngClass]="estadoDe(dia)"
+            [class.seleccionado]="diaSeleccionado === dia.fecha"
+            [attr.aria-label]="dia.fecha + ': ' + (dia.estado === 'SIN_DISPONIBILIDAD' ? 'sin disponibilidad' : dia.estado === 'NO_LABORABLE' ? 'no atiende' : dia.cupos + ' cupos')"
+            [attr.data-fecha]="dia.fecha"
+            [disabled]="dia.estado === 'PASADO' || dia.estado === 'SIN_DISPONIBILIDAD' || dia.estado === 'NO_LABORABLE'"
+            (click)="seleccionarDia(dia)">
+            {{ dia.fecha | date: 'd' }}
+            @if (dia.estado === 'DISPONIBLE' || dia.estado === 'POCA') {
+              <span class="ap-punto" aria-hidden="true"></span>
+            }
+          </button>
+        } @empty {
+          <p class="muted">No hay días cargados todavía.</p>
+        }
+      </div>
+
+      <p class="ap-leyenda muted text-xs">
+        <span class="ap-leyenda-ok"></span> Disponible
+        <span class="ap-leyenda-poca"></span> Pocos cupos
+        <span class="ap-leyenda-vacio"></span> Sin disponibilidad
+        <span class="ap-leyenda-cerrado"></span> No atiende
+      </p>
+    </section>
+
+    @if (diaSeleccionado) {
+      <section class="card ap-slots" data-testid="agenda-publica-slots">
+        <h2>Cupos del {{ diaSeleccionado | date: 'EEEE d MMMM' }}</h2>
+        @if (cargando) {
+          <div class="ap-loading"><div class="spinner"></div><span class="muted">Buscando horarios…</span></div>
+        } @else {
+          <div class="ap-slot-lista">
+            @for (slot of slots; track slot.horaInicio) {
+              <button
+                type="button"
+                class="ap-slot"
+                [class.seleccionado]="slotSeleccionado?.horaInicio === slot.horaInicio"
+                [attr.data-hora]="slot.horaInicio"
+                (click)="seleccionarSlot(slot)">
+                {{ slot.horaInicio }}
+              </button>
+            } @empty {
+              <p class="muted">No quedan cupos libres ese día. Elige otra fecha.</p>
+            }
+          </div>
+          @if (slotSeleccionado) {
+            <div class="ap-confirmar">
+              <p>Confirmas <strong>{{ slotSeleccionado.horaInicio }}</strong>
+                con {{ slotSeleccionado.odontologo }}?</p>
+              <button class="btn primary block" data-testid="agenda-publica-confirmar"
+                [disabled]="reservando" (click)="confirmar()">
+                @if (reservando) { Confirmando… } @else { Confirmar horario }
+              </button>
+            </div>
+          }
+        }
+      </section>
+    }
+
+    @if (reserva?.estado === 'OCUPADA') {
+      <div class="msg warn" data-testid="agenda-publica-ocupada">{{ reserva?.mensaje }}</div>
+    }
+  }
+</main>

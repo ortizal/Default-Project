@@ -21,8 +21,14 @@
               <td class="max-w-md"><div class="truncate">{{ p.contenido }}</div></td>
               <td><span class="badge" [ngClass]="p.activa ? 'ok' : 'dim'">{{ p.activa ? 'Sí' : 'No' }}</span></td>
               <td class="flex">
-                <button class="btn small" (click)="editar(p)">Editar</button>
-                <button class="btn small danger" (click)="eliminar(p)">Eliminar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mPlan" [attr.aria-label]="'Acciones de ' + p.nombre">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mPlan="matMenu">
+                  <button mat-menu-item (click)="editar(p)">Editar</button>
+                  <button mat-menu-item class="peligro" (click)="eliminar(p)">Eliminar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

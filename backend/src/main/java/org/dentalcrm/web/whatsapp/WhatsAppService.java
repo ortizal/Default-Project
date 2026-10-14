@@ -381,15 +381,15 @@ public class WhatsAppService {
         actualizarUltimoMensaje(conversacion, mensaje.getReceivedAt());
         auditService.registrar("RECIBIR_MENSAJE", MODULO, "CONVERSACION", conversacion.getId());
 
-        // Fase 8: agente de IA — agenda natural, herramientas y transferencia a humano.
-        // Si el agente ya está conversando, responde primero; si no ha entrado en
-        // la conversación, el bot simple de la Fase 6 sigue teniendo prioridad.
-        boolean conEstadoAgente = conversacion.getIntencion() != null || conversacion.getContextoAgente() != null;
-        AgenteConversacionalService.RespuestaAgente respuesta = null;
-        if (conEstadoAgente) {
-            respuesta = agenteConversacionalService.procesar(conversacion, texto, ultimoPrev);
-        }
-        if (respuesta == null || respuesta.mensaje() == null || respuesta.mensaje().isBlank()) {
+        // Fase H: el agente conversacional atiende primero; el bot de la Fase 6
+        // queda como reserva sólo cuando el agente no produce respuesta.
+        AgenteConversacionalService.RespuestaAgente respuesta =
+                agenteConversacionalService.procesar(conversacion, texto, ultimoPrev);
+        boolean sinRespuestaDelAgente = respuesta == null
+                || ((respuesta.mensaje() == null || respuesta.mensaje().isBlank())
+                        && respuesta.adjunto() == null
+                        && !respuesta.transferirHumano());
+        if (sinRespuestaDelAgente) {
             // Fase 6: bot — confirmar/cancelar la próxima cita del paciente.
             FlujoWhatsAppService.ResultadoFlujo resultado = flujoWhatsApp.procesarEntrada(conversacion, texto);
             if (resultado != null && resultado.accion() != FlujoWhatsAppService.AccionFlujo.IGNORADA) {
@@ -397,10 +397,7 @@ public class WhatsAppService {
                 if (resultado.mensaje() != null && !resultado.mensaje().isBlank()) {
                     enviarMensaje(conversacion.getId(), new EnviarMensajeRequest(resultado.mensaje()));
                 }
-            }
-            if (!conEstadoAgente && (resultado == null
-                    || resultado.accion() == FlujoWhatsAppService.AccionFlujo.IGNORADA)) {
-                respuesta = agenteConversacionalService.procesar(conversacion, texto, ultimoPrev);
+                return new WebhookResponse(true, conversacion.getId());
             }
         }
         if (respuesta != null) {

@@ -1,0 +1,738 @@
+<ui-page-header
+  [title]="tituloPaciente ? 'Historia clínica — ' + tituloPaciente : 'Historia clínica'"
+  [subtitle]="resumen && resumen.paciente.edad ? resumen.paciente.edad + ' años · Paciente #' + resumen.paciente.id : ''"
+>
+  <ui-button (clicked)="cargarResumen()">↻ Recargar</ui-button>
+  @if (puedeReportes) {
+    <ui-button variant="outline" (clicked)="descargarHistoriaCompleta()">⤓ Historia completa (PDF)</ui-button>
+  }
+  <ui-button variant="outline" (clicked)="volver()">← Pacientes</ui-button>
+</ui-page-header>
+
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="seg tabs-historia" role="tablist" aria-label="Secciones de la historia clínica">
+  @for (t of tabs; track t.id) {
+    <button
+      type="button"
+      class="seg-btn"
+      role="tab"
+      [class.active]="tab === t.id"
+      [attr.aria-selected]="tab === t.id"
+      (click)="seleccionar(t.id)"
+    >
+      {{ t.label }}
+    </button>
+  }
+</div>
+
+<div class="card panel-historia">
+  @switch (tab) {
+    <!-- ============================ RESUMEN ============================ -->
+    @case ('resumen') {
+      @if (resumen; as r) {
+        <div class="grid2">
+          <section class="stack-sm">
+            <h2 class="card-title">Paciente</h2>
+            <p>
+              <strong>{{ r.paciente.nombres }} {{ r.paciente.apellidos }}</strong>
+              @if (r.paciente.edad) {
+                <span class="muted"> · {{ r.paciente.edad }} años</span>
+              }
+              @if (r.paciente.menorEdad) {
+                <ui-badge tone="warn">Menor de edad</ui-badge>
+              }
+            </p>
+            <p class="muted">{{ r.paciente.telefono || '—' }} · {{ r.paciente.email || '—' }}</p>
+            <p>
+              Historia:
+              <ui-badge [tone]="r.estadoHistoria === 'ABIERTA' ? 'ok' : 'muted'">{{ r.estadoHistoria }}</ui-badge>
+              @if (r.odontologoAsignado) {
+                <span class="muted"> · {{ r.odontologoAsignado }}</span>
+              }
+            </p>
+          </section>
+
+          <section class="stack-sm">
+            <h2 class="card-title">Citas</h2>
+            <p class="text-sm">
+              <span class="muted">Última:</span>
+              @if (r.ultimaCita; as u) {
+                {{ u.fecha }} {{ u.hora }} · {{ u.servicio || 'Consulta' }}
+                @if (u.odontologo) { <span class="muted"> · {{ u.odontologo }}</span> }
+              } @else {
+                Sin consultas atendidas
+              }
+            </p>
+            <p class="text-sm">
+              <span class="muted">Próxima:</span>
+              @if (r.proximaCita; as p) {
+                {{ p.fecha }} {{ p.hora }} · {{ p.servicio || 'Consulta' }}
+              } @else {
+                Sin cita programada
+              }
+            </p>
+          </section>
+        </div>
+
+        @if (r.alertas.length) {
+          <div class="alertas">
+            @for (a of r.alertas; track a) {
+              <div class="msg warn">{{ a }}</div>
+            }
+          </div>
+        }
+
+        <div class="grid3 resumen-extra">
+          <section class="stack-sm">
+            <h3 class="card-title">Alergias</h3>
+            @if (r.alergias.length) {
+              <div class="chips">
+                @for (a of r.alergias; track a) {
+                  <ui-badge tone="danger">{{ a }}</ui-badge>
+                }
+              </div>
+            } @else {
+              <p class="muted">Ninguna registrada.</p>
+            }
+            <h3 class="card-title mt-3">Medicación</h3>
+            @if (r.medicacion.length) {
+              <ul class="lista-clinica">
+                @for (m of r.medicacion; track m) {
+                  <li>{{ m }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="muted">Sin medicación activa.</p>
+            }
+          </section>
+
+          <section class="stack-sm">
+            <h3 class="card-title">Diagnósticos activos</h3>
+            @if (r.diagnosticosActivos.length) {
+              <ul class="lista-clinica">
+                @for (d of r.diagnosticosActivos; track d.id) {
+                  <li>
+                    <strong>{{ d.nombre }}</strong>
+                    @if (d.region) { <span class="muted"> · {{ d.region }}</span> }
+                    <span class="muted"> · {{ d.severidad }} · {{ d.estado }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="muted">Sin diagnósticos activos.</p>
+            }
+          </section>
+
+          <section class="stack-sm">
+            <h3 class="card-title">Actividad</h3>
+            <div class="stats-historia">
+              <div class="stat">
+                <span class="stat-value">{{ r.totalAntecedentes }}</span>
+                <span class="stat-label">Antecedentes</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">{{ r.totalEvoluciones }}</span>
+                <span class="stat-label">Evoluciones</span>
+              </div>
+            </div>
+            <h3 class="card-title mt-3">Última evolución</h3>
+            @if (r.ultimaEvolucion; as e) {
+              <p class="text-sm"><strong>{{ e.motivo }}</strong></p>
+              <p class="muted text-sm">{{ e.fecha | date: 'dd/MM/yyyy HH:mm' }}</p>
+            } @else {
+              <p class="muted">Sin evoluciones registradas.</p>
+            }
+          </section>
+        </div>
+      } @else {
+        <p class="muted">Cargando resumen…</p>
+      }
+    }
+
+    <!-- ========================== ANTECEDENTES ========================= -->
+    @case ('antecedentes') {
+      <div class="toolbar">
+        <span class="card-title">Antecedentes estructurados</span>
+        @if (puedeEscribir) {
+          <ui-button variant="primary" (clicked)="nuevoAntecedente()">+ Nuevo antecedente</ui-button>
+        }
+      </div>
+      @if (!antecedentes.length) {
+        <p class="empty">Sin antecedentes registrados.</p>
+      }
+      @for (g of antecedentesAgrupados; track g.tipo) {
+        <section class="grupo-antecedente">
+          <h3 class="card-title">{{ g.label }}</h3>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Detalle</th>
+                <th>Desde</th>
+                <th>Estado</th>
+                <th>Observaciones</th>
+                @if (puedeEscribir) {
+                  <th><span class="visually-hidden">Acciones</span></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of g.items; track a.id) {
+                <tr>
+                  <td>{{ a.nombre }}</td>
+                  <td>{{ a.detalle || '—' }}</td>
+                  <td>{{ a.fechaDesde || '—' }}</td>
+                  <td><ui-badge [tone]="a.estado === 'ACTIVO' ? 'warn' : 'muted'">{{ a.estado }}</ui-badge></td>
+                  <td class="truncate">{{ a.observaciones || '—' }}</td>
+                  @if (puedeEscribir) {
+                    <td class="flex">
+                      <button
+                        class="btn small menu-trigger"
+                        [matMenuTriggerFor]="mAnt"
+                        [attr.aria-label]="'Acciones del antecedente ' + a.nombre"
+                      >
+                        <mat-icon>menu</mat-icon>
+                        <mat-icon class="caret">arrow_drop_down</mat-icon>
+                      </button>
+                      <mat-menu #mAnt="matMenu">
+                        <button mat-menu-item (click)="editarAntecedente(a)">Editar</button>
+                        <button mat-menu-item class="peligro" (click)="eliminarAntecedente(a)">Eliminar</button>
+                      </mat-menu>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    }
+
+    <!-- ============================= EXÁMEN ============================ -->
+    @case ('examen') {
+      <div class="toolbar">
+        <span class="card-title">Exámenes clínicos</span>
+        @if (puedeEscribir) {
+          <ui-button variant="primary" (clicked)="nuevoExamen()">+ Nuevo examen</ui-button>
+        }
+      </div>
+      @if (!examenes.length) {
+        <p class="empty">Sin exámenes registrados.</p>
+      }
+      @for (e of examenes; track e.id) {
+        <article class="ficha-examen">
+          <header class="between">
+            <strong>{{ e.fecha }}</strong>
+            <span class="muted text-sm">{{ e.odontologo || 'Sin odontólogo' }}</span>
+            @if (puedeEscribir) {
+              <button class="btn small" (click)="editarExamen(e)">Editar</button>
+            }
+          </header>
+          <div class="grid3 mt-2">
+            <div>
+              <span class="label">General</span>
+              <p class="text-sm">{{ e.general || '—' }}</p>
+            </div>
+            <div>
+              <span class="label">Extraoral</span>
+              <p class="text-sm">
+                ATM: {{ e.extraoralAtm || '—' }} · Simetría: {{ e.extraoralSimetria || '—' }}<br />
+                Ganglios: {{ e.extraoralGanglios || '—' }} · Apertura: {{ e.extraoralApertura || '—' }}
+              </p>
+            </div>
+            <div>
+              <span class="label">Intraoral</span>
+              <p class="text-sm">
+                Mucosas: {{ e.intraoralMucosas || '—' }} · Lengua: {{ e.intraoralLengua || '—' }}<br />
+                Paladar: {{ e.intraoralPaladar || '—' }} · Encías: {{ e.intraoralEncias || '—' }}<br />
+                Higiene: {{ e.intraoralHigiene || '—' }} · Oclusión: {{ e.intraoralOclusion || '—' }}
+              </p>
+            </div>
+          </div>
+          @if (e.observaciones) {
+            <p class="muted text-sm mt-2">{{ e.observaciones }}</p>
+          }
+        </article>
+      }
+    }
+
+    <!-- =========================== ODONTOGRAMA ========================= -->
+    @case ('odontograma') {
+      <app-odontograma [pacienteId]="pacienteId" />
+    }
+
+    <!-- =========================== PERIODONCIA ========================= -->
+    @case ('periodoncia') {
+      <app-periodoncia [pacienteId]="pacienteId" />
+    }
+
+    <!-- ============================= RECETAS =========================== -->
+    @case ('recetas') {
+      <app-recetas [pacienteId]="pacienteId" />
+    }
+    @case ('consentimientos') {
+      <app-consentimientos [pacienteId]="pacienteId" />
+    }
+
+    <!-- ============================== ARCHIVOS ========================= -->
+    @case ('archivos') {
+      <app-archivos [pacienteId]="pacienteId" />
+    }
+
+    <!-- ============================= PLANES ============================ -->
+    @case ('planes') {
+      <app-planes [pacienteId]="pacienteId" />
+    }
+
+    <!-- =========================== DIAGNÓSTICOS ======================== -->
+    @case ('diagnosticos') {
+      <div class="toolbar">
+        <span class="card-title">Diagnósticos (historial conservado)</span>
+        @if (puedeEscribir) {
+          <ui-button variant="primary" (clicked)="nuevoDiagnostico()">+ Nuevo diagnóstico</ui-button>
+        }
+      </div>
+      @if (!diagnosticos.length) {
+        <p class="empty">Sin diagnósticos registrados.</p>
+      } @else {
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Diagnóstico</th>
+              <th>Región</th>
+              <th>Severidad</th>
+              <th>Estado</th>
+              <th>Odontólogo</th>
+              @if (puedeEscribir) {
+                <th><span class="visually-hidden">Acciones</span></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of diagnosticos; track d.id) {
+              <tr>
+                <td>{{ d.fecha }}</td>
+                <td>{{ d.nombre }}</td>
+                <td>{{ d.region || '—' }}</td>
+                <td>
+                  <ui-badge [tone]="d.severidad === 'SEVERA' ? 'danger' : d.severidad === 'MODERADA' ? 'warn' : 'info'">
+                    {{ d.severidad }}
+                  </ui-badge>
+                </td>
+                <td>
+                  @if (puedeEscribir) {
+                    <select
+                      class="input"
+                      aria-label="Estado del diagnóstico"
+                      [(ngModel)]="d.estado"
+                      (change)="cambiarEstadoDiagnostico(d)"
+                    >
+                      @for (s of estadosDiagnostico; track s) {
+                        <option [value]="s">{{ s }}</option>
+                      }
+                    </select>
+                  } @else {
+                    {{ d.estado }}
+                  }
+                </td>
+                <td>{{ d.odontologo || '—' }}</td>
+                @if (puedeEscribir) {
+                  <td class="flex">
+                    <button
+                      class="btn small menu-trigger"
+                      [matMenuTriggerFor]="mDx"
+                      [attr.aria-label]="'Acciones del diagnóstico ' + d.nombre"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mDx="matMenu">
+                      <button mat-menu-item (click)="editarDiagnostico(d)">Editar</button>
+                    </mat-menu>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    <!-- =========================== EVOLUCIONES ========================= -->
+    @case ('evoluciones') {
+      <div class="toolbar">
+        <span class="card-title">Evoluciones</span>
+        @if (puedeEscribir) {
+          <ui-button variant="primary" (clicked)="nuevaEvolucion()">+ Nueva evolución</ui-button>
+        }
+      </div>
+      @if (!evoluciones.length) {
+        <p class="empty">Sin evoluciones registradas.</p>
+      }
+      @for (e of evoluciones; track e.id) {
+        <article class="ficha-evolucion">
+          <header class="between">
+            <span>
+              <strong>{{ e.motivo }}</strong>
+              <span class="muted text-sm"> · {{ e.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+              @if (e.odontologo) {
+                <span class="muted text-sm"> · {{ e.odontologo }}</span>
+              }
+            </span>
+            <span class="flex gap-2">
+              <ui-badge [tone]="e.estado === 'CERRADA' ? 'muted' : 'ok'">{{ e.estado }}</ui-badge>
+              @if (puedeEscribir && esEditable(e)) {
+                <button class="btn small" (click)="editarEvolucion(e)">Editar</button>
+              }
+              @if (puedeCerrar && esEditable(e)) {
+                <button class="btn small outline" (click)="cerrarEvolucion(e)">Cerrar</button>
+              }
+              @if (puedeEscribir && !esEditable(e)) {
+                <button class="btn small outline" (click)="abrirAdenda(e)">+ Adenda</button>
+              }
+            </span>
+          </header>
+
+          <div class="grid3 mt-2">
+            <div><span class="label">Hallazgos</span><p class="text-sm">{{ e.hallazgos || '—' }}</p></div>
+            <div><span class="label">Diagnóstico</span><p class="text-sm">{{ e.diagnostico || '—' }}</p></div>
+            <div><span class="label">Procedimiento</span><p class="text-sm">{{ e.procedimiento || '—' }}</p></div>
+            <div><span class="label">Anestesia</span><p class="text-sm">{{ e.anestesia || '—' }}</p></div>
+            <div><span class="label">Materiales</span><p class="text-sm">{{ e.materiales || '—' }}</p></div>
+            <div><span class="label">Conducta</span><p class="text-sm">{{ e.conducta || '—' }}</p></div>
+          </div>
+          @if (e.indicaciones) {
+            <p class="muted text-sm mt-2"><span class="label">Indicaciones:</span> {{ e.indicaciones }}</p>
+          }
+          @if (e.soapSubjetivo || e.soapObjetivo || e.soapAnalisis || e.soapPlan) {
+            <div class="soap mt-2">
+              <span class="label">SOAP</span>
+              <p class="text-sm">
+                <strong>S:</strong> {{ e.soapSubjetivo || '—' }} ·
+                <strong>O:</strong> {{ e.soapObjetivo || '—' }}<br />
+                <strong>A:</strong> {{ e.soapAnalisis || '—' }} ·
+                <strong>P:</strong> {{ e.soapPlan || '—' }}
+              </p>
+            </div>
+          }
+          @if (e.adendas?.length) {
+            <div class="adendas mt-2">
+              <span class="label">Adendas</span>
+              @for (a of e.adendas; track a.id) {
+                <p class="text-sm adenda">{{ a.texto }} <span class="muted">— {{ a.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span></p>
+              }
+            </div>
+          }
+        </article>
+      }
+    }
+
+    <!-- ============================= TIMELINE ========================== -->
+    @case ('timeline') {
+      <div class="toolbar">
+        <span class="card-title">Línea de tiempo</span>
+        <span class="text-xs muted" data-testid="timeline-total">{{ timeline.length }} eventos</span>
+      </div>
+      @if (!timeline.length) {
+        <p class="empty">Sin eventos registrados.</p>
+      } @else {
+        <div class="chips chips-filtro" role="group" aria-label="Filtrar eventos de la línea de tiempo">
+          <button type="button" class="chip-filtro" [class.chip-activo]="filtroTimeline === 'TODOS'"
+                  (click)="seleccionarFiltroTimeline('TODOS')">
+            Todos <span class="chip-contador">{{ timeline.length }}</span>
+          </button>
+          @for (tipo of tiposTimeline; track tipo) {
+            <button type="button" class="chip-filtro" [class.chip-activo]="filtroTimeline === tipo"
+                    (click)="seleccionarFiltroTimeline(tipo)">
+              {{ etiquetaEvento(tipo) }} <span class="chip-contador">{{ conteoTipoTimeline(tipo) }}</span>
+            </button>
+          }
+        </div>
+        @if (!timelineFiltrada.length) {
+          <p class="empty">Sin eventos de este tipo.</p>
+        } @else {
+          <ol class="timeline">
+            @for (ev of timelineFiltrada; track ev.tipo + ev.referenciaId) {
+              <li class="timeline-item" [attr.data-tipo]="ev.tipo">
+                <span class="timeline-dot" [attr.data-tipo]="ev.tipo"></span>
+                <div class="timeline-cuerpo">
+                  <div class="between">
+                    <strong>{{ ev.titulo }}</strong>
+                    <ui-badge [tone]="tonoEvento(ev.tipo)">
+                      {{ etiquetaEvento(ev.tipo) }}
+                    </ui-badge>
+                  </div>
+                  @if (ev.detalle) {
+                    <p class="text-sm muted">{{ ev.detalle }}</p>
+                  }
+                  <span class="text-xs muted">{{ ev.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      }
+    }
+  }
+</div>
+
+<!-- ========================= MODAL ANTECEDENTE ========================= -->
+@if (modalAntecedente) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Antecedente" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoAntecedente ? 'Editar antecedente' : 'Nuevo antecedente' }}</h2>
+      <div class="sub">Un dato por fila: nada de párrafos libres.</div>
+      <div class="form-row">
+        <div>
+          <label class="label" for="ha-tipo">Tipo *</label>
+          <select id="ha-tipo" class="input" [(ngModel)]="formAntecedente.tipo">
+            @for (t of tiposAntecedente; track t.id) {
+              <option [value]="t.id">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="ha-nombre">Nombre *</label>
+          <input id="ha-nombre" class="input" maxlength="150" [(ngModel)]="formAntecedente.nombre" />
+        </div>
+        <div>
+          <label class="label" for="ha-detalle">Detalle</label>
+          <input id="ha-detalle" class="input" maxlength="255" placeholder="dosis, fecha, motivo…" [(ngModel)]="formAntecedente.detalle" />
+        </div>
+        <div>
+          <label class="label" for="ha-estado">Estado</label>
+          <select id="ha-estado" class="input" [(ngModel)]="formAntecedente.estado">
+            @for (s of estadosAntecedente; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="ha-desde">Fecha desde</label>
+          <app-date
+            id="ha-desde"
+            controlId="ha-desde"
+            ariaLabel="Fecha desde"
+            [(ngModel)]="formAntecedente.fechaDesde"
+          />
+        </div>
+        <div class="full">
+          <label class="label" for="ha-obs">Observaciones</label>
+          <textarea id="ha-obs" class="input" [(ngModel)]="formAntecedente.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" (click)="modalAntecedente = false">Cancelar</button>
+        <button class="btn primary" (click)="guardarAntecedente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- =========================== MODAL EXÁMEN ============================ -->
+@if (modalExamen) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Examen clínico" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoExamen ? 'Editar examen' : 'Nuevo examen clínico' }}</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="he-fecha">Fecha</label>
+          <app-date id="he-fecha" controlId="he-fecha" ariaLabel="Fecha del examen" [(ngModel)]="formExamen.fecha" />
+        </div>
+        <div class="full">
+          <label class="label" for="he-gen">General</label>
+          <textarea id="he-gen" class="input" [(ngModel)]="formExamen.general"></textarea>
+        </div>
+        <div>
+          <label class="label" for="he-atm">ATM</label>
+          <input id="he-atm" class="input" maxlength="255" [(ngModel)]="formExamen.extraoralAtm" />
+        </div>
+        <div>
+          <label class="label" for="he-sim">Simetría facial</label>
+          <input id="he-sim" class="input" maxlength="255" [(ngModel)]="formExamen.extraoralSimetria" />
+        </div>
+        <div>
+          <label class="label" for="he-gang">Ganglios</label>
+          <input id="he-gang" class="input" maxlength="255" [(ngModel)]="formExamen.extraoralGanglios" />
+        </div>
+        <div>
+          <label class="label" for="he-ap">Apertura</label>
+          <input id="he-ap" class="input" maxlength="255" [(ngModel)]="formExamen.extraoralApertura" />
+        </div>
+        <div>
+          <label class="label" for="he-muc">Mucosas</label>
+          <input id="he-muc" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralMucosas" />
+        </div>
+        <div>
+          <label class="label" for="he-len">Lengua</label>
+          <input id="he-len" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralLengua" />
+        </div>
+        <div>
+          <label class="label" for="he-pal">Paladar</label>
+          <input id="he-pal" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralPaladar" />
+        </div>
+        <div>
+          <label class="label" for="he-enc">Encías</label>
+          <input id="he-enc" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralEncias" />
+        </div>
+        <div>
+          <label class="label" for="he-hig">Higiene</label>
+          <input id="he-hig" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralHigiene" />
+        </div>
+        <div>
+          <label class="label" for="he-ocl">Oclusión</label>
+          <input id="he-ocl" class="input" maxlength="255" [(ngModel)]="formExamen.intraoralOclusion" />
+        </div>
+        <div class="full">
+          <label class="label" for="he-obs">Observaciones</label>
+          <textarea id="he-obs" class="input" [(ngModel)]="formExamen.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" (click)="modalExamen = false">Cancelar</button>
+        <button class="btn primary" (click)="guardarExamen()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================= MODAL DIAGNÓSTICO ========================= -->
+@if (modalDiagnostico) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Diagnóstico" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoDiagnostico ? 'Editar diagnóstico' : 'Nuevo diagnóstico' }}</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="hd-nombre">Diagnóstico *</label>
+          <input id="hd-nombre" class="input" maxlength="150" list="dl-diagnosticos" [(ngModel)]="formDiagnostico.nombre" />
+          <datalist id="dl-diagnosticos">
+            @for (d of diagnosticos; track d.id) {
+              <option [value]="d.nombre"></option>
+            }
+          </datalist>
+        </div>
+        <div>
+          <label class="label" for="hd-region">Región / diente</label>
+          <input id="hd-region" class="input" maxlength="60" placeholder="FDI 26, General…" [(ngModel)]="formDiagnostico.region" />
+        </div>
+        <div>
+          <label class="label" for="hd-sev">Severidad</label>
+          <select id="hd-sev" class="input" [(ngModel)]="formDiagnostico.severidad">
+            @for (s of severidades; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="hd-est">Estado</label>
+          <select id="hd-est" class="input" [(ngModel)]="formDiagnostico.estado">
+            @for (s of estadosDiagnostico; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="hd-fecha">Fecha</label>
+          <app-date id="hd-fecha" controlId="hd-fecha" ariaLabel="Fecha del diagnóstico" [(ngModel)]="formDiagnostico.fecha" />
+        </div>
+        <div class="full">
+          <label class="label" for="hd-obs">Observaciones</label>
+          <textarea id="hd-obs" class="input" [(ngModel)]="formDiagnostico.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" (click)="modalDiagnostico = false">Cancelar</button>
+        <button class="btn primary" (click)="guardarDiagnostico()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================== MODAL EVOLUCIÓN ========================== -->
+@if (modalEvolucion) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Evolución" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoEvolucion ? 'Editar evolución' : 'Nueva evolución' }}</h2>
+      <div class="sub">Al cerrarla la nota queda inmutable: las correcciones van por adenda.</div>
+      <div class="form-row">
+        <div>
+          <label class="label" for="hv-motivo">Motivo *</label>
+          <input id="hv-motivo" class="input" maxlength="255" [(ngModel)]="formEvolucion.motivo" />
+        </div>
+        <div>
+          <label class="label" for="hv-odo">Odontólogo</label>
+          <select id="hv-odo" class="input" [(ngModel)]="formEvolucion.odontologoId">
+            <option [ngValue]="null">Sin asignar</option>
+            @for (o of odontologos; track o.id) {
+              <option [ngValue]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="hv-hall">Hallazgos</label>
+          <textarea id="hv-hall" class="input" [(ngModel)]="formEvolucion.hallazgos"></textarea>
+        </div>
+        <div class="full">
+          <label class="label" for="hv-dx">Diagnóstico</label>
+          <textarea id="hv-dx" class="input" [(ngModel)]="formEvolucion.diagnostico"></textarea>
+        </div>
+        <div class="full">
+          <label class="label" for="hv-proc">Procedimiento</label>
+          <textarea id="hv-proc" class="input" [(ngModel)]="formEvolucion.procedimiento"></textarea>
+        </div>
+        <div>
+          <label class="label" for="hv-ane">Anestesia</label>
+          <input id="hv-ane" class="input" maxlength="155" [(ngModel)]="formEvolucion.anestesia" />
+        </div>
+        <div>
+          <label class="label" for="hv-mat">Materiales</label>
+          <input id="hv-mat" class="input" maxlength="255" [(ngModel)]="formEvolucion.materiales" />
+        </div>
+        <div class="full">
+          <label class="label" for="hv-ind">Indicaciones</label>
+          <textarea id="hv-ind" class="input" [(ngModel)]="formEvolucion.indicaciones"></textarea>
+        </div>
+        <div class="full">
+          <label class="label" for="hv-con">Conducta</label>
+          <input id="hv-con" class="input" maxlength="255" [(ngModel)]="formEvolucion.conducta" />
+        </div>
+        <details class="full soap-form">
+          <summary>SOAP (opcional)</summary>
+          <div class="form-row mt-2">
+            <div><label class="label" for="hv-s">Subjetivo</label><textarea id="hv-s" class="input" [(ngModel)]="formEvolucion.soapSubjetivo"></textarea></div>
+            <div><label class="label" for="hv-o">Objetivo</label><textarea id="hv-o" class="input" [(ngModel)]="formEvolucion.soapObjetivo"></textarea></div>
+            <div><label class="label" for="hv-a">Análisis</label><textarea id="hv-a" class="input" [(ngModel)]="formEvolucion.soapAnalisis"></textarea></div>
+            <div><label class="label" for="hv-p">Plan</label><textarea id="hv-p" class="input" [(ngModel)]="formEvolucion.soapPlan"></textarea></div>
+          </div>
+        </details>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" (click)="modalEvolucion = false">Cancelar</button>
+        <button class="btn primary" (click)="guardarEvolucion()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL ADENDA =========================== -->
+@if (modalAdenda) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Adenda" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Adenda de evolución</h2>
+      <div class="sub">La nota original no se modifica: esta corrección queda firmada en el historial.</div>
+      <label class="label" for="ad-texto">Corrección</label>
+      <textarea id="ad-texto" class="input" rows="4" [(ngModel)]="adendaTexto"></textarea>
+      <div class="modal-actions">
+        <button class="btn" (click)="modalAdenda = false">Cancelar</button>
+        <button class="btn primary" [disabled]="!adendaTexto.trim()" (click)="guardarAdenda()">Registrar adenda</button>
+      </div>
+    </div>
+  </div>
+}

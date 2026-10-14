@@ -7,9 +7,11 @@ public record LoginResponse(
         String tokenType,
         long expiresInMs,
         String username,
-        List<String> roles
+        List<String> roles,
+        List<String> permisos
 ) {
-    public static LoginResponse of(String token, long expiresInMs, String username, List<String> roles) {
-        return new LoginResponse(token, "Bearer", expiresInMs, username, roles);
+    public static LoginResponse of(String token, long expiresInMs, String username,
+                                   List<String> roles, List<String> permisos) {
+        return new LoginResponse(token, "Bearer", expiresInMs, username, roles, permisos);
     }
 }

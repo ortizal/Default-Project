@@ -6,10 +6,15 @@ import { AgenteConversacion, ConversacionInicio, MensajeRequest } from '../core/
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiTableComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-agente',
   templateUrl: './agente.html',
-  imports: [FormsModule, CommonModule, UiPageHeaderComponent, UiTableComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,FormsModule, CommonModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class AgenteComponent implements OnInit {
   private readonly api = inject(Api);

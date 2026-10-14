@@ -33,12 +33,27 @@ export class AuthService {
     return this.state?.roles ?? [];
   }
 
+  get permisos(): string[] {
+    return this.state?.permisos ?? [];
+  }
+
   get logged(): boolean {
     return !!this.token;
   }
 
   hasRole(code: string): boolean {
     return this.roles.some((r) => r.toUpperCase() === code.toUpperCase());
+  }
+
+  /**
+   * Menú dinámico: `true` si el permiso está concedido (o si la sesión es antigua
+   * y no trae `permisos`). La autorización real la decide el backend con 403.
+   */
+  puede(codigo?: string): boolean {
+    if (!codigo) return true;
+    const permisos = this.state?.permisos;
+    if (permisos === undefined) return true;
+    return permisos.includes(codigo);
   }
 
   login(username: string, password: string): Promise<void> {

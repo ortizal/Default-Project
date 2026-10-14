@@ -49,6 +49,7 @@ export class LayoutComponent implements OnDestroy {
     if (seg === 'notificaciones') return 'Notificaciones';
     if (seg === 'agente') return 'Agente IA';
     if (seg === 'reportes') return 'Reportes';
+    if (seg === 'facturacion') return 'Finanzas';
     if (seg === 'auditoria') return 'Auditoría';
     if (seg === 'usuarios') return 'Usuarios';
     return (MENU.flatMap((s) => s.items).find((i) => i.path === '/' + seg)?.label) ?? 'Inicio';

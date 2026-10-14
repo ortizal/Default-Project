@@ -75,6 +75,12 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      # Raíz de archivos clínicos; en compose es un volumen nombrado para que
+      # sobrevivan a la reconstrucción de la imagen del backend.
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-/app/data/archivos}
+
+    volumes:
+      - storage_data:/app/data/archivos
 
     ports:
       - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-18082}:8080"
@@ -126,3 +132,4 @@ volumes:
   postgres_data:
   redis_data:
   openwa_data:
+  storage_data:

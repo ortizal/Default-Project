@@ -13,10 +13,15 @@ import {
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-calendario',
   templateUrl: './calendario.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent],
 })
 export class CalendarioComponent implements OnInit {
   private readonly api = inject(Api);

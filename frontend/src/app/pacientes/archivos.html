@@ -1,0 +1,129 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="toolbar">
+  <span class="card-title">Archivos clínicos ({{ archivos.length }})</span>
+  <span class="separador"></span>
+  <ui-button size="sm" (clicked)="cargar()">Refrescar</ui-button>
+</div>
+
+@if (escribir) {
+  <div class="subida">
+    <div class="campo">
+      <label class="label" for="arc-archivo">Archivo</label>
+      <input
+        #inputArchivo
+        id="arc-archivo"
+        class="input"
+        type="file"
+        [accept]="extensionesAceptadas"
+        (change)="seleccionarArchivo($event)"
+      />
+      <p class="muted text-sm">JPG, PNG, WEBP, TIFF, PDF o DCM · hasta 20 MB. El contenido se guarda fuera de la base de datos.</p>
+    </div>
+    <div class="campo">
+      <label class="label" for="arc-categoria">Categoría</label>
+      <select id="arc-categoria" class="input" [(ngModel)]="categoria">
+        @for (c of categorias; track c.id) {
+          <option [value]="c.id">{{ c.label }}</option>
+        }
+      </select>
+    </div>
+    <div class="campo">
+      <label class="label" for="arc-fecha">Fecha del estudio</label>
+      <input id="arc-fecha" class="input" type="date" [(ngModel)]="fecha" />
+    </div>
+    <div class="campo">
+      <label class="label" for="arc-obs">Observaciones</label>
+      <input id="arc-obs" class="input" maxlength="500" placeholder="Ej. control postoperatorio" [(ngModel)]="observaciones" />
+    </div>
+    @if (archivo && errorAlta) {
+      <p class="msg error">{{ errorAlta }}</p>
+    }
+    <div class="acciones">
+      <ui-button size="sm" variant="primary" [disabled]="!!errorAlta || subiendo" (clicked)="subir()">
+        {{ subiendo ? 'Subiendo…' : 'Subir archivo' }}
+      </ui-button>
+      <ui-button size="sm" (clicked)="limpiarAlta()">Limpiar</ui-button>
+    </div>
+  </div>
+}
+
+@if (cargando) {
+  <p class="empty">Cargando archivos…</p>
+} @else if (!archivos.length) {
+  <p class="empty">Este paciente todavía no tiene archivos clínicos.</p>
+} @else {
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Categoría</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Tamaño</th>
+          <th scope="col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of archivos; track a.id) {
+          <tr [class.fila-sel]="false">
+            <td>
+              <button type="button" class="btn-link" (click)="ver(a)">{{ a.nombre }}</button>
+            </td>
+            <td>
+              <ui-badge [tone]="toneCategoria(a.categoria)">{{ etiquetaCategoria(a.categoria) }}</ui-badge>
+            </td>
+            <td>{{ a.fecha || (a.subidoEn ? (a.subidoEn | date: 'yyyy-MM-dd') : '—') }}</td>
+            <td>{{ formatoBytes(a.tamano) }}</td>
+            <td class="acciones-fila">
+              <button
+                type="button"
+                class="btn small menu-trigger"
+                [matMenuTriggerFor]="mArch"
+                [attr.aria-label]="'Acciones de ' + a.nombre"
+              >
+                <mat-icon>menu</mat-icon>
+                <mat-icon class="caret">arrow_drop_down</mat-icon>
+              </button>
+              <mat-menu #mArch="matMenu">
+                @if (esImagen(a.mime)) {
+                  <button type="button" mat-menu-item (click)="ver(a)">Ver</button>
+                }
+                <button type="button" mat-menu-item (click)="descargar(a)">Descargar</button>
+                @if (escribir) {
+                  <button type="button" mat-menu-item class="peligro" (click)="eliminar(a)">Eliminar</button>
+                }
+              </mat-menu>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (modalPreview) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Vista previa del archivo"
+      class="modal wide preview"
+      (click)="stop($event)"
+      (keydown.escape)="cerrarPreview()"
+    >
+      <h2 id="arc-preview-titulo">{{ previewNombre }}</h2>
+      @if (previewEsImagen) {
+        <img id="arc-preview-img" class="preview-img" [src]="previewUrl" [alt]="previewNombre" />
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarPreview()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

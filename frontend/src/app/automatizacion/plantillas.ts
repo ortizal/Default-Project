@@ -6,10 +6,15 @@ import { Plantilla } from '../core/models';
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiTableComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-plantillas',
   templateUrl: './plantillas.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class PlantillasComponent implements OnInit {
   private readonly api = inject(Api);

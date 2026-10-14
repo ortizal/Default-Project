@@ -1,0 +1,1 @@
+import{On as jo,m as Cl}from"./chunk--JbN2_6S.js";function i(a,t,o,e){return a.cargando=!0,e?.markForCheck(),t.pipe(Cl({next:()=>e?.markForCheck(),error:()=>e?.markForCheck()}),jo(()=>{(!o||o())&&(a.cargando=!1,e?.markForCheck())}))}export{i as t};

@@ -1,8 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Api } from '../core/api';
-import { Auditoria, Page } from '../core/models';
+import { Auditoria, Page, paginasDe } from '../core/models';
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiTableComponent, UiPaginationComponent } from '../ui';
 
@@ -11,6 +12,7 @@ const MODULOS = [
   'AGENTE_IA',
   'AUTOMATIZACIONES',
   'CITAS',
+  'FACTURACION',
   'GOOGLE_CALENDAR',
   'HORARIOS',
   'ODONTOLOGOS',
@@ -34,11 +36,14 @@ const MODULOS = [
 export class AuditoriaComponent implements OnInit {
   private readonly api = inject(Api);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
 
   readonly modulos = MODULOS;
   rows: Auditoria[] = [];
   q = '';
   modulo = '';
+  entidad = '';
+  entidadId: number | null = null;
   pagina = 0;
   totalPag = 1;
   cargando = false;
@@ -46,6 +51,22 @@ export class AuditoriaComponent implements OnInit {
   private abiertos = new Set<number>();
 
   ngOnInit(): void {
+    // Enlace desde la bandeja de comprobantes (§3.7):
+    // ?entidad=COMPROBANTE_ELECTRONICO&entidadId=1&modulo=FACTURACION
+    const params = this.route.snapshot.queryParamMap;
+    this.q = params.get('q') ?? '';
+    this.modulo = params.get('modulo') ?? '';
+    this.entidad = params.get('entidad') ?? '';
+    const id = Number(params.get('entidadId'));
+    this.entidadId = Number.isFinite(id) && id > 0 ? id : null;
+    this.cargar();
+  }
+
+  /** Quita el enlace de una fila concreta y vuelve a la vista general. */
+  quitarFiltroEntidad(): void {
+    this.entidad = '';
+    this.entidadId = null;
+    this.pagina = 0;
     this.cargar();
   }
 
@@ -58,6 +79,8 @@ export class AuditoriaComponent implements OnInit {
     const params: string[] = [];
     if (this.q.trim()) params.push(`q=${encodeURIComponent(this.q.trim())}`);
     if (this.modulo) params.push(`modulo=${this.modulo}`);
+    if (this.entidad) params.push(`entidad=${encodeURIComponent(this.entidad)}`);
+    if (this.entidadId) params.push(`entidadId=${this.entidadId}`);
     params.push(`page=${this.pagina}`, 'size=20');
     withLoading(
       this,
@@ -67,7 +90,7 @@ export class AuditoriaComponent implements OnInit {
     ).subscribe({
       next: (r) => {
         this.rows = r.content;
-        this.totalPag = Math.max(r.totalPages ?? 1, 1);
+        this.totalPag = paginasDe(r);
         this.cdr.markForCheck();
       },
       error: (e) => {

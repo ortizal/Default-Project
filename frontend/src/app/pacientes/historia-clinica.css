@@ -1,0 +1,256 @@
+/* ---------------------------------------------------------------------
+   Historia clínica (Fase B): pestañas, fichas clínicas y línea de tiempo
+   --------------------------------------------------------------------- */
+
+.tabs-historia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 14px;
+}
+
+.panel-historia {
+  padding: 18px;
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.resumen-extra {
+  margin-top: 18px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chips-filtro {
+  margin: 4px 0 14px;
+}
+
+.chip-filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 1px solid var(--ls-border);
+  border-radius: 999px;
+  background: var(--ls-surface);
+  color: var(--ls-text, inherit);
+  font: inherit;
+  font-size: var(--ls-text-xs, 0.75rem);
+  cursor: pointer;
+}
+
+.chip-filtro:hover {
+  border-color: var(--ls-primary);
+}
+
+.chip-filtro.chip-activo {
+  border-color: var(--ls-primary);
+  background: var(--ls-primary-soft);
+  color: var(--ls-primary-text);
+  font-weight: 600;
+}
+
+.chip-filtro:focus-visible {
+  outline: 2px solid var(--ls-focus, var(--ls-primary));
+  outline-offset: 2px;
+}
+
+.chip-contador {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ls-bg, var(--ls-surface));
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista-clinica {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--ls-text-sm, 0.875rem);
+}
+
+.stats-historia {
+  display: flex;
+  gap: 10px;
+}
+
+.stats-historia .stat {
+  background: var(--ls-surface-2, var(--ls-surface));
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-sm);
+  padding: 10px 14px;
+  min-width: 96px;
+}
+
+.stats-historia .stat-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stats-historia .stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ls-muted);
+}
+
+.grupo-antecedente {
+  margin-top: 16px;
+}
+
+.ficha-examen,
+.ficha-evolucion {
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  padding: 14px;
+  margin-top: 12px;
+  background: var(--ls-surface);
+}
+
+.ficha-examen header,
+.ficha-evolucion header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.soap,
+.adendas {
+  border-left: 3px solid var(--ls-border);
+  padding-left: 10px;
+}
+
+.adenda {
+  margin: 4px 0;
+}
+
+.soap-form summary {
+  cursor: pointer;
+  font-size: var(--ls-text-xs, 0.8rem);
+  color: var(--ls-muted);
+}
+
+/* Línea de tiempo ---------------------------------------------------- */
+
+.timeline {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: 0;
+  width: 1px;
+  background: var(--ls-border);
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin-top: 5px;
+  border-radius: 50%;
+  border: 2px solid var(--ls-border);
+  background: var(--ls-surface);
+}
+
+.timeline-dot[data-tipo="EVOLUCION"] {
+  border-color: var(--ls-primary);
+  background: var(--ls-primary-soft, var(--ls-surface));
+}
+
+.timeline-dot[data-tipo="DIAGNOSTICO"] {
+  border-color: var(--ls-warning);
+}
+
+.timeline-dot[data-tipo="EXAMEN"] {
+  border-color: var(--ls-info);
+}
+
+.timeline-dot[data-tipo="CITA"] {
+  border-color: var(--ls-success);
+}
+
+.timeline-dot[data-tipo="ODONTOGRAMA"] {
+  border-color: var(--ls-primary-dark);
+  background: var(--ls-primary-soft, var(--ls-surface));
+}
+
+.timeline-dot[data-tipo="PERIODONCIA"] {
+  border-color: var(--ls-success);
+  background: var(--ls-success-soft, var(--ls-surface));
+}
+
+.timeline-dot[data-tipo="PLAN"] {
+  border-color: var(--ls-primary-text);
+}
+
+.timeline-dot[data-tipo="PROCEDIMIENTO"] {
+  border-color: var(--ls-primary-dark);
+}
+
+.timeline-dot[data-tipo="RECETA"] {
+  border-color: var(--ls-warning);
+  background: var(--ls-warning-soft, var(--ls-surface));
+}
+
+.timeline-dot[data-tipo="ARCHIVO"] {
+  border-color: var(--ls-info);
+}
+
+.timeline-dot[data-tipo="CONSENTIMIENTO"] {
+  border-color: var(--ls-info);
+  background: var(--ls-info-soft, var(--ls-surface));
+}
+
+.timeline-cuerpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

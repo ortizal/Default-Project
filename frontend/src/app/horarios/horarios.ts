@@ -6,10 +6,15 @@ import { DIAS, ExcepcionHorario, Horario, nombreEstado, Odontologo } from '../co
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiTableComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-horarios',
   templateUrl: './horarios.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class HorariosComponent implements OnInit {
   private readonly api = inject(Api);

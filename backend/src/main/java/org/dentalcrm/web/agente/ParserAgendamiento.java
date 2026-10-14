@@ -19,10 +19,10 @@ import java.util.regex.Pattern;
  * odontólogo a partir de un mensaje libre ("cita con el dr perez manana a las 10",
  * "viernes 19", "10:30", "limpieza", ...).
  */
-final class ParserAgendamiento {
+public final class ParserAgendamiento {
 
-    record EntradaAgendamiento(LocalDate fecha, LocalTime horaInicio, Long servicioId, Long doctorId) {
-        static EntradaAgendamiento vacia() {
+    public record EntradaAgendamiento(LocalDate fecha, LocalTime horaInicio, Long servicioId, Long doctorId) {
+        public static EntradaAgendamiento vacia() {
             return new EntradaAgendamiento(null, null, null, null);
         }
     }
@@ -60,7 +60,7 @@ final class ParserAgendamiento {
     private ParserAgendamiento() {
     }
 
-    static EntradaAgendamiento parsear(String texto, LocalDate hoy,
+    public static EntradaAgendamiento parsear(String texto, LocalDate hoy,
                                        List<Servicio> servicios, List<Odontologo> odontologos) {
         String t = normalizar(texto);
         return new EntradaAgendamiento(
@@ -81,7 +81,7 @@ final class ParserAgendamiento {
      * @return la hora no se interpreta aquí: se valida contra los cupos reales
      *         del día, así que siempre vuelve vacía
      */
-    static EntradaAgendamiento entradaParaPaso(String paso, String texto, LocalDate hoy,
+    public static EntradaAgendamiento entradaParaPaso(String paso, String texto, LocalDate hoy,
                                                List<Servicio> servicios, List<Odontologo> odontologos) {
         String t = normalizar(texto);
         return switch (paso == null ? "" : paso) {
@@ -95,7 +95,7 @@ final class ParserAgendamiento {
         };
     }
 
-    static Optional<LocalDate> fechaDelTexto(String t, LocalDate hoy) {
+    public static Optional<LocalDate> fechaDelTexto(String t, LocalDate hoy) {
         t = normalizar(t);
         if (t.isBlank()) {
             return Optional.empty();
@@ -144,7 +144,7 @@ final class ParserAgendamiento {
         return Optional.empty();
     }
 
-    static Optional<LocalTime> horaDelTexto(String t) {
+    public static Optional<LocalTime> horaDelTexto(String t) {
         t = normalizar(t);
         if (contienePalabra(t, "mediodia") || t.contains("medio dia")) {
             return Optional.of(LocalTime.NOON);
@@ -165,7 +165,7 @@ final class ParserAgendamiento {
         return Optional.empty();
     }
 
-    static Optional<Long> servicioDelTexto(String t, List<Servicio> servicios) {
+    public static Optional<Long> servicioDelTexto(String t, List<Servicio> servicios) {
         if (servicios.isEmpty()) {
             return Optional.empty();
         }
@@ -189,7 +189,7 @@ final class ParserAgendamiento {
         return Optional.empty();
     }
 
-    static Optional<Long> doctorDelTexto(String t, List<Odontologo> odontologos) {
+    public static Optional<Long> doctorDelTexto(String t, List<Odontologo> odontologos) {
         if (odontologos.isEmpty()) {
             return Optional.empty();
         }
@@ -237,7 +237,7 @@ final class ParserAgendamiento {
         return false;
     }
 
-    static String normalizar(String texto) {
+    public static String normalizar(String texto) {
         if (texto == null) {
             return "";
         }
@@ -246,7 +246,7 @@ final class ParserAgendamiento {
         return sinAcentos.trim().toLowerCase(Locale.ROOT);
     }
 
-    static boolean contienePalabra(String texto, String palabra) {
+    public static boolean contienePalabra(String texto, String palabra) {
         if (texto == null || palabra == null || palabra.isBlank()) {
             return false;
         }
@@ -294,7 +294,7 @@ final class ParserAgendamiento {
         return Optional.empty();
     }
 
-    static Optional<Integer> indiceDeTexto(String texto, int tamano) {
+    public static Optional<Integer> indiceDeTexto(String texto, int tamano) {
         String t = normalizar(texto).trim();
         for (Map.Entry<String, Integer> numero : NUMEROS.entrySet()) {
             if (t.matches("(?:opcion|opcion|el|la|numero|#)?\\s*" + numero.getKey())) {

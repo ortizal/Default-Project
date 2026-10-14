@@ -1,0 +1,471 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="toolbar">
+  <span class="card-title">Planes de tratamiento ({{ planes.length }})</span>
+  @if (escribir) {
+    <ui-button variant="primary" (clicked)="nuevoPlan()">+ Nuevo plan</ui-button>
+  }
+</div>
+
+@if (!planes.length) {
+  <p class="empty">Este paciente todavía no tiene planes de tratamiento.</p>
+} @else {
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">No.</th>
+          <th scope="col">Título</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Líneas</th>
+          <th scope="col">Presupuestos</th>
+          <th scope="col">Total</th>
+          <th scope="col">Odontólogo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of planes; track p.id) {
+          <tr [class.fila-sel]="plan?.id === p.id">
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(p)">{{ p.id }}</button>
+            </td>
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(p)">{{ p.titulo }}</button>
+            </td>
+            <td><ui-badge [tone]="toneEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</ui-badge></td>
+            <td>{{ p.fecha }}</td>
+            <td>{{ p.lineas }}</td>
+            <td>{{ p.presupuestos }}</td>
+            <td>$ {{ p.total.toFixed(2) }}</td>
+            <td>{{ p.odontologo || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (plan; as p) {
+  <section class="detalle-plan" aria-label="Detalle del plan">
+    <div class="toolbar">
+      <span class="card-title">{{ p.titulo }}</span>
+      <ui-badge [tone]="toneEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</ui-badge>
+      <span class="muted text-sm">Plan No. {{ p.id }} · {{ p.fecha }}</span>
+      @if (p.odontologo) {
+        <span class="muted text-sm">{{ p.odontologo }}</span>
+      }
+      <span class="separador"></span>
+      @if (puedeEditarPlan) {
+        <ui-button size="sm" (clicked)="editarPlan()">Editar</ui-button>
+        <ui-button size="sm" (clicked)="abrirCambioEstado()">Cambiar estado</ui-button>
+        <ui-button size="sm" variant="danger" (clicked)="eliminarPlan()">Eliminar</ui-button>
+      }
+      <ui-button size="sm" (clicked)="descargarPdf()">Descargar PDF</ui-button>
+    </div>
+
+    @if (p.observaciones) {
+      <p class="muted text-sm">{{ p.observaciones }}</p>
+    }
+
+    <div class="totales">
+      <span>Subtotal: <strong>$ {{ p.subtotal.toFixed(2) }}</strong></span>
+      <span>Total: <strong>$ {{ p.total.toFixed(2) }}</strong></span>
+      <span>Líneas: <strong>{{ p.lineas.length }}</strong></span>
+      <span>Presupuestos: <strong>{{ p.presupuestos.length }}</strong></span>
+    </div>
+
+    <div class="toolbar">
+      <span class="card-title">Líneas del plan</span>
+      @if (puedeEditarPlan) {
+        <ui-button size="sm" variant="primary" (clicked)="nuevaLinea()">+ Agregar línea</ui-button>
+      }
+    </div>
+    @if (!p.lineas.length) {
+      <p class="empty">Sin líneas. Agrega los procedimientos para poder emitir el presupuesto.</p>
+    } @else {
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Fase</th>
+              <th scope="col">Diente</th>
+              <th scope="col">Procedimiento</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Ses.</th>
+              <th scope="col">Precio</th>
+              <th scope="col">Dto %</th>
+              <th scope="col">Subtotal</th>
+              <th scope="col">Estado</th>
+              @if (puedeEditarPlan || enEjecucion) {
+                <th scope="col">Acciones</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of p.lineas; track l.id) {
+              <tr>
+                <td>{{ l.numero }}</td>
+                <td>{{ l.fase }}</td>
+                <td>
+                  @if (l.diente) {
+                    {{ l.diente }}@if (l.superficie) { · {{ l.superficie }} }
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  {{ l.procedimiento }}
+                  @if (l.diagnostico) {
+                    <span class="muted text-sm"> · {{ l.diagnostico }}</span>
+                  }
+                </td>
+                <td>{{ l.prioridad }}</td>
+                <td>{{ l.sesiones }}</td>
+                <td>$ {{ l.precioUnitario.toFixed(2) }}</td>
+                <td>{{ l.descuentoPct }}</td>
+                <td>$ {{ l.subtotal.toFixed(2) }}</td>
+                <td>
+                  <ui-badge [tone]="toneEstado(l.estado)">{{ etiquetaEstado(l.estado) }}</ui-badge>
+                </td>
+                @if (puedeEditarPlan || enEjecucion) {
+                  <td class="acciones">
+                    @if (puedeEditarPlan) {
+                      <button
+                        type="button"
+                        class="btn small menu-trigger"
+                        [matMenuTriggerFor]="mLinea"
+                        [attr.aria-label]="'Acciones de la línea ' + l.procedimiento"
+                      >
+                        <mat-icon>menu</mat-icon>
+                        <mat-icon class="caret">arrow_drop_down</mat-icon>
+                      </button>
+                      <mat-menu #mLinea="matMenu">
+                        <button mat-menu-item (click)="editarLinea(l)">Editar</button>
+                        <button mat-menu-item class="peligro" (click)="eliminarLinea(l)">Eliminar</button>
+                      </mat-menu>
+                    }
+                    @if (enEjecucion) {
+                      <label class="sr-only" for="estado-linea-{{ l.id }}">Estado de la línea {{ l.procedimiento }}</label>
+                      <select
+                        id="estado-linea-{{ l.id }}"
+                        class="input estado-linea"
+                        [ngModel]="l.estado"
+                        (ngModelChange)="cambiarEstadoLinea(l, $event)"
+                      >
+                        @for (e of estadosLinea; track e.id) {
+                          <option [value]="e.id">{{ e.label }}</option>
+                        }
+                      </select>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <div class="toolbar">
+      <span class="card-title">Presupuestos</span>
+      @if (escribir && p.lineas.length && p.estado !== 'COMPLETADO' && p.estado !== 'CANCELADO') {
+        <ui-button size="sm" variant="primary" (clicked)="emitirPresupuesto()">Emitir presupuesto</ui-button>
+      }
+    </div>
+    @if (!p.presupuestos.length) {
+      <p class="empty">Sin presupuestos emitidos.</p>
+    } @else {
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th scope="col">No.</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Subtotal</th>
+              <th scope="col">Descuento</th>
+              <th scope="col">Total</th>
+              <th scope="col">Vigente</th>
+              <th scope="col">Firmante</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of p.presupuestos; track b.id) {
+              <tr>
+                <td>{{ b.numero }}</td>
+                <td>{{ b.fecha }}</td>
+                <td><ui-badge [tone]="toneEstado(b.estado)">{{ etiquetaEstado(b.estado) }}</ui-badge></td>
+                <td>$ {{ b.subtotal.toFixed(2) }}</td>
+                <td>$ {{ b.descuento.toFixed(2) }}</td>
+                <td>$ {{ b.total.toFixed(2) }}</td>
+                <td>{{ b.vigente ? 'Sí' : 'No' }}</td>
+                <td>{{ b.firmante || '—' }}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn small menu-trigger"
+                    [matMenuTriggerFor]="mPres"
+                    [attr.aria-label]="'Acciones del presupuesto ' + b.numero"
+                  >
+                    <mat-icon>menu</mat-icon>
+                    <mat-icon class="caret">arrow_drop_down</mat-icon>
+                  </button>
+                  <mat-menu #mPres="matMenu">
+                    <button mat-menu-item (click)="verPresupuesto(b)">Ver detalle</button>
+                  </mat-menu>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}
+
+<!-- ============================ MODAL PLAN ============================= -->
+@if (modalPlan) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Plan de tratamiento" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoPlan ? 'Editar plan' : 'Nuevo plan de tratamiento' }}</h2>
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="pl-titulo">Título *</label>
+          <input id="pl-titulo" class="input" maxlength="255" [(ngModel)]="formPlan.titulo" placeholder="Ortodoncia fija, Rehabilitación…" />
+        </div>
+        <div>
+          <label class="label" for="pl-odo">Odontólogo</label>
+          <select id="pl-odo" class="input" [(ngModel)]="formPlan.odontologoId">
+            <option [ngValue]="null">Sin asignar</option>
+            @for (o of odontologos; track o.id) {
+              <option [ngValue]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="pl-obs">Observaciones</label>
+          <textarea id="pl-obs" class="input" [(ngModel)]="formPlan.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalPlan = false">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!formPlan.titulo.trim()" (click)="guardarPlan()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================= MODAL ESTADO PLAN ========================= -->
+@if (modalEstado && plan) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Cambiar estado del plan" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Cambiar estado del plan</h2>
+      <div class="sub">
+        Estado actual: <strong>{{ etiquetaEstado(plan.estado) }}</strong>
+      </div>
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="pl-destino">Nuevo estado</label>
+          <select id="pl-destino" class="input" [(ngModel)]="destino">
+            @for (d of transicionesDe(plan.estado); track d) {
+              <option [value]="d">{{ etiquetaEstado(d) }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="pl-coment">Comentario</label>
+          <textarea id="pl-coment" class="input" [(ngModel)]="comentarioEstado"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalEstado = false">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!destino" (click)="cambiarEstadoPlan()">Aplicar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL LÍNEA ============================ -->
+@if (modalLinea) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Línea del plan" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoLinea ? 'Editar línea' : 'Nueva línea' }}</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="ln-num">Número</label>
+          <input id="ln-num" class="input" type="number" min="1" [(ngModel)]="formLinea.numero" placeholder="Automático" />
+        </div>
+        <div>
+          <label class="label" for="ln-fase">Fase *</label>
+          <input id="ln-fase" class="input" type="number" min="1" [(ngModel)]="formLinea.fase" />
+        </div>
+        <div>
+          <label class="label" for="ln-diente">Diente (FDI)</label>
+          <input id="ln-diente" class="input" type="number" min="11" max="85" [(ngModel)]="formLinea.diente" placeholder="26, 41…" />
+        </div>
+        <div>
+          <label class="label" for="ln-sup">Superficie</label>
+          <select id="ln-sup" class="input" [(ngModel)]="formLinea.superficie">
+            @for (s of superficies; track s) {
+              <option [value]="s">{{ s === '' ? 'Sin superficie' : s }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="ln-proc">Procedimiento *</label>
+          <input id="ln-proc" class="input" maxlength="255" [(ngModel)]="formLinea.procedimiento" />
+        </div>
+        <div>
+          <label class="label" for="ln-dx">Diagnóstico</label>
+          <input id="ln-dx" class="input" maxlength="150" [(ngModel)]="formLinea.diagnostico" />
+        </div>
+        <div>
+          <label class="label" for="ln-prio">Prioridad</label>
+          <select id="ln-prio" class="input" [(ngModel)]="formLinea.prioridad">
+            @for (p of prioridades; track p.id) {
+              <option [value]="p.id">{{ p.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label" for="ln-ses">Sesiones *</label>
+          <input id="ln-ses" class="input" type="number" min="1" [(ngModel)]="formLinea.sesiones" />
+        </div>
+        <div>
+          <label class="label" for="ln-precio">Precio unitario *</label>
+          <input id="ln-precio" class="input" type="number" min="0" step="0.01" [(ngModel)]="formLinea.precioUnitario" />
+        </div>
+        <div>
+          <label class="label" for="ln-dto">Descuento %</label>
+          <input id="ln-dto" class="input" type="number" min="0" max="100" step="0.01" [(ngModel)]="formLinea.descuentoPct" />
+        </div>
+        <div class="full">
+          <label class="label" for="ln-notas">Notas</label>
+          <textarea id="ln-notas" class="input" [(ngModel)]="formLinea.notas"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalLinea = false">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!formLinea.procedimiento.trim()" (click)="guardarLinea()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ======================== MODAL PRESUPUESTO ========================== -->
+@if (modalPresupuesto && presupuesto; as b) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Presupuesto" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Presupuesto No. {{ b.numero }}</h2>
+      <div class="sub">
+        <ui-badge [tone]="toneEstado(b.estado)">{{ etiquetaEstado(b.estado) }}</ui-badge>
+        @if (b.vigente) {
+          <span class="muted"> · vigente</span>
+        }
+        · {{ b.fecha }}
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Diente</th>
+              <th scope="col">Procedimiento</th>
+              <th scope="col">Ses.</th>
+              <th scope="col">Precio</th>
+              <th scope="col">Dto %</th>
+              <th scope="col">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of b.lineas; track l.id) {
+              <tr>
+                <td>{{ l.numero }}</td>
+                <td>
+                  @if (l.diente) {
+                    {{ l.diente }}@if (l.superficie) { · {{ l.superficie }} }
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>{{ l.procedimiento }}</td>
+                <td>{{ l.sesiones }}</td>
+                <td>$ {{ l.precioUnitario.toFixed(2) }}</td>
+                <td>{{ l.descuentoPct }}</td>
+                <td>$ {{ l.subtotal.toFixed(2) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="totales">
+        <span>Subtotal: <strong>$ {{ b.subtotal.toFixed(2) }}</strong></span>
+        <span>Descuento: <strong>$ {{ b.descuento.toFixed(2) }}</strong></span>
+        <span>Total: <strong>$ {{ b.total.toFixed(2) }}</strong></span>
+      </div>
+
+      @if (b.firmante) {
+        <p class="text-sm">
+          Aceptado por <strong>{{ b.firmante }}</strong>
+          @if (b.aceptadoEn) {
+            <span class="muted"> · {{ b.aceptadoEn }}</span>
+          }
+        </p>
+        @if (b.firmaHash) {
+          <p class="muted firma">SHA-256: {{ b.firmaHash }}</p>
+        }
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalPresupuesto = false">Cerrar</button>
+        @for (accion of accionesPresupuesto(); track accion) {
+          @if (escribir) {
+            <button
+              type="button"
+              class="btn"
+              [class.primary]="accion === 'ACEPTADO'"
+              [class.danger]="accion === 'RECHAZADO' || accion === 'ANULADO'"
+              (click)="accionPresupuesto(accion)"
+            >
+              {{ verboPresupuesto(accion) }}
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================= MODAL ACEPTACIÓN ========================== -->
+@if (modalAceptacion && presupuesto) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Aceptación del presupuesto" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Aceptar presupuesto No. {{ presupuesto.numero }}</h2>
+      <div class="sub">La aceptación queda firmada con SHA-256 y el plan pasa a Aceptado.</div>
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="ac-firmante">Firmante *</label>
+          <input id="ac-firmante" class="input" maxlength="150" [(ngModel)]="firmante" placeholder="Nombre y apellido de quien acepta" />
+        </div>
+        <div class="full">
+          <label class="label" for="ac-coment">Comentario</label>
+          <textarea id="ac-coment" class="input" [(ngModel)]="comentarioAceptacion"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="modalAceptacion = false">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!firmante.trim()" (click)="aceptarPresupuesto()">Aceptar</button>
+      </div>
+    </div>
+  </div>
+}

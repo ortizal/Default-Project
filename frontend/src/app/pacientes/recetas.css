@@ -1,0 +1,112 @@
+/* Estilos propios de la pestaña "Recetas" (Fase E, §4.12).
+   Todo lo demás lo aportan los estilos globales del sistema. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--ls-primary-text);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ls-primary-dark);
+  }
+}
+
+.btn-link[disabled] {
+  color: var(--ls-muted-text, #777);
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.tbl tr.fila-sel td,
+.tbl tr.fila-sel th {
+  background: var(--ls-primary-soft);
+}
+
+.detalle-receta {
+  margin-top: var(--ls-space-5);
+}
+
+.detalle-receta > .toolbar {
+  flex-wrap: wrap;
+}
+
+.separador {
+  flex: 1 1 auto;
+}
+
+.totales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ls-space-4);
+  margin: var(--ls-space-3) 0;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  background: var(--ls-surface-2);
+  font-size: var(--ls-text-sm);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+  white-space: nowrap;
+}
+
+.obs {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receta .num {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.receta .medicamento {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.receta .instrucciones {
+  max-width: 320px;
+  white-space: normal;
+}
+
+.lineas .input {
+  min-width: 110px;
+}
+
+.lineas .ancho {
+  min-width: 150px;
+}
+
+.lineas-acciones {
+  margin-top: var(--ls-space-3);
+}
+
+.modal .num {
+  width: 92px;
+  padding: 4px 6px;
+}

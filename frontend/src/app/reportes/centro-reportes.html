@@ -1,0 +1,44 @@
+<ui-page-header title="Centro de reportes" />
+
+<div class="toolbar" role="search">
+  <div class="form-field">
+    <label class="label" for="catalogo-busqueda">Buscar reporte</label>
+    <input id="catalogo-busqueda" class="input sm" type="search" [(ngModel)]="busqueda"
+           placeholder="Nombre o descripción" data-testid="catalogo-busqueda">
+  </div>
+  <div class="form-field">
+    <label class="label" for="catalogo-categoria">Dominio</label>
+    <select id="catalogo-categoria" class="input sm" [(ngModel)]="categoria">
+      @for (item of categorias; track item) {
+        <option [value]="item">{{ item }}</option>
+      }
+    </select>
+  </div>
+  <button class="btn outline" type="button" (click)="limpiar()">Limpiar filtros</button>
+</div>
+
+<section class="mt-4" aria-label="Reportes disponibles" data-testid="catalogo-reportes">
+  @if (disponibles.length) {
+    <div class="grid cols-2">
+      @for (reporte of disponibles; track reporte.ruta) {
+        <article class="card m-0 report-entry">
+          <div class="card-header">
+            <div>
+              <span class="muted text-sm">{{ reporte.categoria }}</span>
+              <h2 class="card-title">{{ reporte.nombre }}</h2>
+            </div>
+          </div>
+          <p>{{ reporte.descripcion }}</p>
+          <dl class="report-meta">
+            <div><dt>Filtros</dt><dd>{{ reporte.filtros }}</dd></div>
+            <div><dt>Fuente</dt><dd><code>{{ reporte.fuente }}</code></dd></div>
+            <div><dt>Salida</dt><dd>{{ reporte.formatos }}</dd></div>
+          </dl>
+          <a class="btn primary" [routerLink]="reporte.ruta">Abrir reporte</a>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty" data-testid="catalogo-vacio">No hay reportes autorizados que coincidan con estos filtros.</div>
+  }
+</section>

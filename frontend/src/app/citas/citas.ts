@@ -6,11 +6,16 @@ import { Cita, Odontologo, Servicio, Paciente, Page } from '../core/models';
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiPaginationComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-citas',
   templateUrl: './citas.html',
   styleUrl: './citas.css',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
 })
 export class CitasComponent implements OnInit {
   private readonly api = inject(Api);

@@ -1,0 +1,153 @@
+<ui-page-header title="Reportes clínicos" />
+
+<div class="toolbar">
+  <div class="form-field">
+    <label class="label" for="rc-desde">Desde</label>
+    <input id="rc-desde" class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()">
+  </div>
+  <div class="form-field">
+    <label class="label" for="rc-hasta">Hasta</label>
+    <input id="rc-hasta" class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar()">
+  </div>
+  <div class="form-field">
+    <label class="label" for="rc-limite">Mostrar</label>
+    <select id="rc-limite" class="input sm" [(ngModel)]="limite" (change)="cargar()">
+      @for (n of limites; track n) {
+        <option [ngValue]="n">{{ n }} filas</option>
+      }
+    </select>
+  </div>
+  <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
+</div>
+
+@if (error) {
+  <div class="msg error" data-testid="reportes-error">{{ error }}</div>
+}
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando reportes…</div>
+}
+
+@if (e; as r) {
+  <div class="grid cols-3" data-testid="reportes-clinicos-totales">
+    <div class="card stat m-0"><div class="num">{{ r.totales.evoluciones }}</div><div class="lbl">Evoluciones</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.totales.examenes }}</div><div class="lbl">Exámenes</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.totales.diagnosticos }}</div><div class="lbl">Diagnósticos</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.totales.recetas }}</div><div class="lbl">Recetas</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.totales.planes }}</div><div class="lbl">Planes de tratamiento</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.totales.pacientesAtendidos }}</div><div class="lbl">Pacientes atendidos</div></div>
+  </div>
+
+  <div class="grid cols-2 mt-4">
+    <div class="card m-0">
+      <div class="card-header">
+        <h2 class="card-title">Diagnósticos frecuentes</h2>
+        <span class="muted text-sm">{{ r.desde }} → {{ r.hasta }}</span>
+      </div>
+      @if (r.diagnosticosFrecuentes.length) {
+        <div class="tbl-wrap scrollable" tabindex="0">
+          <table class="tbl" data-testid="tabla-diagnosticos-frecuentes">
+          <thead>
+            <tr><th>Diagnóstico</th><th class="text-right">Registros</th><th class="text-right">Pacientes</th></tr>
+          </thead>
+          <tbody>
+            @for (d of r.diagnosticosFrecuentes; track d.nombre) {
+              <tr>
+                <td>{{ d.nombre }}</td>
+                <td class="text-right">{{ d.total }}</td>
+                <td class="text-right">{{ d.pacientes }}</td>
+              </tr>
+            }
+          </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty">Sin diagnósticos en el período.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Producción clínica</h2></div>
+      @if (r.produccionClinica.length) {
+        <div class="tbl-wrap scrollable" tabindex="0">
+          <table class="tbl" data-testid="tabla-produccion-clinica">
+          <thead>
+            <tr><th>Procedimiento</th><th class="text-right">Cantidad</th><th class="text-right">Total</th></tr>
+          </thead>
+          <tbody>
+            @for (p of r.produccionClinica; track p.procedimiento) {
+              <tr>
+                <td>{{ p.procedimiento }}</td>
+                <td class="text-right">{{ p.cantidad }}</td>
+                <td class="text-right">{{ moneda(p.total) }}</td>
+              </tr>
+            }
+          </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty">Sin procedimientos completados en el período.</div>
+      }
+    </div>
+  </div>
+
+  <div class="grid cols-2 mt-4">
+    <div class="card m-0">
+      <div class="card-header">
+        <h2 class="card-title">Tratamientos pendientes</h2>
+        <span class="muted text-sm">Estado actual del plan</span>
+      </div>
+      @if (r.tratamientosPendientes.length) {
+        <div class="tbl-wrap scrollable" tabindex="0">
+          <table class="tbl" data-testid="tabla-tratamientos-pendientes">
+          <thead>
+            <tr><th>Paciente</th><th>Procedimiento</th><th>Pieza</th><th>Prioridad</th><th>Estado</th><th class="text-right">Total</th></tr>
+          </thead>
+          <tbody>
+            @for (t of r.tratamientosPendientes; track t.lineaId) {
+              <tr>
+                <td>{{ t.paciente }}</td>
+                <td>{{ t.procedimiento }}</td>
+                <td>{{ pieza(t.diente, t.superficie) }}</td>
+                <td><ui-badge [tone]="tonePrioridad(t.prioridad)">{{ etiquetaPrioridad(t.prioridad) }}</ui-badge></td>
+                <td>{{ t.estado || '—' }}</td>
+                <td class="text-right">{{ moneda(t.precio) }}</td>
+              </tr>
+            }
+          </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty">Sin tratamientos pendientes.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Continuidad de la atención</h2></div>
+      <div class="grid cols-3" data-testid="continuidad">
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.citasAtendidas }}</div><div class="lbl">Citas atendidas</div></div>
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.citasConfirmadas }}</div><div class="lbl">Confirmadas</div></div>
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.citasCanceladas }}</div><div class="lbl">Canceladas</div></div>
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.citasNoAsistio }}</div><div class="lbl">No asistió</div></div>
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.pacientesActivos }}</div><div class="lbl">Pacientes activos</div></div>
+        <div class="card stat m-0"><div class="num">{{ r.continuidad.pacientesSinProximaCita }}</div><div class="lbl">Sin próxima cita</div></div>
+      </div>
+      <div class="card-header"><h2 class="card-title">Sin actividad en 90 días</h2></div>
+      @if (r.continuidad.sinActividad90d.length) {
+        <div class="tbl-wrap scrollable" tabindex="0">
+          <table class="tbl" data-testid="tabla-sin-actividad">
+          <thead>
+            <tr><th>Paciente</th></tr>
+          </thead>
+          <tbody>
+            @for (s of r.continuidad.sinActividad90d; track s.pacienteId) {
+              <tr><td>{{ s.paciente }}</td></tr>
+            }
+          </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty">Todos los pacientes tuvieron actividad en los últimos 90 días.</div>
+      }
+    </div>
+  </div>
+}

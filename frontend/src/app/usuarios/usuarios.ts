@@ -12,10 +12,15 @@ import {
   UiBadgeComponent,
 } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-usuarios',
   templateUrl: './usuarios.html',
   imports: [
+    MatIconModule,
+    MatMenuModule,
     CommonModule,
     FormsModule,
     UiPageHeaderComponent,

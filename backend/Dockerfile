@@ -7,7 +7,9 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN useradd --system --uid 1001 dentalcrm
+RUN useradd --system --uid 1001 dentalcrm \
+    && mkdir -p /app/data/archivos \
+    && chown -R dentalcrm:dentalcrm /app/data
 COPY --from=build /app/target/*.jar app.jar
 USER dentalcrm
 EXPOSE 8080

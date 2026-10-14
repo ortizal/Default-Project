@@ -34,8 +34,14 @@
               <td>{{ h.intervaloMinutos }} min</td>
               <td><span class="badge" [ngClass]="h.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ h.estado }}</span></td>
               <td class="flex">
-                <button class="btn small" (click)="editar(h)">Editar</button>
-                <button class="btn small outline danger" (click)="eliminar(h)">Eliminar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mHor" [attr.aria-label]="'Acciones del horario del ' + DIAS[h.diaSemana - 1]">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mHor="matMenu">
+                  <button mat-menu-item (click)="editar(h)">Editar</button>
+                  <button mat-menu-item class="peligro" (click)="eliminar(h)">Eliminar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {
@@ -71,7 +77,13 @@
               <td>{{ rangoExcepcion(e) }}</td>
               <td>{{ e.motivo || '—' }}</td>
               <td class="flex">
-                <button class="btn small outline danger" (click)="eliminarExcepcion(e)">Eliminar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mExc" [attr.aria-label]="'Acciones de la excepción del ' + e.fecha">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mExc="matMenu">
+                  <button mat-menu-item class="peligro" (click)="eliminarExcepcion(e)">Eliminar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { Paciente, Page, Tutor } from '../core/models';
 import { AppDateComponent } from '../core/app-date.component';
@@ -14,10 +15,15 @@ import {
   UiConfirmService,
 } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-pacientes',
   templateUrl: './pacientes.html',
   imports: [
+    MatIconModule,
+    MatMenuModule,
     CommonModule,
     FormsModule,
     AppDateComponent,
@@ -26,6 +32,7 @@ import {
     UiTableComponent,
     UiPaginationComponent,
     UiBadgeComponent,
+    RouterLink,
   ],
 })
 export class PacientesComponent implements OnInit {

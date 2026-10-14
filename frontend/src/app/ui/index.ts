@@ -1,4 +1,4 @@
-// Barrel del sistema de componentes UI (§6 del spec "Little Smile").
+// Barrel del sistema de componentes UI (§6 del spec "CRM Dental AT").
 // Toda la lógica visual vive aquí; los módulos sólo componen.
 export * from './ui-button';
 export * from './ui-table';

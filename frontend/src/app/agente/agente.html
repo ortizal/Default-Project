@@ -30,7 +30,13 @@
                 {{ c.ultimoMensaje || '—' }} <span class="text-xs">({{ c.ultimoMensajeAt | date:'HH:mm' }})</span>
               </td>
               <td>
-                <button class="btn small danger" (click)="transferir(c)">Transferir a humano</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mAg" [attr.aria-label]="'Acciones de la conversación de ' + (c.nombreContacto || c.telefono)">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mAg="matMenu">
+                  <button mat-menu-item class="peligro" (click)="transferir(c)">Transferir a humano</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

@@ -1,4 +1,4 @@
-# Entorno de desarrollo - CRM Odontológico
+# Entorno de desarrollo - CRM Dental AT
 # Copia este archivo a .env y ajusta los valores.
 
 SPRING_PROFILES_ACTIVE=dev

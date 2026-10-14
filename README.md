@@ -1,6 +1,6 @@
-# CRM Odontológico
+# CRM Dental AT
 
-CRM odontológico multi-tenant con gestión de pacientes, agenda, citas, WhatsApp (OpenWA), Google Calendar, reportes y agente de IA conversacional.
+CRM Dental AT — CRM odontológico multi-tenant con gestión de pacientes, agenda, citas, WhatsApp (OpenWA), Google Calendar, reportes y agente de IA conversacional. Marca **ALANTEK**.
 
 ## Stack
 
@@ -152,16 +152,39 @@ npm run e2e                    # Playwright; requiere `ng serve` en :4200
 npx ng build --configuration production   # build de producción (sin warnings)
 ```
 
-Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 21 rutas
-autenticadas, con el formulario y el diálogo abiertos, y en tema oscuro), `qa.spec.ts` (scroll horizontal,
+Suites e2e: `axe.spec.ts` (axe-core: WCAG A/AA + buenas prácticas en las 28 rutas
+autenticadas, con el formulario, el diálogo y un menú de acciones de fila abiertos,
+y en tema oscuro), `qa.spec.ts` (scroll horizontal,
 campos etiquetados, botones nombrados y ≥30 px, ids duplicados, errores de consola,
-Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en las 21 rutas ×
+Escape y diálogos a 360 px), `contraste.spec.ts` (WCAG AA en las 28 rutas ×
 claro/oscuro × preferencia del sistema/manual), `hover.spec.ts` (contraste de los
-estados `:hover` en las 21 rutas — axe y `contraste.spec.ts` sólo miden el estado
-base), `foco.spec.ts` (anillo de foco por teclado en las 21 rutas + login, WCAG 2.4.7
+estados `:hover` en las 28 rutas — axe y `contraste.spec.ts` sólo miden el estado
+base), `foco.spec.ts` (anillo de foco por teclado en las 28 rutas + login, WCAG 2.4.7
 y contraste del anillo ≥3:1, WCAG 1.4.11), `redes.spec.ts` (validación de la publicación en redes sociales),
 `theme.spec.ts` (toggle del topbar), `confirm.spec.ts`
-(diálogo `UiConfirmDialog`), `odontologos.spec.ts` y `calendario.spec.ts` (no destructivos).
+(diálogo `UiConfirmDialog`), `odontologos.spec.ts`, `calendario.spec.ts` (no destructivos),
+`permisos.spec.ts` (menú dinámico por permisos), `odontograma.spec.ts` (dibujo FDI,
+edición de condiciones y permisos de sólo lectura), `planes.spec.ts` (línea y
+presupuesto por UI, aceptación firmada del presupuesto y permisos de sólo lectura) y
+`periodoncia.spec.ts` (mediciones por pieza, comparación de exámenes, PDF y
+permisos de sólo lectura), `recetas.spec.ts` (alta, anulación y PDF de una
+receta, y recepción que sólo puede consultarlas) y `consentimientos.spec.ts`
+(emisión desde plantilla, firma con lienzo, PDF, recepción que sólo puede
+consultarlos y, en menores, el tutor obligatorio del §4.14 con firma
+reservada a ese tutor), `archivos.spec.ts` (subida con clasificación,
+vista previa, descarga y borrado de archivos clínicos §4.15, y recepción
+sin permiso de escritura) y `timeline.spec.ts` (la línea temporal unificada
+§4.16 con sus 11 tipos, chips de filtro con recuento y recepción que sólo
+la consulta), y `reportes-clinicos.spec.ts` (reportes clínicos §4.17: menú
+y página con los seis totales, descarga real del PDF de historia completa
+y recepción que no ve el menú ni el botón y recibe 403), y
+`facturacion.spec.ts` (finanzas internas §3.3/§3.4/§3.12/§3.13: sección
+**Finanzas** del menú, dashboard, cargo con detalle de cuenta, apertura y
+egreso de caja, pestañas de los reportes financieros y recepción sin
+`REPORTES_FINANCIEROS` que recibe 403), y `comprobantes.spec.ts`
+(facturación electrónica §3.5–§3.7: bandeja paginada con filtros, detalle con
+descarga del XML, enlace al historial de auditoría del comprobante, y botón
+**Emitir factura** desde la cuenta con el comprobante resultante).
 
 ### Sistema de diseño
 
@@ -170,8 +193,12 @@ y contraste del anillo ≥3:1, WCAG 1.4.11), `redes.spec.ts` (validación de la 
 - UI kit reutilizable en `src/app/ui/` (8 componentes, todos en uso: `ui-page-header`,
   `ui-table`, `ui-pagination`, `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`,
   `ui-confirm-host` + `UiConfirmService`).
-- Material Angular retematizado a la paleta LS; tema oscuro por clase en `<html>`
+- Marca **CRM Dental AT** (ALANTEK): wordmark tipográfico `.alantek` en login,
+  sidebar y pie; Material Angular retematizado a la paleta; tema oscuro por clase en `<html>`
   con alternador en el topbar (respeta `prefers-color-scheme` mientras no haya elección).
+- Columna de acciones de las tablas: un disparador por fila (icono de menú + flecha)
+  que abre un `mat-menu` con todas las opciones, aunque sea sólo una
+  (patrón replicado en 20 plantillas; ver `docs/ESTADO_DEL_SISTEMA.md` §2.17).
 
 ## Estructura
 
@@ -187,6 +214,7 @@ y contraste del anillo ≥3:1, WCAG 1.4.11), `redes.spec.ts` (validación de la 
 
 | Doc | Contenido |
 |---|---|
+| `docs/ESTADO_DEL_SISTEMA.md` | **Estado total**: funcionalidad, módulos, accesos, operaciones, incidencias y proyección |
 | `docs/ARCHITECTURE.md` | Arquitectura: backend, multi-tenant, frontend, flujo de una cita |
 | `docs/DATABASE.md` | Migraciones Flyway y modelo de datos |
 | `docs/API.md` | Referencia REST (endpoints, auth, formato de error) |

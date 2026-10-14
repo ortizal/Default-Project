@@ -1,0 +1,180 @@
+<ui-page-header title="Finanzas — Reportes" />
+
+<div class="seg" role="tablist" aria-label="Reportes financieros" data-testid="tabs-reportes-fin">
+  @for (p of pestanas; track p) {
+    <button class="seg-btn" type="button" role="tab" [class.active]="pestana === p"
+            [attr.aria-selected]="pestana === p" (click)="seleccionar(p)">
+      {{ etiquetaPestana(p) }}
+    </button>
+  }
+</div>
+
+<div class="toolbar">
+  @if (pestana !== 'saldos') {
+    <div class="form-field">
+      <label class="label" for="rep-desde">Desde</label>
+      <input id="rep-desde" class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()">
+    </div>
+    <div class="form-field">
+      <label class="label" for="rep-hasta">Hasta</label>
+      <input id="rep-hasta" class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar()">
+    </div>
+  }
+  <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
+</div>
+
+@if (error) {
+  <div class="msg error" data-testid="reportes-fin-error">{{ error }}</div>
+}
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando reporte…</div>
+}
+
+@if (pestana === 'ventas' && ventas; as r) {
+  <div class="grid cols-3 mt-4" data-testid="reporte-ventas">
+    <div class="card stat m-0"><div class="num">{{ moneda(r.facturado) }}</div><div class="lbl">Facturado</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.cobrado) }}</div><div class="lbl">Cobrado</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.descuentos) }}</div><div class="lbl">Descuentos</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.devoluciones) }}</div><div class="lbl">Devoluciones</div></div>
+  </div>
+
+  <div class="grid cols-2 mt-4">
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Ventas por día</h2></div>
+      @if (r.porDia.length) {
+        <table class="tbl">
+          <thead><tr><th>Fecha</th><th class="text-right">Facturado</th><th class="text-right">Cobrado</th><th class="text-right">Mov.</th></tr></thead>
+          <tbody>
+            @for (d of r.porDia; track d.fecha) {
+              <tr>
+                <td>{{ d.fecha }}</td>
+                <td class="text-right">{{ moneda(d.facturado) }}</td>
+                <td class="text-right">{{ moneda(d.cobrado) }}</td>
+                <td class="text-right">{{ d.movimientos }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin movimientos en el período.</div>
+      }
+    </div>
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Cobros por forma de pago</h2></div>
+      @if (r.porFormaPago.length) {
+        <table class="tbl">
+          <thead><tr><th>Forma de pago</th><th class="text-right">Neto</th></tr></thead>
+          <tbody>
+            @for (f of r.porFormaPago; track f.formaPago) {
+              <tr><td>{{ etiquetaFormaPago(f.formaPago) }}</td><td class="text-right">{{ moneda(f.monto) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cobros en el período.</div>
+      }
+      <div class="card-header"><h2 class="card-title">Top servicios</h2></div>
+      @if (r.porServicio.length) {
+        <table class="tbl">
+          <thead><tr><th>Servicio</th><th class="text-right">Facturado</th></tr></thead>
+          <tbody>
+            @for (s of r.porServicio; track s.servicio) {
+              <tr><td>{{ s.servicio }}</td><td class="text-right">{{ moneda(s.facturado) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cargos ligados a un servicio.</div>
+      }
+    </div>
+  </div>
+}
+
+@if (pestana === 'produccion' && produccion; as r) {
+  <div class="card mt-4 m-0" data-testid="reporte-produccion">
+    <div class="card-header">
+      <h2 class="card-title">Producción por odontólogo</h2>
+      <span class="muted text-sm">Total {{ moneda(r.total) }} · {{ r.cargos }} cargos</span>
+    </div>
+    @if (r.porOdontologo.length) {
+      <table class="tbl">
+        <thead>
+          <tr><th>Odontólogo</th><th class="text-right">Cargos</th><th class="text-right">Facturado</th><th class="text-right">Descuentos</th></tr>
+        </thead>
+        <tbody>
+          @for (o of r.porOdontologo; track o.odontologo) {
+            <tr>
+              <td>{{ o.odontologo }}</td>
+              <td class="text-right">{{ o.cargos }}</td>
+              <td class="text-right">{{ moneda(o.facturado) }}</td>
+              <td class="text-right">{{ moneda(o.descuentos) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Sin cargos con odontólogo asignado en el período.</div>
+    }
+  </div>
+}
+
+@if (pestana === 'saldos' && saldos; as r) {
+  <div class="grid cols-3 mt-4" data-testid="reporte-saldos">
+    <div class="card stat m-0"><div class="num">{{ moneda(r.totalPorCobrar) }}</div><div class="lbl">Total por cobrar</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.cantidadCuentas }}</div><div class="lbl">Cuentas con saldo</div></div>
+    <div class="card stat m-0"><div class="num">{{ r.cuentas.length }}</div><div class="lbl">Cuentas listadas</div></div>
+  </div>
+  <div class="card mt-4 m-0">
+    <div class="card-header"><h2 class="card-title">Cuentas con saldo</h2></div>
+    @if (r.cuentas.length) {
+      <table class="tbl">
+        <thead><tr><th>Paciente</th><th>Cédula</th><th>Estado</th><th class="text-right">Saldo</th></tr></thead>
+        <tbody>
+          @for (c of r.cuentas; track c.id) {
+            <tr>
+              <td>{{ c.paciente }}</td>
+              <td>{{ c.cedula || '—' }}</td>
+              <td><ui-badge [tone]="toneEstadoCuenta(c.estado)">{{ etiquetaEstadoCuenta(c.estado) }}</ui-badge></td>
+              <td class="text-right">{{ moneda(c.saldo) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">No hay cuentas pendientes: todo está saldado.</div>
+    }
+  </div>
+}
+
+@if (pestana === 'caja' && caja; as r) {
+  <div class="grid cols-3 mt-4" data-testid="reporte-caja">
+    <div class="card stat m-0"><div class="num">{{ r.cantidadSesiones }}</div><div class="lbl">Sesiones</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.ingresos) }}</div><div class="lbl">Ingresos</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.egresos) }}</div><div class="lbl">Egresos</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.diferenciaTotal) }}</div><div class="lbl">Diferencia total</div></div>
+  </div>
+  <div class="card mt-4 m-0">
+    <div class="card-header"><h2 class="card-title">Sesiones de caja</h2></div>
+    @if (r.sesiones.length) {
+      <table class="tbl">
+        <thead>
+          <tr><th>Fecha</th><th>Caja</th><th class="text-right">Apertura</th>
+              <th class="text-right">Declarado</th><th class="text-right">Diferencia</th></tr>
+        </thead>
+        <tbody>
+          @for (s of r.sesiones; track s.id) {
+            <tr>
+              <td>{{ s.fecha }}</td>
+              <td>{{ s.nombre }}</td>
+              <td class="text-right">{{ moneda(s.apertura) }}</td>
+              <td class="text-right">{{ moneda(s.declarado) }}</td>
+              <td class="text-right">{{ moneda(s.diferencia) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Sin sesiones de caja en el período.</div>
+    }
+  </div>
+}

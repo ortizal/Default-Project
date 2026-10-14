@@ -15,15 +15,26 @@
     box-shadow: inset -12px 0 12px -12px rgba(38, 50, 56, 0.18);
   }
 
-
+  // El scroll horizontal vive en el envoltorio (focoteable, WCAG 2.1.1);
+  // la tabla se estira y deja de scrollear por su cuenta.
+  > table.tbl {
+    display: table;
+    width: 100%;
+    max-width: none;
+    overflow: visible;
+  }
 }
 table.tbl {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--ls-text-sm);
   color: var(--ls-text);
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 
 }
+
 .tbl th {
   position: sticky;
   top: 0;
@@ -104,7 +115,7 @@ table.tbl {
   }
 
   table.tbl {
-    min-width: 640px;
+    min-width: 0;
   }
 
   .tbl th,

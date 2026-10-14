@@ -52,6 +52,8 @@ Capas por dominio:
 | `google` | OAuth 2.0, calendarios, sincronización de eventos |
 | `reporte` | Dashboard y estadísticas (consultas nativas aisladas por tenant) |
 | `usuario` | CRUD con roles; username/email únicos globales |
+| `cuenta` | Libro mayor del paciente (Fase F): cargos, descuentos, abonos, anticipos, devoluciones, saldo y estados `ABIERTA/PARCIAL/PAGADA/CERRADA/ANULADA` |
+| `caja` | Sesiones de caja (una `ABIERTA` por tenant), ingresos/egresos por forma de pago y conciliación declarado vs. esperado |
 | `auditoria` | Registro de acciones con antes/después (JSONB) |
 
 Paquetes transversales:
@@ -74,7 +76,7 @@ Paquetes transversales:
 
 - `POST /api/v1/auth/login` → JWT en respuesta `{token, tokenType, expiresInMs, username, roles}`.
 - Cada petición protegida requiere `Authorization: Bearer <token>`.
-- RBAC: 4 roles (SUPER_ADMIN, ADMIN, ODONTOLOGO, RECEPCION) y 21 permisos; los roles se resuelven en el login y se embeben en el token. Los endpoints autorizan por permiso (`PERMISO_*`).
+- RBAC: 4 roles (SUPER_ADMIN, ADMIN, ODONTOLOGO, RECEPCION) y **49 permisos**; los roles se resuelven en el login y se embeben en el token. Los endpoints autorizan por permiso (`PERMISO_*`).
 
 ## Frontend (`/frontend`)
 
@@ -87,13 +89,17 @@ Angular 22 standalone, TypeScript estricto, build de producción con lazy loadin
   `AuthService` (token/roles/logout), `auth.interceptor` (añade Bearer, redirige en 401), `guards`.
 - Módulos: login, dashboard, pacientes, odontólogos, servicios, horarios, agenda
   (Día/Semana/Mes), citas, whatsapp (sesiones + inbox), plantillas, automatizaciones,
-  notificaciones, google calendar, reportes, agente, usuarios, auditoría.
+  notificaciones, google calendar, reportes, agente, usuarios, auditoría,
+  historia clínica (odontograma, planes, recetas, consentimientos, archivos y
+  timeline) y **facturación** (dashboard, cuentas, caja y reportes financieros).
 - Sistema de diseño: SCSS + Bootstrap 5, paleta `#A1CB35` / `#F86401` / `#FFFFFF`,
   escala compacta `sm`, tokens en `src/theme.scss` + `src/styles/`, plantilla `.content-wrapper`
   y UI kit en `src/app/ui/` (8 componentes, todos en uso: `ui-page-header`, `ui-table`,
   `ui-pagination`, `ui-badge`, `ui-modal`, `ui-button`, `ui-confirm-dialog`, `ui-confirm-host`
   + `UiConfirmService`). Material Angular retematizado a la paleta LS; tema oscuro
-  por clase en `<html>` con alternador en el topbar.
+  por clase en `<html>` con alternador en el topbar. La columna de acciones de cada
+  tabla muestra un único disparador por fila (icono de menú + flecha) que abre un
+  `mat-menu` con todas las opciones de la fila (ver `ESTADO_DEL_SISTEMA.md` §2.17).
 - QA: `ng lint`, `ng test` (Vitest) y `npm run e2e` (Playwright): axe-core (WCAG A/AA y
   buenas prácticas), contraste WCAG AA en los 4 modos de tema (estado base y `:hover`),
   anillo de foco por teclado, responsive, landmarks y

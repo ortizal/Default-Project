@@ -1,5 +1,5 @@
 // =====================================================================
-// Little Smile — variables SCSS (sólo valores, sin emitir CSS)
+// CRM Dental AT — variables SCSS (sólo valores, sin emitir CSS)
 // Escala base 4px. Los colores canónicos viven en _tokens.scss como
 // custom properties; aquí se replican como Sass para poder alimentar
 // las variables de Bootstrap antes de importarlo.
@@ -71,7 +71,7 @@ $ls-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-ser
 $ls-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
 // --- Layout ----------------------------------------------------------
-$ls-sidebar-w: 232px;
+$ls-sidebar-w: 256px;
 $ls-sidebar-w-collapsed: 64px;
 $ls-topbar-h: 56px;
 $ls-content-max: 1440px;

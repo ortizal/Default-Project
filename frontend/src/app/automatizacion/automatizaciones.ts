@@ -15,10 +15,15 @@ const EVENTOS = [
   'NO_ASISTIO',
 ];
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-automatizaciones',
   templateUrl: './automatizaciones.html',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent, UiTableComponent],
 })
 export class AutomatizacionesComponent implements OnInit {
   private readonly api = inject(Api);

@@ -24,12 +24,17 @@ public class AuditoriaController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('PERMISO_AUDITORIA_READ')")
-    @Operation(summary = "Listar auditoría (buscar por acción, módulo o entidad)")
+    @Operation(summary = "Listar auditoría (buscar por acción, módulo o entidad)",
+            description = "Con `entidad` y `entidadId` se ve el historial exacto de una fila, "
+                    + "por ejemplo el comprobante abierto en la bandeja (plan §3.7).")
     public ResponseEntity<Page<AuditoriaResponse>> listar(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String modulo,
+            @RequestParam(required = false) String entidad,
+            @RequestParam(required = false) Long entidadId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(auditoriaService.listar(q, modulo, page, size));
+        return ResponseEntity.ok(
+                auditoriaService.listar(q, modulo, entidad, entidadId, page, size));
     }
 }

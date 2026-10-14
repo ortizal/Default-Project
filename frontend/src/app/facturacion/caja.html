@@ -1,0 +1,211 @@
+<ui-page-header title="Finanzas — Caja" />
+
+@if (error) {
+  <div class="msg error" data-testid="caja-error">{{ error }}</div>
+}
+@if (mensaje) {
+  <div class="msg ok" data-testid="caja-mensaje">{{ mensaje }}</div>
+}
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando caja…</div>
+}
+
+@if (caja === null && !cargando) {
+  <div class="card m-0" data-testid="caja-cerrada">
+    <div class="card-header"><h2 class="card-title">No hay una caja abierta</h2></div>
+    <div class="empty">Abre la sesión de hoy para registrar cobros, ingresos y egresos.</div>
+    @if (puedeEscribir) {
+      <form class="toolbar" (ngSubmit)="abrir()">
+        <div class="form-field">
+          <label class="label" for="caja-nombre">Nombre</label>
+          <input id="caja-nombre" class="input sm" name="nombre" type="text"
+                 [(ngModel)]="apertura.nombre">
+        </div>
+        <div class="form-field">
+          <label class="label" for="caja-apertura">Fondo inicial</label>
+          <input id="caja-apertura" class="input sm" name="montoApertura" type="number" min="0"
+                 step="0.01" [(ngModel)]="apertura.montoApertura">
+        </div>
+        <button class="btn primary" type="submit">Abrir caja</button>
+      </form>
+    }
+  </div>
+}
+
+@if (caja; as c) {
+  <div class="grid cols-3 mt-4" data-testid="caja-sesion">
+    <div class="card stat m-0"><div class="num">{{ moneda(c.totales.apertura) }}</div><div class="lbl">Fondo inicial</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(c.totales.ingresos) }}</div><div class="lbl">Ingresos</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(c.totales.egresos) }}</div><div class="lbl">Egresos</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(c.totales.esperadoEfectivo) }}</div><div class="lbl">Esperado en efectivo</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(c.montoDeclarado) }}</div><div class="lbl">Declarado al cierre</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(c.diferencia) }}</div><div class="lbl">Diferencia</div></div>
+  </div>
+
+  <div class="card-header mt-4">
+    <h2 class="card-title">Sesión {{ etiquetaCaja(c.estado) }}</h2>
+    <span class="muted text-sm">{{ c.fecha }} · abierta por {{ c.abiertoPor || '—' }}</span>
+  </div>
+
+  @if (puedeEscribir && c.estado === 'ABIERTA') {
+    <form class="toolbar" (ngSubmit)="agregar()" data-testid="form-movimiento-caja">
+      <div class="form-field">
+        <label class="label" for="mov-caja-tipo">Tipo</label>
+        <select id="mov-caja-tipo" class="input sm" name="tipo" [(ngModel)]="mov.tipo">
+          @for (t of tipos; track t) {
+            <option [value]="t">{{ t === 'INGRESO' ? 'Ingreso' : 'Egreso' }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="label" for="mov-caja-concepto">Concepto</label>
+        <input id="mov-caja-concepto" class="input sm" name="concepto" type="text"
+               [(ngModel)]="mov.concepto" required placeholder="Ej. Compra de insumos">
+      </div>
+      <div class="form-field">
+        <label class="label" for="mov-caja-monto">Monto</label>
+        <input id="mov-caja-monto" class="input sm" name="monto" type="number" min="0.01"
+               step="0.01" [(ngModel)]="mov.monto">
+      </div>
+      <div class="form-field">
+        <label class="label" for="mov-caja-forma">Forma de pago</label>
+        <select id="mov-caja-forma" class="input sm" name="formaPago" [(ngModel)]="mov.formaPago">
+          @for (f of formas; track f) {
+            <option [value]="f">{{ etiquetaFormaPago($any(f)) }}</option>
+          }
+        </select>
+      </div>
+      <button class="btn primary" type="submit">Registrar</button>
+    </form>
+  }
+
+  <div class="grid cols-3 mt-4">
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Movimientos</h2></div>
+      @if (c.movimientos.length) {
+        <table class="tbl" data-testid="tabla-movimientos-caja">
+          <thead>
+            <tr><th>Concepto</th><th>Forma</th><th class="text-right">Monto</th><th><span class="visually-hidden">Acciones</span></th></tr>
+          </thead>
+          <tbody>
+            @for (m of c.movimientos; track m.id) {
+              <tr [class.muted]="m.anulado">
+                <td>
+                  {{ m.concepto }}
+                  @if (m.paciente) {
+                    <span class="muted text-sm"> · {{ m.paciente }}</span>
+                  }
+                  @if (m.anulado) {
+                    <span class="muted text-sm"> · anulado</span>
+                  }
+                </td>
+                <td>{{ etiquetaFormaPago(m.formaPago) }}</td>
+                <td class="text-right">
+                  {{ m.tipo === 'EGRESO' ? '-' : '' }}{{ moneda(m.monto) }}
+                </td>
+                <td class="text-right">
+                  @if (puedeEscribir && !m.anulado && c.estado === 'ABIERTA') {
+                    <button
+                      class="btn sm menu-trigger"
+                      [matMenuTriggerFor]="mMov"
+                      [attr.aria-label]="'Acciones del movimiento ' + m.concepto"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mMov="matMenu">
+                      <button mat-menu-item class="peligro" (click)="anular(m.id)"
+                              [attr.aria-label]="'Anular movimiento ' + m.concepto">Anular</button>
+                    </mat-menu>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin movimientos en esta sesión.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Por forma de pago</h2></div>
+      @if (c.totales.porForma.length) {
+        <table class="tbl">
+          <thead><tr><th>Forma de pago</th><th class="text-right">Neto</th></tr></thead>
+          <tbody>
+            @for (f of c.totales.porForma; track f.formaPago) {
+              <tr>
+                <td>{{ etiquetaFormaPago(f.formaPago) }}</td>
+                <td class="text-right">{{ moneda(f.monto) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cobros todavía.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Cerrar caja</h2></div>
+      @if (c.estado === 'ABIERTA' && puedeCerrar) {
+        <form class="stack" (ngSubmit)="cerrar()" data-testid="form-cerrar-caja">
+          <div class="form-field">
+            <label class="label" for="caja-declarado">Efectivo contado</label>
+            <input id="caja-declarado" class="input sm" name="montoDeclarado" type="number"
+                   min="0" step="0.01" [(ngModel)]="cierre.montoDeclarado">
+            <p class="hint">
+              Esperado {{ moneda(c.totales.esperadoEfectivo) }} · diferencia
+              {{ moneda(diferenciaEsperada) }}
+            </p>
+          </div>
+          <div class="form-field">
+            <label class="label" for="caja-obs-cierre">Observaciones</label>
+            <textarea id="caja-obs-cierre" class="input sm" name="observaciones" rows="2"
+                      [(ngModel)]="cierre.observaciones"></textarea>
+          </div>
+          <button class="btn primary" type="submit">Cerrar caja</button>
+        </form>
+      } @else if (c.estado === 'ABIERTA') {
+        <div class="empty">Solo un usuario con <code>CAJA_CERRAR</code> puede cerrar la sesión.</div>
+      } @else {
+        <div class="stack text-sm">
+          <p><strong>Cerrada</strong> por {{ c.cerradoPor || '—' }} · {{ c.cerradoEn || '—' }}</p>
+          <p>Declarado {{ moneda(c.montoDeclarado) }} · diferencia {{ moneda(c.diferencia) }}</p>
+          @if (c.observacionesCierre) {
+            <p class="muted">{{ c.observacionesCierre }}</p>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<div class="card mt-4">
+  <div class="card-header">
+    <h2 class="card-title">Historial de sesiones</h2>
+    <span class="muted text-sm">{{ historial.length }} sesiones</span>
+  </div>
+  @if (historial.length) {
+    <table class="tbl" data-testid="tabla-historial-caja">
+      <thead>
+        <tr><th>Fecha</th><th>Estado</th><th class="text-right">Apertura</th>
+            <th class="text-right">Declarado</th><th class="text-right">Diferencia</th></tr>
+      </thead>
+      <tbody>
+        @for (h of historial; track h.id) {
+          <tr>
+            <td>{{ h.fecha }}</td>
+            <td>{{ etiquetaCaja(h.estado) }}</td>
+            <td class="text-right">{{ moneda(h.montoApertura) }}</td>
+            <td class="text-right">{{ moneda(h.montoDeclarado) }}</td>
+            <td class="text-right">{{ moneda(h.diferencia) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="empty">Todavía no se ha cerrado ninguna sesión.</div>
+  }
+</div>

@@ -1,0 +1,52 @@
+.intelligence-section {
+  margin-top: 1.25rem;
+}
+
+.intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 1rem;
+}
+
+.intelligence-link {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.intelligence-link:hover {
+  border-color: var(--ls-primary, #719a22);
+}
+
+.intelligence-link:focus-visible {
+  outline: none;
+  box-shadow: var(--ls-focus-ring);
+}
+
+.intelligence-icon {
+  display: grid;
+  width: 2.4rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--ls-primary-soft, #eef6da);
+  // --ls-primary-text es el verde que ya cumple AA sobre --ls-primary-soft;
+  // --ls-primary (el de marca, #a1cb35) se queda en 1.70:1 y rompe WCAG 4.5.
+  color: var(--ls-primary-text, #547018);
+}
+
+.intelligence-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.intelligence-link .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: auto;
+}

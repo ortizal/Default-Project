@@ -1,26 +1,245 @@
 
-    <ui-page-header title="Inicio" />
+<ui-page-header title="Inicio" />
 
-    <div class="card">
-      <div class="card-header"><h2 class="card-title">Resumen del día</h2></div>
-      @if (cargando) {
-        <span class="spin"></span>
-      } @else if (d) {
-        <div class="grid cols-3">
-          <div class="stat card"><div class="num">{{ d.citasDeHoy }}</div><div class="lbl">Citas hoy</div></div>
-          <div class="stat card"><div class="num text-warning">{{ d.citasPendientesHoy }}</div><div class="lbl">Pendientes hoy</div></div>
-          <div class="stat card"><div class="num text-success">{{ d.citasConfirmadasHoy }}</div><div class="lbl">Confirmadas hoy</div></div>
-          <div class="stat card"><div class="num text-danger">{{ d.citasCanceladasHoy }}</div><div class="lbl">Canceladas hoy</div></div>
-          <div class="stat card"><div class="num text-danger">{{ d.noAsistieronHoy }}</div><div class="lbl">No asistieron</div></div>
-          <div class="stat card"><div class="num">{{ d.pacientesNuevosMes }}</div><div class="lbl">Pacientes nuevos (mes)</div></div>
-          <div class="stat card"><div class="num">{{ d.conversacionesAbiertas }}</div><div class="lbl">Conversaciones abiertas</div></div>
-          <div class="stat card"><div class="num text-success">{{ d.mensajesEnviados }}</div><div class="lbl">Mensajes enviados</div></div>
-          <div class="stat card"><div class="num text-danger">{{ d.mensajesConError }}</div><div class="lbl">Mensajes con error</div></div>
-          <div class="stat card"><div class="num text-success">{{ d.notificacionesEnviadas }}</div><div class="lbl">Notificaciones enviadas</div></div>
-          <div class="stat card"><div class="num text-danger">{{ d.notificacionesConError }}</div><div class="lbl">Notificaciones con error</div></div>
-        </div>
-      } @else {
-        <div class="empty">No se pudo cargar el resumen.</div>
-      }
+<div class="dashboard-heading">
+  <div>
+    <p class="dashboard-eyebrow">{{ hoy }}</p>
+    <h2>Resumen de tu consultorio</h2>
+    <p class="muted">Agenda, actividad y puntos que necesitan atención.</p>
+  </div>
+  <button class="btn" type="button" (click)="cargar()" [disabled]="cargando">
+    <mat-icon>refresh</mat-icon>
+    Actualizar
+  </button>
+</div>
+
+@if (cargando) {
+  <div class="dashboard-loading" role="status">
+    <mat-spinner diameter="28" />
+    <span>Actualizando indicadores…</span>
+  </div>
+} @else if (error || !d || !estadisticas) {
+  <div class="dashboard-error" role="alert">
+    <mat-icon>cloud_off</mat-icon>
+    <div>
+      <strong>No pudimos cargar el resumen</strong>
+      <p>Verifica tu conexión y vuelve a intentarlo.</p>
     </div>
+    <button class="btn" type="button" (click)="cargar()">Reintentar</button>
+  </div>
+} @else {
+  <section class="dashboard-section" aria-labelledby="operacion-title">
+    <div class="section-heading">
+      <div>
+        <p class="dashboard-eyebrow">HOY</p>
+        <h2 id="operacion-title">Operación diaria</h2>
+      </div>
+      <a class="text-link" routerLink="/agenda">Abrir agenda <mat-icon>arrow_forward</mat-icon></a>
+    </div>
+
+    <div class="dashboard-grid">
+      <button class="dashboard-stat card stat-primary" type="button" (click)="abrirDetalle('citas')">
+        <span class="stat-top"><span class="stat-icon"><mat-icon>event_available</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.citasDeHoy }}</span>
+        <span class="lbl">Citas de hoy</span>
+        <span class="stat-note">{{ d.citasConfirmadasHoy }} confirmadas · {{ d.citasPendientesHoy }} pendientes</span>
+      </button>
+
+      <button class="dashboard-stat card" type="button" (click)="abrirDetalle('cancelaciones')">
+        <span class="stat-top"><span class="stat-icon warning"><mat-icon>event_busy</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.citasPendientesHoy }}</span>
+        <span class="lbl">Pendientes por confirmar</span>
+        <span class="stat-note">{{ d.citasCanceladasHoy }} canceladas · {{ d.noAsistieronHoy }} inasistencias hoy</span>
+      </button>
+
+      <button class="dashboard-stat card" type="button" (click)="abrirDetalle('pacientes')">
+        <span class="stat-top"><span class="stat-icon green"><mat-icon>person_add</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.pacientesNuevosMes }}</span>
+        <span class="lbl">Nuevos pacientes este mes</span>
+        <span class="stat-note">Crecimiento de la base de pacientes</span>
+      </button>
+
+      <button class="dashboard-stat card" type="button" (click)="abrirDetalle('conversaciones')">
+        <span class="stat-top"><span class="stat-icon blue"><mat-icon>forum</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.conversacionesAbiertas }}</span>
+        <span class="lbl">Conversaciones abiertas</span>
+        <span class="stat-note">Revisa mensajes que pueden requerir respuesta</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="dashboard-section" aria-labelledby="analisis-title">
+    <div class="section-heading">
+      <div>
+        <p class="dashboard-eyebrow">ÚLTIMOS 30 DÍAS</p>
+        <h2 id="analisis-title">Rendimiento y tendencias</h2>
+      </div>
+      <a class="text-link" routerLink="/reportes">Ver reportes <mat-icon>arrow_forward</mat-icon></a>
+    </div>
+
+    <div class="analysis-grid">
+      <button class="analysis-card card" type="button" (click)="abrirDetalle('tendencia')">
+        <span class="analysis-card-heading"><span>Citas agendadas</span><mat-icon>open_in_new</mat-icon></span>
+        <span class="analysis-number">{{ citasPeriodoActual }}</span>
+        <span class="analysis-caption">
+          @if (variacionCitas === null) {
+            Sin actividad en el período anterior para comparar
+          } @else {
+            <span [class.positive]="variacionCitas >= 0" [class.negative]="variacionCitas < 0">
+              {{ variacionCitas > 0 ? '+' : '' }}{{ variacionCitas }}%
+            </span>
+            frente a los 30 días anteriores
+          }
+        </span>
+        <span class="sparkline" aria-hidden="true">
+          @for (dia of tendencia14; track dia.fecha) {
+            <span [style.height.%]="(dia.total / maxTendencia) * 100" [title]="dia.etiqueta + ': ' + dia.total"></span>
+          }
+        </span>
+        <span class="chart-caption">Actividad diaria · últimos 14 días</span>
+      </button>
+
+      <button class="analysis-card card" type="button" (click)="abrirDetalle('cancelaciones')">
+        <span class="analysis-card-heading"><span>Cancelación y asistencia</span><mat-icon>open_in_new</mat-icon></span>
+        <span class="rate-row"><span>Cancelaciones</span><strong>{{ tasaCancelacion }}%</strong></span>
+        <span class="rate-track"><span class="rate-fill amber" [style.width.%]="tasaCancelacion"></span></span>
+        <span class="analysis-caption">{{ cancelacionesPeriodo }} citas canceladas</span>
+        <span class="rate-row"><span>No asistencia</span><strong>{{ tasaInasistencia }}%</strong></span>
+        <span class="rate-track"><span class="rate-fill coral" [style.width.%]="tasaInasistencia"></span></span>
+        <span class="analysis-caption">{{ inasistenciasPeriodo }} inasistencias registradas</span>
+      </button>
+
+      <button class="analysis-card card ranking-card" type="button" (click)="abrirDetalle('ranking')">
+        <div class="analysis-card-heading"><span>Actividad por equipo</span><mat-icon>groups</mat-icon></div>
+        <h3>Odontólogos con más citas</h3>
+        @if (odontologosTop.length) {
+          @for (item of odontologosTop; track item.nombre) {
+            <div class="ranking-row"><span>{{ item.nombre }}</span><strong>{{ item.total }}</strong></div>
+          }
+        } @else {
+          <p class="analysis-caption">Sin citas registradas en el período.</p>
+        }
+        <h3>Servicios más solicitados</h3>
+        @if (serviciosTop.length) {
+          @for (item of serviciosTop; track item.nombre) {
+            <div class="ranking-row"><span>{{ item.nombre }}</span><strong>{{ item.total }}</strong></div>
+          }
+        } @else {
+          <p class="analysis-caption">Sin servicios registrados en el período.</p>
+        }
+      </button>
+    </div>
+  </section>
+
+  <section class="dashboard-section" aria-labelledby="mensajeria-title">
+    <div class="section-heading">
+      <div>
+        <p class="dashboard-eyebrow">SEGUIMIENTO</p>
+        <h2 id="mensajeria-title">Mensajería y notificaciones</h2>
+      </div>
+    </div>
+    <div class="dashboard-grid compact-grid">
+      <button class="dashboard-stat card" type="button" (click)="abrirDetalle('mensajes')">
+        <span class="stat-top"><span class="stat-icon green"><mat-icon>send</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.mensajesEnviados }}</span>
+        <span class="lbl">Mensajes enviados</span>
+        <span class="stat-note">{{ d.mensajesConError }} con error · total acumulado</span>
+      </button>
+      <button class="dashboard-stat card" type="button" (click)="abrirDetalle('notificaciones')">
+        <span class="stat-top"><span class="stat-icon blue"><mat-icon>notifications_active</mat-icon></span><mat-icon class="stat-open">open_in_new</mat-icon></span>
+        <span class="num">{{ d.notificacionesEnviadas }}</span>
+        <span class="lbl">Notificaciones enviadas</span>
+        <span class="stat-note">{{ d.notificacionesConError }} con error · total acumulado</span>
+      </button>
+    </div>
+  </section>
+}
+
+@if (detalle && d && estadisticas) {
+  <ui-modal [title]="tituloDetalle" subtitle="Indicadores del consultorio" size="wide" (closed)="cerrarDetalle()">
+    @switch (detalle) {
+      @case ('citas') {
+        <div class="modal-metrics">
+          <div><strong>{{ d.citasDeHoy }}</strong><span>Total hoy</span></div>
+          <div><strong>{{ d.citasConfirmadasHoy }}</strong><span>Confirmadas</span></div>
+          <div><strong>{{ d.citasPendientesHoy }}</strong><span>Pendientes</span></div>
+          <div><strong>{{ d.citasCanceladasHoy }}</strong><span>Canceladas</span></div>
+          <div><strong>{{ d.noAsistieronHoy }}</strong><span>No asistieron</span></div>
+        </div>
+        <p class="modal-insight">{{ d.citasPendientesHoy ? 'Hay citas que aún esperan confirmación.' : 'No hay citas pendientes de confirmación.' }}</p>
+        <a class="btn primary" routerLink="/agenda" (click)="cerrarDetalle()">Ir a la agenda</a>
+      }
+      @case ('tendencia') {
+        <p class="modal-insight">{{ citasPeriodoActual }} citas en los últimos 30 días; {{ citasPeriodoAnterior }} en los 30 días previos.</p>
+        <div class="trend-list">
+          @for (dia of tendencia14; track dia.fecha) {
+            <div class="trend-row"><span>{{ dia.etiqueta }}</span><span class="trend-track"><span [style.width.%]="(dia.total / maxTendencia) * 100"></span></span><strong>{{ dia.total }}</strong></div>
+          }
+        </div>
+        <a class="btn" routerLink="/reportes" (click)="cerrarDetalle()">Abrir reportes</a>
+      }
+      @case ('cancelaciones') {
+        <div class="modal-metrics">
+          <div><strong>{{ cancelacionesPeriodo }}</strong><span>Cancelaciones · 30 días</span></div>
+          <div><strong>{{ tasaCancelacion }}%</strong><span>Tasa de cancelación</span></div>
+          <div><strong>{{ inasistenciasPeriodo }}</strong><span>No asistieron · 30 días</span></div>
+          <div><strong>{{ tasaInasistencia }}%</strong><span>Tasa de inasistencia</span></div>
+        </div>
+        <p class="modal-insight">Las tasas se calculan sobre las citas agendadas en el período seleccionado.</p>
+        <a class="btn" routerLink="/reportes" (click)="cerrarDetalle()">Analizar en reportes</a>
+      }
+      @case ('ranking') {
+        <div class="modal-rankings">
+          <section>
+            <h3>Odontólogos · citas</h3>
+            @for (item of odontologosOrdenados; track item.nombre) {
+              <div class="ranking-row"><span>{{ item.nombre }}</span><strong>{{ item.total }}</strong></div>
+            } @empty {
+              <p class="analysis-caption">Sin citas registradas en el período.</p>
+            }
+          </section>
+          <section>
+            <h3>Servicios · demanda</h3>
+            @for (item of serviciosOrdenados; track item.nombre) {
+              <div class="ranking-row"><span>{{ item.nombre }}</span><strong>{{ item.total }}</strong></div>
+            } @empty {
+              <p class="analysis-caption">Sin servicios registrados en el período.</p>
+            }
+          </section>
+        </div>
+        <p class="modal-insight">El ranking cuenta citas por fecha de atención, incluyendo todos sus estados.</p>
+        <a class="btn" routerLink="/reportes" (click)="cerrarDetalle()">Abrir reportes completos</a>
+      }
+      @case ('pacientes') {
+        <div class="modal-highlight"><strong>{{ d.pacientesNuevosMes }}</strong><span>pacientes incorporados este mes</span></div>
+        <p class="modal-insight">Revisa la ficha y los datos de contacto para preparar su primera visita.</p>
+        <a class="btn primary" routerLink="/pacientes" (click)="cerrarDetalle()">Ver pacientes</a>
+      }
+      @case ('conversaciones') {
+        <div class="modal-highlight"><strong>{{ d.conversacionesAbiertas }}</strong><span>conversaciones abiertas</span></div>
+        <p class="modal-insight">Prioriza los mensajes pendientes para reducir el tiempo de respuesta y confirmar próximas citas.</p>
+        <a class="btn primary" routerLink="/whatsapp/inbox" (click)="cerrarDetalle()">Abrir bandeja</a>
+      }
+      @case ('mensajes') {
+        <div class="modal-metrics">
+          <div><strong>{{ d.mensajesEnviados }}</strong><span>Enviados</span></div>
+          <div><strong>{{ d.mensajesConError }}</strong><span>Con error</span></div>
+          <div><strong>{{ porcentaje(d.mensajesEnviados, d.mensajesEnviados + d.mensajesConError) }}%</strong><span>Entrega registrada</span></div>
+        </div>
+        <p class="modal-insight">Conteos acumulados según el estado actual de los mensajes.</p>
+        <a class="btn primary" routerLink="/whatsapp/inbox" (click)="cerrarDetalle()">Revisar WhatsApp</a>
+      }
+      @case ('notificaciones') {
+        <div class="modal-metrics">
+          <div><strong>{{ d.notificacionesEnviadas }}</strong><span>Enviadas</span></div>
+          <div><strong>{{ d.notificacionesConError }}</strong><span>Con error</span></div>
+          <div><strong>{{ porcentaje(d.notificacionesEnviadas, d.notificacionesEnviadas + d.notificacionesConError) }}%</strong><span>Entrega registrada</span></div>
+        </div>
+        <p class="modal-insight">Conteos acumulados según el estado actual de las notificaciones.</p>
+        <a class="btn" routerLink="/notificaciones" (click)="cerrarDetalle()">Ver notificaciones</a>
+      }
+    }
+    <button actions class="btn" type="button" (click)="cerrarDetalle()">Cerrar</button>
+  </ui-modal>
+}
   

@@ -9,10 +9,15 @@ import { AppDateComponent } from '../core/app-date.component';
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-agenda',
   templateUrl: './agenda.html',
   imports: [
+    MatIconModule,
+    MatMenuModule,
     CommonModule,
     FormsModule,
     RouterLink,

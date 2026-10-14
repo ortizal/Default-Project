@@ -32,13 +32,18 @@
               </td>
               <td><ui-badge [tone]="u.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ u.estado }}</ui-badge></td>
               <td class="flex">
-                <button class="btn small" (click)="editar(u)">Editar</button>
-                <button
-                  class="btn small"
-                  [class.outline]="u.estado === 'ACTIVO'"
-                  [class.danger]="u.estado === 'ACTIVO'"
-                  (click)="cambiarEstado(u)"
-                >{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mUsu" [attr.aria-label]="'Acciones de ' + u.nombres + ' ' + u.apellidos">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mUsu="matMenu">
+                  <button mat-menu-item (click)="editar(u)">Editar</button>
+                  <button
+                    mat-menu-item
+                    [class.peligro]="u.estado === 'ACTIVO'"
+                    (click)="cambiarEstado(u)"
+                  >{{ u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

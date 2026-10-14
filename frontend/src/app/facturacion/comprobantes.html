@@ -1,0 +1,384 @@
+<ui-page-header title="Finanzas — Comprobantes" />
+
+<div class="toolbar">
+  <div class="form-field">
+    <label class="label" for="comp-q">Número, clave o paciente</label>
+    <input id="comp-q" class="input sm" type="text" [(ngModel)]="q"
+           (keyup.enter)="buscar()" placeholder="Buscar" data-testid="comprobantes-buscar">
+  </div>
+  <div class="form-field">
+    <label class="label" for="comp-desde">Desde</label>
+    <input id="comp-desde" class="input sm" type="date" [(ngModel)]="desde"
+           (change)="buscar()" data-testid="comprobantes-desde">
+  </div>
+  <div class="form-field">
+    <label class="label" for="comp-hasta">Hasta</label>
+    <input id="comp-hasta" class="input sm" type="date" [(ngModel)]="hasta"
+           (change)="buscar()" data-testid="comprobantes-hasta">
+  </div>
+  <div class="form-field">
+    <label class="label" for="comp-tipo">Tipo</label>
+    <select id="comp-tipo" class="input sm" [(ngModel)]="tipo" (change)="buscar()"
+            data-testid="comprobantes-tipo">
+      @for (t of tipos; track t) {
+        <option [value]="t">{{ t ? etiquetaTipoComprobante(t) : 'Todos' }}</option>
+      }
+    </select>
+  </div>
+  <div class="form-field">
+    <label class="label" for="comp-estado">Estado SRI</label>
+    <select id="comp-estado" class="input sm" [(ngModel)]="estado" (change)="buscar()"
+            data-testid="comprobantes-estado">
+      @for (e of estadosTributarios; track e) {
+        <option [value]="e">{{ e ? etiquetaEstadoTributario(e) : 'Todos' }}</option>
+      }
+    </select>
+  </div>
+  <div class="form-field">
+    <label class="label" for="comp-generacion">Generación</label>
+    <select id="comp-generacion" class="input sm" [(ngModel)]="generacion" (change)="buscar()"
+            data-testid="comprobantes-generacion">
+      @for (g of estadosGeneracion; track g) {
+        <option [value]="g">{{ g ? etiquetaEstadoGeneracion(g) : 'Todas' }}</option>
+      }
+    </select>
+  </div>
+  <button class="btn" (click)="buscar()" [disabled]="cargando">Buscar</button>
+  <button class="btn outline" type="button" (click)="limpiar()">Limpiar</button>
+</div>
+
+@if (error) {
+  <div class="msg error" data-testid="comprobantes-error">{{ error }}</div>
+}
+@if (mensaje) {
+  <div class="msg ok" data-testid="comprobantes-mensaje">{{ mensaje }}</div>
+}
+
+<div class="grid cols-2 mt-4">
+  <div class="card m-0">
+    <div class="card-header">
+      <h2 class="card-title">Comprobantes</h2>
+      <span class="muted text-sm" data-testid="comprobantes-total">{{ totalElementos }} resultados</span>
+    </div>
+    <ui-table [loading]="cargando" loadingText="Cargando comprobantes…">
+      <thead>
+        <tr>
+          <th>Número</th><th>Fecha</th><th>Paciente</th>
+          <th class="text-right">Total</th><th>Estado</th>
+          <th><span class="visually-hidden">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of rows; track c.id) {
+          <tr>
+            <td>
+              {{ c.numeroComprobante }}
+              @if (c.tipo !== '01') {
+                <ui-badge tone="info">{{ etiquetaTipoComprobante(c.tipo) }}</ui-badge>
+              }
+              @if (c.simulado) {
+                <ui-badge tone="warn">simulado</ui-badge>
+              }
+              @if (c.motivo) {
+                <div class="muted text-sm" data-testid="fila-motivo">{{ c.motivo }}</div>
+              }
+            </td>
+            <td>{{ c.fechaEmision }}</td>
+            <td>
+              {{ c.paciente || '—' }}
+              @if (c.identificacion) {
+                <div class="muted text-sm">{{ c.identificacion }}</div>
+              }
+            </td>
+            <td class="text-right">{{ moneda(c.total) }}</td>
+            <td>
+              <ui-badge [tone]="toneEstadoTributario(c.estadoTributario)">
+                {{ etiquetaEstadoTributario(c.estadoTributario) }}
+              </ui-badge>
+            </td>
+            <td class="text-right">
+              <button
+                class="btn sm menu-trigger"
+                [matMenuTriggerFor]="mComp"
+                [attr.aria-label]="'Acciones del comprobante ' + c.numeroComprobante"
+              >
+                <mat-icon>menu</mat-icon>
+                <mat-icon class="caret">arrow_drop_down</mat-icon>
+              </button>
+              <mat-menu #mComp="matMenu">
+                <button mat-menu-item (click)="abrir(c.id)"
+                        [attr.aria-label]="'Ver el comprobante ' + c.numeroComprobante">Ver</button>
+                <button mat-menu-item (click)="descargarXml(c)"
+                        [attr.aria-label]="'Descargar el XML del comprobante ' + c.numeroComprobante">Descargar XML</button>
+                <button mat-menu-item (click)="descargarRide(c)" [disabled]="!puedeDescargarRide(c)"
+                  [attr.aria-label]="puedeDescargarRide(c) ? 'Descargar el RIDE del comprobante ' + c.numeroComprobante : 'RIDE disponible después de autorización real del SRI'">
+                  {{ puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'RIDE pendiente de autorización' }}
+                </button>
+                @if (puedeEmitir && !c.simulado) {
+                  <button mat-menu-item (click)="reenviar(c)"
+                          [attr.aria-label]="'Reenviar al SRI el comprobante ' + c.numeroComprobante">Reenviar al SRI</button>
+                  <button mat-menu-item (click)="consultar(c)"
+                          [attr.aria-label]="'Consultar al SRI el comprobante ' + c.numeroComprobante">Consultar al SRI</button>
+                }
+                @if (puedeAnular && esFacturaAutorizada(c)) {
+                  <button mat-menu-item (click)="abrirNotaCredito(c)" data-testid="fila-nota-credito"
+                          [attr.aria-label]="'Emitir una nota de crédito sobre ' + c.numeroComprobante">Nota de crédito</button>
+                }
+                @if (puedeAnular && esAnulable(c)) {
+                  <button mat-menu-item type="button" [disabled]="!anulacionSriDisponible"
+                          (click)="abrirAnulacion(c)" data-testid="fila-anular"
+                          [title]="anulacionSriDisponible ? '' : 'La anulación requiere una respuesta real del SRI'">
+                    {{ anulacionSriDisponible ? 'Anular' : 'Anulación SRI no disponible' }}
+                  </button>
+                }
+                <button mat-menu-item (click)="auditoria(c)"
+                        [attr.aria-label]="'Historial de auditoría del comprobante ' + c.numeroComprobante">Auditoría</button>
+              </mat-menu>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty" data-testid="comprobantes-vacio">
+              Sin comprobantes con ese filtro.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </ui-table>
+    <ui-pagination
+      [page]="pagina + 1"
+      [pages]="totalPaginas"
+      (prev)="ir(pagina - 1)"
+      (next)="ir(pagina + 1)"
+    />
+  </div>
+
+  @if (sel; as c) {
+    <div class="card m-0" data-testid="detalle-comprobante">
+      <div class="card-header">
+        <h2 class="card-title">{{ c.numeroComprobante }}</h2>
+        <ui-badge [tone]="toneEstadoTributario(c.estadoTributario)">
+          {{ etiquetaEstadoTributario(c.estadoTributario) }}
+        </ui-badge>
+      </div>
+
+      <div class="grid cols-3">
+        <div class="card stat m-0">
+          <div class="num">{{ moneda(c.total) }}</div><div class="lbl">Total</div>
+        </div>
+        <div class="card stat m-0">
+          <div class="num">{{ c.fechaEmision }}</div><div class="lbl">Emisión</div>
+        </div>
+        <div class="card stat m-0">
+          <div class="num">{{ etiquetaEstadoGeneracion(c.estadoGeneracion) }}</div>
+          <div class="lbl">Generación</div>
+        </div>
+      </div>
+
+      <div class="grid2 mt-4">
+        <div>
+          <div class="label">Tipo</div>
+          <div>{{ etiquetaTipoComprobante(c.tipo) }}</div>
+        </div>
+        <div>
+          <div class="label">Clave de acceso</div>
+          <div data-testid="detalle-clave">{{ c.claveAcceso }}</div>
+        </div>
+        <div>
+          <div class="label">Ambiente / firma</div>
+          <div>
+            {{ c.ambiente }} · {{ c.modoFirma }}
+            @if (c.simulado) {
+              <ui-badge tone="warn">simulado — sin validez tributaria</ui-badge>
+            }
+          </div>
+        </div>
+        <div>
+          <div class="label">Autorización</div>
+          <div data-testid="detalle-autorizacion">{{ c.autorizacionNumero || '—' }}</div>
+        </div>
+        <div>
+          <div class="label">Respuesta del SRI</div>
+          <div>{{ c.sriRespuesta || '—' }}</div>
+        </div>
+        <div>
+          <div class="label">Paciente</div>
+          <div>{{ c.pacienteId ? 'Paciente #' + c.pacienteId : '—' }}</div>
+        </div>
+        <div>
+          <div class="label">Modifica</div>
+          <div data-testid="detalle-referencia">
+            {{ c.comprobanteReferenciaId ? 'Factura #' + c.comprobanteReferenciaId : '—' }}
+          </div>
+        </div>
+        <div>
+          <div class="label">Motivo</div>
+          <div data-testid="detalle-motivo">{{ c.motivo || '—' }}</div>
+        </div>
+      </div>
+
+      @if (c.errorMensaje) {
+        <div class="msg error" data-testid="detalle-error">{{ c.errorMensaje }}</div>
+      }
+
+      <div class="toolbar mt-4">
+        <button class="btn sm" type="button" (click)="descargarXml(c)"
+                data-testid="descargar-xml">Descargar XML</button>
+        <button class="btn sm" type="button" (click)="descargarRide(c)"
+          [disabled]="!puedeDescargarRide(c)"
+          [title]="puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'Disponible tras autorización real del SRI'"
+          data-testid="descargar-ride">
+          {{ puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'RIDE pendiente de autorización' }}
+        </button>
+        @if (puedeEmitir && !c.simulado) {
+          <button class="btn sm" type="button" (click)="reenviar(c)"
+                  data-testid="reenviar-sri">Reenviar al SRI</button>
+          <button class="btn sm" type="button" (click)="consultar(c)"
+                  data-testid="consultar-sri">Consultar al SRI</button>
+        }
+        @if (puedeAnular && esFacturaAutorizada(c)) {
+          <button class="btn sm" type="button" (click)="abrirNotaCredito(c)"
+                  data-testid="nota-credito">Nota de crédito</button>
+        }
+        @if (puedeAnular && esAnulable(c)) {
+          <button class="btn sm danger" type="button" [disabled]="!anulacionSriDisponible"
+                  (click)="abrirAnulacion(c)"
+                  [title]="anulacionSriDisponible ? '' : 'La anulación requiere una respuesta real del SRI'"
+                  data-testid="anular-comprobante">
+            {{ anulacionSriDisponible ? 'Anular' : 'Anulación SRI no disponible' }}
+          </button>
+        }
+        <button class="btn sm outline" type="button" (click)="auditoria(c)"
+                data-testid="auditoria-comprobante">Auditoría</button>
+        <button class="btn sm outline" type="button" (click)="cerrarDetalle()"
+                data-testid="cerrar-detalle">Cerrar</button>
+      </div>
+    </div>
+  } @else {
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Detalle</h2></div>
+      <div class="empty">Selecciona un comprobante para ver su detalle y descargarlo.</div>
+    </div>
+  }
+</div>
+
+@if (nota; as n) {
+  <ui-modal
+    title="Nota de crédito"
+    [subtitle]="'Sobre ' + n.comprobante.numeroComprobante + ' · ' + moneda(n.comprobante.total) + ' · ' + n.comprobante.fechaEmision"
+    size="wide"
+    (closed)="cerrarDialogo()"
+    data-testid="dialogo-nota"
+  >
+    <div class="form-field">
+      <label class="label" for="nota-alcance">Alcance</label>
+      <select id="nota-alcance" class="input sm" [(ngModel)]="n.parcial"
+              data-testid="nota-alcance">
+        <option [ngValue]="false">Devolución total — todo el comprobante</option>
+        <option [ngValue]="true">Devolución parcial — sólo algunas líneas</option>
+      </select>
+    </div>
+
+    @if (n.parcial) {
+      @if (n.lineas.length > 0) {
+        <div class="tbl-wrap mt-4">
+          <table class="tbl dense">
+            <thead>
+              <tr>
+                <th>Línea</th><th>Descripción</th>
+                <th class="text-right">Facturado</th>
+                <th class="text-right">A devolver</th>
+                <th class="text-right">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of n.lineas; track l.linea) {
+                <tr>
+                  <td>{{ l.linea }}</td>
+                  <td>{{ l.descripcion }}</td>
+                  <td class="text-right">{{ l.facturada }}</td>
+                  <td class="text-right">
+                    <input class="input sm" type="number" min="0" [max]="l.facturada" step="1"
+                           [(ngModel)]="l.cantidad"
+                           [attr.aria-label]="'Cantidad a devolver de la línea ' + l.linea"
+                           [attr.data-testid]="'nota-cantidad-' + l.linea">
+                  </td>
+                  <td class="text-right">{{ moneda(importeLinea(l)) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty mt-4">Este comprobante no tiene líneas de detalle.</div>
+      }
+    }
+
+    <div class="form-field mt-4">
+      <label class="label" for="nota-motivo">Motivo (obligatorio, 5 a 300 caracteres)</label>
+      <textarea id="nota-motivo" class="input" rows="3" maxlength="300" [(ngModel)]="n.motivo"
+                placeholder="Motivo de la devolución" data-testid="nota-motivo"></textarea>
+      <span class="muted text-sm" data-testid="nota-motivo-contador">
+        {{ n.motivo.trim().length }}/300
+      </span>
+    </div>
+
+    <p class="text-sm mt-4" data-testid="nota-resumen">
+      Se emitirá una nota de crédito por <strong>{{ moneda(devuelto(n)) }}</strong>
+      @if (n.parcial) {
+        ({{ lineasMarcadas(n) }} de {{ n.lineas.length }} líneas)
+      }
+      en ambiente de pruebas, con firma simulada.
+    </p>
+
+    @if (n.error) {
+      <div class="msg error" data-testid="nota-error">{{ n.error }}</div>
+    }
+
+    <ng-container actions>
+      <button class="btn ghost" type="button" (click)="cerrarDialogo()"
+              data-testid="nota-cancelar">Cancelar</button>
+      <button class="btn primary" type="button" (click)="emitirNotaCredito()"
+              [disabled]="n.enviando" data-testid="nota-emitir">
+        {{ n.enviando ? 'Emitiendo…' : 'Emitir nota de crédito' }}
+      </button>
+    </ng-container>
+  </ui-modal>
+}
+
+@if (anulacion; as a) {
+  <ui-modal
+    title="Anular comprobante"
+    [subtitle]="a.comprobante.numeroComprobante"
+    size="narrow"
+    (closed)="cerrarDialogo()"
+    data-testid="dialogo-anular"
+  >
+    <p class="text-sm">
+      El comprobante pasará a estado <strong>anulado</strong> y quedará registrado el
+      trámite con su motivo. La fila nunca se elimina (plan §3.10).
+    </p>
+
+    <div class="form-field mt-4">
+      <label class="label" for="anular-motivo">Motivo (obligatorio, 5 a 500 caracteres)</label>
+      <textarea id="anular-motivo" class="input" rows="3" maxlength="500" [(ngModel)]="a.motivo"
+                placeholder="Por qué se anula" data-testid="anular-motivo"></textarea>
+      <span class="muted text-sm" data-testid="anular-motivo-contador">
+        {{ a.motivo.trim().length }}/500
+      </span>
+    </div>
+
+    @if (a.error) {
+      <div class="msg error" data-testid="anular-error">{{ a.error }}</div>
+    }
+
+    <ng-container actions>
+      <button class="btn ghost" type="button" (click)="cerrarDialogo()"
+              data-testid="anular-cancelar">Cancelar</button>
+      <button class="btn danger" type="button" (click)="confirmarAnulacion()"
+              [disabled]="a.enviando" data-testid="anular-confirmar">
+        {{ a.enviando ? 'Anulando…' : 'Anular' }}
+      </button>
+    </ng-container>
+  </ui-modal>
+}

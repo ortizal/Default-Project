@@ -1,11 +1,14 @@
 import { expect, test, Page } from '@playwright/test';
 import { AxeBuilder } from '@axe-core/playwright';
+import { abrirDesactivar } from './actions';
 
 // Todas las rutas del app (app.routes.ts) salvo `login`, que se audita sin sesión.
 const PAGINAS = [
   'dashboard',
   'reportes',
+  'reportes-clinicos',
   'pacientes',
+  'pacientes/1/historia',
   'odontologos',
   'servicios',
   'horarios',
@@ -24,6 +27,10 @@ const PAGINAS = [
   'configuracion/consultorio',
   'configuracion/integraciones',
   'redes-sociales',
+  'facturacion',
+  'facturacion/cuentas',
+  'facturacion/caja',
+  'facturacion/reportes',
 ];
 
 // WCAG A/AA más las buenas prácticas de axe (landmarks, orden de encabezados,
@@ -95,9 +102,24 @@ test('sin violaciones WCAG A/AA con el formulario y el diálogo abiertos', async
 
   await page.keyboard.press('Escape');
   await expect(page.locator('.modal')).toBeHidden();
-  await page.locator('button.btn.small.danger:not([disabled])').first().click();
+  await abrirDesactivar(page);
   await expect(page.locator('[role="dialog"]')).toBeVisible();
   expect(await auditar(page, 'pacientes/confirmación')).toEqual([]);
+});
+
+test('sin violaciones WCAG A/AA con el menú de acciones de una fila abierto', async ({ page }) => {
+  test.setTimeout(120_000);
+  await preparar(page);
+  await login(page);
+  await ir(page, 'pacientes');
+  await page.waitForSelector('tbody tr', { timeout: 10000 });
+
+  await page.locator('tbody tr').first().locator('button.menu-trigger').click();
+  await expect(page.locator('[role="menu"]:visible')).toBeVisible();
+  expect(await auditar(page, 'pacientes/menú de acciones')).toEqual([]);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[role="menu"]')).toHaveCount(0);
 });
 
 test('sin violaciones en el tema oscuro en todas las rutas', async ({ page }) => {

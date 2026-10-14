@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { Api } from './core/api';
 import { authInterceptor } from './core/auth.interceptor';
+import { marcarLandmarkDeOverlays } from './core/overlay-landmark';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,6 +14,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideHttpClient(withInterceptors([authInterceptor])),
     { provide: APP_INITIALIZER, useFactory: (api: Api) => () => api.init(), deps: [Api], multi: true },
+    { provide: APP_INITIALIZER, useFactory: () => () => marcarLandmarkDeOverlays(), multi: true },
     provideRouter(routes),
   ],
 };

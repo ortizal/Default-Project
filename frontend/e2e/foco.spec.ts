@@ -8,6 +8,7 @@ import { test, expect, Page } from '@playwright/test';
 const RUTAS = [
   'dashboard',
   'reportes',
+  'reportes-clinicos',
   'pacientes',
   'odontologos',
   'servicios',
@@ -27,6 +28,10 @@ const RUTAS = [
   'configuracion/consultorio',
   'configuracion/integraciones',
   'redes-sociales',
+  'facturacion',
+  'facturacion/cuentas',
+  'facturacion/caja',
+  'facturacion/reportes',
 ];
 
 interface Foco {

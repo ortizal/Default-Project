@@ -1,0 +1,47 @@
+// =====================================================================
+// Menú desplegable de acciones de fila — disparador y estilos de ítems
+// El disparador es un icono de menú con flecha hacia abajo; todas las
+// opciones de la celda viven dentro del menú (mat-menu) y no compiten
+// como botones sueltos en la tabla.
+// =====================================================================
+
+.btn.menu-trigger {
+  gap: 0;
+  padding: 5px 6px;
+
+  .caret {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--ls-muted);
+  }
+}
+
+.btn.menu-trigger:hover .caret {
+  color: inherit;
+}
+
+// El panel hereda la tipografía de la app: Material trae su propia familia
+// (Roboto) y una escala de 16px que no coincide con la densidad de las tablas.
+.mat-mdc-menu-panel {
+  font-family: var(--ls-font);
+}
+
+.mat-mdc-menu-panel .mat-mdc-menu-content {
+  font-family: var(--ls-font);
+  font-size: var(--ls-text-sm);
+}
+
+.mat-mdc-menu-panel .mat-mdc-menu-item {
+  min-height: 40px;
+}
+
+// Ítem destructivo dentro del menú de acciones (Eliminar, Cancelar…)
+.mat-mdc-menu-panel .mat-mdc-menu-item.peligro {
+  color: var(--ls-danger);
+}
+
+.mat-mdc-menu-panel .mat-mdc-menu-item.peligro:not([disabled]):hover,
+.mat-mdc-menu-panel .mat-mdc-menu-item.peligro:not([disabled]).cdk-keyboard-focused {
+  background-color: var(--ls-danger-soft);
+}

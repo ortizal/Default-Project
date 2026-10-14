@@ -36,8 +36,14 @@
               <td>{{ o.email || '-' }}</td>
               <td><ui-badge [tone]="o.estado === 'ACTIVO' ? 'ok' : 'bad'">{{ o.estado }}</ui-badge></td>
               <td class="flex">
-                <button class="btn small" (click)="editar(o)">Editar</button>
-                <button class="btn small outline danger" (click)="desactivar(o)" [disabled]="o.estado !== 'ACTIVO'">Desactivar</button>
+                <button class="btn small menu-trigger" [matMenuTriggerFor]="mOdont" [attr.aria-label]="'Acciones de ' + o.nombres + ' ' + o.apellidos">
+                  <mat-icon>menu</mat-icon>
+                  <mat-icon class="caret">arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #mOdont="matMenu">
+                  <button mat-menu-item (click)="editar(o)">Editar</button>
+                  <button mat-menu-item class="peligro" [disabled]="o.estado !== 'ACTIVO'" (click)="desactivar(o)">Desactivar</button>
+                </mat-menu>
               </td>
             </tr>
           } @empty {

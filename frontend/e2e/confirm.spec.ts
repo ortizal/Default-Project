@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { abrirDesactivar } from './actions';
 
 async function login(page: Page) {
   await page.goto('./');
@@ -12,9 +13,7 @@ async function login(page: Page) {
 async function abrirConfirmacion(page: Page) {
   await page.goto('pacientes');
   await page.waitForSelector('tbody tr', { timeout: 10000 });
-  const desactivar = page.locator('button.btn.small.danger:not([disabled])').first();
-  await expect(desactivar).toBeVisible();
-  await desactivar.click();
+  await abrirDesactivar(page);
 
   const dialogo = page.locator('[role="dialog"]');
   await expect(dialogo).toBeVisible({ timeout: 5000 });

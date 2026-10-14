@@ -54,6 +54,11 @@ export class Api {
     return this.inZone(this.http.delete<T>(this.url(path)));
   }
 
+  /** Descarga binaria (PDF) con la misma autenticación que el resto de la API. */
+  getBlob(path: string): Observable<Blob> {
+    return this.inZone(this.http.get(this.url(path), { responseType: 'blob' }));
+  }
+
   private inZone<T>(source: Observable<T>): Observable<T> {
     return new Observable<T>((subscriber) => {
       const sub = source.subscribe({

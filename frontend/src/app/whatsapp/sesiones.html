@@ -104,14 +104,24 @@
                 </td>
                 <td>
                   <div class="acciones">
-                    @if (s.estado === 'DESCONECTADA' || s.estado === 'CONECTANDO' || s.estado === 'ERROR') {
-                      <button class="btn sm success" (click)="conectar(s)">▶ Conectar</button>
-                    }
-                    @if (s.estado === 'CONECTADA') {
-                      <button class="btn sm" (click)="desconectar(s)">⏹ Desconectar</button>
-                    }
-                    <button class="btn sm" (click)="probar(s)" aria-label="Ver QR">↻ QR</button>
-                    <button class="btn sm danger" (click)="borrar(s)" aria-label="Borrar sesión">✗</button>
+                    <button
+                      class="btn sm menu-trigger"
+                      [matMenuTriggerFor]="mSesion"
+                      [attr.aria-label]="'Acciones de la sesión ' + (s.nombre || s.sesionId)"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mSesion="matMenu">
+                      @if (s.estado === 'DESCONECTADA' || s.estado === 'CONECTANDO' || s.estado === 'ERROR') {
+                        <button mat-menu-item (click)="conectar(s)">▶ Conectar</button>
+                      }
+                      @if (s.estado === 'CONECTADA') {
+                        <button mat-menu-item (click)="desconectar(s)">⏹ Desconectar</button>
+                      }
+                      <button mat-menu-item (click)="probar(s)" aria-label="Ver QR">↻ QR</button>
+                      <button mat-menu-item class="peligro" (click)="borrar(s)" aria-label="Borrar sesión">✗</button>
+                    </mat-menu>
                   </div>
                 </td>
               </tr>

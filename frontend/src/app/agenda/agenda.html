@@ -53,7 +53,15 @@
                   <td>{{ c.pacienteNombre }}</td>
                   <td>{{ c.servicioNombre }}</td>
                   <td><span class="badge" [ngClass]="badge(c.estado)">{{ c.estado }}</span></td>
-                  <td><a class="btn small" routerLink="/citas">Ver</a></td>
+                  <td>
+                    <button class="btn small menu-trigger" [matMenuTriggerFor]="mCitaDia" [attr.aria-label]="'Acciones de la cita de ' + c.pacienteNombre">
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mCitaDia="matMenu">
+                      <a mat-menu-item routerLink="/citas">Ver</a>
+                    </mat-menu>
+                  </td>
                 </tr>
               } @empty {
                 <tr><td colspan="5" class="empty">Sin citas este día.</td></tr>

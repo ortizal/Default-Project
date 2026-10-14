@@ -62,6 +62,24 @@ textarea.input {
   margin-top: 12px;
 }
 
+.signature-status {
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.signature-password {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.signature-password .field {
+  flex: 1 1 280px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

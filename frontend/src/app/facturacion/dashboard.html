@@ -1,0 +1,195 @@
+<ui-page-header title="Finanzas — Dashboard" />
+
+<div class="toolbar">
+  <div class="range-presets" role="group" aria-label="Rango rápido">
+    @for (rango of rangos; track rango.dias) {
+      <button class="btn outline sm" type="button" [class.active]="diasRango === rango.dias"
+              (click)="seleccionarRango(rango.dias)">{{ rango.etiqueta }}</button>
+    }
+  </div>
+  <div class="form-field">
+    <label class="label" for="fin-desde">Desde</label>
+    <input id="fin-desde" class="input sm" type="date" [(ngModel)]="desde" (change)="cargar()">
+  </div>
+  <div class="form-field">
+    <label class="label" for="fin-hasta">Hasta</label>
+    <input id="fin-hasta" class="input sm" type="date" [(ngModel)]="hasta" (change)="cargar()">
+  </div>
+  <button class="btn" (click)="cargar()" [disabled]="cargando">Actualizar</button>
+</div>
+
+@if (error) {
+  <div class="msg error" data-testid="finanzas-error">{{ error }}</div>
+}
+@if (cargando) {
+  <div class="empty"><span class="spinner"></span> Cargando dashboard…</div>
+}
+
+@if (e; as r) {
+  @if (puedeVerReportes) {
+  <section class="insights-grid mt-4" aria-label="Tendencia y proyecciones">
+    <div class="card trend-panel m-0" data-testid="tendencia-financiera">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Ritmo financiero</h2>
+          <span class="muted text-sm">Facturado y cobrado · {{ r.desde }} → {{ r.hasta }}</span>
+        </div>
+        <div class="chart-legend" aria-label="Leyenda">
+          <span><i class="legend-dot billed"></i>Facturado</span>
+          <span><i class="legend-dot collected"></i>Cobrado</span>
+        </div>
+      </div>
+      @if (tendencia.length) {
+        <div class="trend-chart" role="img" aria-label="Barras de facturación y cobranza por periodo">
+          @for (punto of tendencia; track punto.etiqueta) {
+            <div class="trend-group" [attr.title]="punto.etiqueta + ': facturado ' + moneda(punto.facturado) + ', cobrado ' + moneda(punto.cobrado)">
+              <div class="trend-bars">
+                <span class="trend-bar billed" [style.height.%]="alturaBarra(punto.facturado)"></span>
+                <span class="trend-bar collected" [style.height.%]="alturaBarra(punto.cobrado)"></span>
+              </div>
+              <span class="trend-label">{{ punto.etiqueta }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty">Sin movimientos para graficar en este rango.</div>
+      }
+    </div>
+
+    <div class="card m-0 growth-panel" data-testid="crecimiento-financiero">
+      <div class="card-header"><h2 class="card-title">Crecimiento</h2></div>
+      @if (crecimiento !== null) {
+        <div class="growth-value" [class.negative]="crecimiento < 0">
+          {{ crecimiento > 0 ? '+' : '' }}{{ crecimiento | number:'1.1-1' }}%
+        </div>
+        <p class="muted text-sm">Facturación frente a los {{ diasRango }} días anteriores</p>
+        <div class="comparison-line">
+          <span>Periodo actual</span><strong>{{ moneda(ventas?.facturado) }}</strong>
+          <span>Periodo anterior</span><strong>{{ moneda(ventasAnterior?.facturado) }}</strong>
+        </div>
+      } @else {
+        <div class="empty">No hay base de comparación con facturación previa.</div>
+      }
+    </div>
+  </section>
+  }
+
+  <div class="grid cols-3" data-testid="dashboard-financiero">
+    <div class="card stat m-0"><div class="num">{{ moneda(r.facturado) }}</div><div class="lbl">Facturado (rango)</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.cobrado) }}</div><div class="lbl">Cobrado (rango)</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.cuentasPorCobrar) }}</div><div class="lbl">Por cobrar · {{ r.cuentasPendientes }} cuentas</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.anticipos) }}</div><div class="lbl">Anticipos vigentes</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.ticketPromedio) }}</div><div class="lbl">Ticket promedio · {{ r.cobros }} cobros</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.descuentos) }}</div><div class="lbl">Descuentos</div></div>
+  </div>
+
+  <section class="scenario-grid mt-4" aria-label="Proyecciones y exposición">
+    @if (puedeVerReportes) {
+    <div class="card m-0">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Proyección a 30 días</h2>
+          <span class="muted text-sm">Según el promedio diario del periodo seleccionado</span>
+        </div>
+      </div>
+      <div class="scenario-switch" role="group" aria-label="Escenario de crecimiento">
+        <button class="btn outline sm" type="button" [class.active]="escenario === 'conservador'"
+                (click)="seleccionarEscenario('conservador')">Conservador</button>
+        <button class="btn outline sm" type="button" [class.active]="escenario === 'base'"
+                (click)="seleccionarEscenario('base')">Base</button>
+        <button class="btn outline sm" type="button" [class.active]="escenario === 'optimista'"
+                (click)="seleccionarEscenario('optimista')">Optimista</button>
+      </div>
+      <div class="projection-value">{{ moneda(proyeccion) }}</div>
+      <p class="muted text-sm">{{ escenario === 'conservador' ? 'Ritmo reducido 10%' : escenario === 'optimista' ? 'Ritmo aumentado 10%' : 'Ritmo actual sostenido' }}</p>
+    </div>
+    }
+
+    <div class="card m-0 risk-panel" data-testid="riesgo-cartera">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Pérdida potencial estimada</h2>
+          <span class="muted text-sm">Exposición sobre {{ moneda(r.cuentasPorCobrar) }} por cobrar</span>
+        </div>
+      </div>
+      <div class="projection-value risk-value">{{ riesgoEstimado === null ? 'Sin supuesto' : moneda(riesgoEstimado) }}</div>
+      <label class="risk-control" for="riesgo-porcentaje">
+        <span>Supuesto de incobrabilidad</span><strong>{{ porcentajeRiesgo === null ? 'No definido' : porcentajeRiesgo + '%' }}</strong>
+      </label>
+      <input id="riesgo-porcentaje" class="risk-slider" type="range" min="0" max="100" step="5"
+             [(ngModel)]="porcentajeRiesgo" [attr.aria-valuetext]="porcentajeRiesgo === null ? 'Supuesto no definido' : porcentajeRiesgo + '% estimado'">
+      <p class="muted text-sm">Escenario editable; no representa una pérdida confirmada ni sustituye el análisis de antigüedad de saldos.</p>
+    </div>
+  </section>
+
+  <div class="grid cols-3 mt-4" data-testid="dashboard-hoy-mes">
+    <div class="card stat m-0"><div class="num">{{ moneda(r.facturadoHoy) }}</div><div class="lbl">Facturado hoy</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.cobradoHoy) }}</div><div class="lbl">Cobrado hoy</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.facturadoMes) }}</div><div class="lbl">Facturado del mes</div></div>
+    <div class="card stat m-0"><div class="num">{{ moneda(r.cobradoMes) }}</div><div class="lbl">Cobrado del mes</div></div>
+  </div>
+
+  <div class="grid cols-3 mt-4">
+    <div class="card m-0">
+      <div class="card-header">
+        <h2 class="card-title">Cobros por forma de pago</h2>
+        <span class="muted text-sm">{{ r.desde }} → {{ r.hasta }}</span>
+      </div>
+      @if (r.porFormaPago.length) {
+        <table class="tbl" data-testid="tabla-forma-pago">
+          <thead><tr><th>Forma de pago</th><th class="text-right">Neto</th></tr></thead>
+          <tbody>
+            @for (f of r.porFormaPago; track f.formaPago) {
+              <tr>
+                <td>{{ etiquetaFormaPago(f.formaPago) }}</td>
+                <td class="text-right">{{ moneda(f.monto) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cobros en el período.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Facturado por odontólogo</h2></div>
+      @if (r.porOdontologo.length) {
+        <table class="tbl" data-testid="tabla-odontologos-fin">
+          <thead><tr><th>Odontólogo</th><th class="text-right">Facturado</th><th class="text-right">Cargos</th></tr></thead>
+          <tbody>
+            @for (o of r.porOdontologo; track o.odontologo) {
+              <tr>
+                <td>{{ o.odontologo }}</td>
+                <td class="text-right">{{ moneda(o.facturado) }}</td>
+                <td class="text-right">{{ o.cargos }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cargos con odontólogo asignado.</div>
+      }
+    </div>
+
+    <div class="card m-0">
+      <div class="card-header"><h2 class="card-title">Facturado por servicio</h2></div>
+      @if (r.porServicio.length) {
+        <table class="tbl" data-testid="tabla-servicios-fin">
+          <thead><tr><th>Servicio</th><th class="text-right">Facturado</th><th class="text-right">Cargos</th></tr></thead>
+          <tbody>
+            @for (s of r.porServicio; track s.servicio) {
+              <tr>
+                <td>{{ s.servicio }}</td>
+                <td class="text-right">{{ moneda(s.facturado) }}</td>
+                <td class="text-right">{{ s.cargos }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty">Sin cargos ligados a un servicio.</div>
+      }
+    </div>
+  </div>
+}

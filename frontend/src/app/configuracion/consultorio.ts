@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
+import { AuthService } from '../core/auth.service';
 import { UiPageHeaderComponent } from '../ui';
 
 interface Consultorio {
@@ -17,6 +18,28 @@ interface Consultorio {
   firmaDigitalCargada?: boolean;
 }
 
+interface ConfiguracionFirma {
+  ambiente: 'PRUEBAS' | 'PRODUCCION';
+  tipoEmision: string;
+  contribuyenteEspecial: boolean;
+  agenteRetencion: boolean;
+  obligadoContabilidad: boolean;
+  establecimiento: string;
+  puntoEmision: string;
+  secuencialActual: number;
+  secuencialSiguiente: string;
+  sriUrlPruebas: string;
+  sriUrlProduccion: string;
+  sriUrlActiva: string;
+  firmaModo: string;
+  firmaMotivo: string | null;
+  firmaArchivo: string | null;
+  firmaPasswordConfigurada: boolean;
+  firmaTitular: string | null;
+  firmaValidoDesde: string | null;
+  firmaValidoHasta: string | null;
+}
+
 @Component({
   selector: 'app-consultorio',
   templateUrl: './consultorio.html',
@@ -25,6 +48,7 @@ interface Consultorio {
 })
 export class ConsultorioComponent implements OnInit {
   private readonly api = inject(Api);
+  private readonly auth = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   form: Consultorio = {
@@ -43,8 +67,15 @@ export class ConsultorioComponent implements OnInit {
   exito = '';
   firmaSeleccionada: File | null = null;
   firmaSubiendo = false;
+  firmaPassword = '';
+  firmaPasswordGuardando = false;
+  cargandoFacturacion = false;
+  guardandoFacturacion = false;
+  puedeConfigurarFacturacion = false;
+  configFacturacion: ConfiguracionFirma | null = null;
 
   ngOnInit(): void {
+    this.puedeConfigurarFacturacion = this.auth.puede('CONFIGURACION_FACTURACION');
     this.api.get<Consultorio>('/configuracion/consultorio').subscribe({
       next: (consultorio) => {
         this.form = { ...this.form, ...consultorio };
@@ -54,6 +85,86 @@ export class ConsultorioComponent implements OnInit {
       error: (e) => {
         this.error = e?.error?.message || 'No se pudo cargar la configuración.';
         this.cargando = false;
+        this.cdr.markForCheck();
+      },
+    });
+    if (this.puedeConfigurarFacturacion) this.cargarConfiguracionFacturacion();
+  }
+
+  cargarConfiguracionFacturacion(): void {
+    this.cargandoFacturacion = true;
+    this.api.get<ConfiguracionFirma>('/facturacion/configuracion').subscribe({
+      next: (configuracion) => {
+        this.configFacturacion = configuracion;
+        this.cargandoFacturacion = false;
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.error = e?.error?.message || 'No se pudo cargar la configuración tributaria.';
+        this.cargandoFacturacion = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  guardarConfiguracionFacturacion(): void {
+    const actual = this.configFacturacion;
+    if (!actual || this.guardandoFacturacion) return;
+    this.guardandoFacturacion = true;
+    this.error = '';
+    this.exito = '';
+    this.api.put<ConfiguracionFirma>('/facturacion/configuracion', {
+      ambiente: actual.ambiente,
+      tipoEmision: actual.tipoEmision,
+      contribuyenteEspecial: actual.contribuyenteEspecial,
+      agenteRetencion: actual.agenteRetencion,
+      obligadoContabilidad: actual.obligadoContabilidad,
+      establecimiento: actual.establecimiento,
+      puntoEmision: actual.puntoEmision,
+      secuencialActual: actual.secuencialActual,
+      sriUrlPruebas: actual.sriUrlPruebas,
+      sriUrlProduccion: actual.sriUrlProduccion,
+      sriUsuario: null,
+      sriClave: null,
+      limpiarSriClave: false,
+    }).subscribe({
+      next: (configuracion) => {
+        this.configFacturacion = configuracion;
+        this.guardandoFacturacion = false;
+        this.exito = 'Configuración tributaria guardada.';
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.error = e?.error?.message || 'No se pudo guardar la configuración tributaria.';
+        this.guardandoFacturacion = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  guardarPasswordFirma(): void {
+    if (!this.form.firmaDigitalCargada || this.firmaPasswordGuardando) return;
+    if (!this.firmaPassword) {
+      this.error = 'Escribe la contraseña del archivo .p12.';
+      return;
+    }
+    this.firmaPasswordGuardando = true;
+    this.error = '';
+    this.exito = '';
+    this.api.put<ConfiguracionFirma>('/facturacion/configuracion/firma', {
+      password: this.firmaPassword,
+    }).subscribe({
+      next: (configuracion) => {
+        this.configFacturacion = configuracion;
+        this.firmaPassword = '';
+        this.firmaPasswordGuardando = false;
+        this.exito = 'Certificado validado y contraseña protegida.';
+        this.cdr.markForCheck();
+      },
+      error: (e) => {
+        this.firmaPassword = '';
+        this.error = e?.error?.message || 'No se pudo validar el certificado .p12.';
+        this.firmaPasswordGuardando = false;
         this.cdr.markForCheck();
       },
     });
@@ -127,6 +238,7 @@ export class ConsultorioComponent implements OnInit {
         this.firmaSeleccionada = null;
         this.firmaSubiendo = false;
         this.exito = 'Firma digital cargada.';
+        if (this.puedeConfigurarFacturacion) this.cargarConfiguracionFacturacion();
         this.cdr.markForCheck();
       },
       error: (e) => {
@@ -147,6 +259,7 @@ export class ConsultorioComponent implements OnInit {
         this.form = { ...this.form, ...consultorio };
         this.firmaSubiendo = false;
         this.exito = 'Firma digital eliminada.';
+        if (this.puedeConfigurarFacturacion) this.cargarConfiguracionFacturacion();
         this.cdr.markForCheck();
       },
       error: (e) => {

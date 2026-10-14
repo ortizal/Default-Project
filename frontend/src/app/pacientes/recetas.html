@@ -1,0 +1,267 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="toolbar">
+  <span class="card-title">Recetas ({{ recetas.length }})</span>
+  @if (escribir) {
+    <ui-button size="sm" variant="primary" (clicked)="nuevaReceta()">+ Nueva receta</ui-button>
+  }
+  @if (receta) {
+    <ui-button size="sm" (clicked)="descargarPdf()">Descargar PDF</ui-button>
+  }
+</div>
+
+@if (!recetas.length) {
+  <p class="empty">Este paciente todavía no tiene recetas emitidas.</p>
+} @else {
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Fecha</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Profesional</th>
+          <th scope="col">Diagnóstico</th>
+          <th scope="col">Medicamentos</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of recetas; track r.id) {
+          <tr [class.fila-sel]="receta?.id === r.id">
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(r)">{{ r.fecha }}</button>
+            </td>
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(r)">
+                <ui-badge [tone]="toneEstado(r.estado)">{{ etiquetaEstado(r.estado) }}</ui-badge>
+              </button>
+            </td>
+            <td>{{ r.odontologo || '—' }}</td>
+            <td class="obs">{{ r.diagnostico || '—' }}</td>
+            <td>{{ r.lineas }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (receta; as r) {
+  <section class="detalle-receta" aria-label="Detalle de la receta">
+    <div class="toolbar">
+      <span class="card-title">Receta No. {{ r.id }}</span>
+      <ui-badge [tone]="toneEstado(r.estado)">{{ etiquetaEstado(r.estado) }}</ui-badge>
+      <span class="muted text-sm">{{ r.fecha }}</span>
+      @if (r.odontologo) {
+        <span class="muted text-sm">{{ r.odontologo }}</span>
+      }
+      <span class="separador"></span>
+      @if (escribir && r.estado === 'VIGENTE') {
+        <ui-button size="sm" (clicked)="editarReceta()">Editar</ui-button>
+        <ui-button size="sm" variant="danger" (clicked)="abrirAnular()">Anular</ui-button>
+      }
+      <ui-button size="sm" (clicked)="descargarPdf()">PDF</ui-button>
+    </div>
+
+    <div class="totales">
+      <span>Paciente: <strong>{{ r.paciente }}</strong></span>
+      <span>Diagnóstico: <strong>{{ r.diagnostico || '—' }}</strong></span>
+      <span>Medicamentos: <strong>{{ r.lineas.length }}</strong></span>
+    </div>
+
+    @if (r.observaciones) {
+      <p class="muted text-sm">{{ r.observaciones }}</p>
+    }
+    @if (r.estado === 'ANULADA' && r.motivoAnulacion) {
+      <p class="msg error">Receta anulada: {{ r.motivoAnulacion }}</p>
+    }
+
+    <div class="tbl-wrap">
+      <table class="tbl receta">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Medicamento</th>
+            <th scope="col">Concentración</th>
+            <th scope="col">Presentación</th>
+            <th scope="col">Dosis</th>
+            <th scope="col">Vía</th>
+            <th scope="col">Frecuencia</th>
+            <th scope="col">Duración</th>
+            <th scope="col">Instrucciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of r.lineas; track l.id) {
+            <tr>
+              <td class="num">{{ l.numero }}</td>
+              <td class="medicamento">{{ l.medicamento }}</td>
+              <td>{{ l.concentracion || '—' }}</td>
+              <td>{{ l.presentacion || '—' }}</td>
+              <td>{{ l.dosis }}</td>
+              <td>{{ etiquetaVia(l.via) }}</td>
+              <td>{{ l.frecuencia || '—' }}</td>
+              <td>{{ l.duracion || '—' }}</td>
+              <td class="obs instrucciones">{{ l.instrucciones || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+<!-- ============================ MODAL RECETA ============================ -->
+@if (modalReceta) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Receta" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editandoReceta ? 'Editar receta' : 'Nueva receta' }}</h2>
+
+      <div class="form-row">
+        <div>
+          <label class="label" for="rec-fecha">Fecha *</label>
+          <input id="rec-fecha" class="input" type="date" [(ngModel)]="formReceta.fecha" />
+        </div>
+        <div>
+          <label class="label" for="rec-profesional">Profesional</label>
+          <select id="rec-profesional" class="input" [(ngModel)]="formReceta.odontologoId">
+            <option [ngValue]="null">— Sin asignar —</option>
+            @for (o of odontologos; track o.id) {
+              <option [ngValue]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="rec-diagnostico">Diagnóstico</label>
+          <input id="rec-diagnostico" class="input" maxlength="255" [(ngModel)]="formReceta.diagnostico" />
+        </div>
+        <div class="full">
+          <label class="label" for="rec-obs">Observaciones</label>
+          <textarea id="rec-obs" class="input" [(ngModel)]="formReceta.observaciones"></textarea>
+        </div>
+      </div>
+
+      <div class="sub">Cada medicamento necesita nombre y dosis. La vía, la frecuencia y la duración son opcionales.</div>
+
+      <div class="tbl-wrap">
+        <table class="tbl lineas">
+          <thead>
+            <tr>
+              <th scope="col">Medicamento *</th>
+              <th scope="col">Concentración</th>
+              <th scope="col">Presentación</th>
+              <th scope="col">Dosis *</th>
+              <th scope="col">Vía</th>
+              <th scope="col">Frecuencia</th>
+              <th scope="col">Duración</th>
+              <th scope="col">Instrucciones</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of formReceta.lineas; track $index) {
+              <tr>
+                <td>
+                  <label class="sr-only" for="lin-med-{{ $index }}">Medicamento</label>
+                  <input id="lin-med-{{ $index }}" class="input ancho" maxlength="150" [(ngModel)]="l.medicamento" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-conc-{{ $index }}">Concentración</label>
+                  <input id="lin-conc-{{ $index }}" class="input" maxlength="100" [(ngModel)]="l.concentracion" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-pres-{{ $index }}">Presentación</label>
+                  <input id="lin-pres-{{ $index }}" class="input" maxlength="100" [(ngModel)]="l.presentacion" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-dosis-{{ $index }}">Dosis</label>
+                  <input id="lin-dosis-{{ $index }}" class="input" maxlength="100" [(ngModel)]="l.dosis" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-via-{{ $index }}">Vía</label>
+                  <select id="lin-via-{{ $index }}" class="input" [(ngModel)]="l.via">
+                    <option value="">—</option>
+                    @for (v of vias; track v.id) {
+                      <option [value]="v.id">{{ v.label }}</option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-frec-{{ $index }}">Frecuencia</label>
+                  <input id="lin-frec-{{ $index }}" class="input" maxlength="100" [(ngModel)]="l.frecuencia" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-dur-{{ $index }}">Duración</label>
+                  <input id="lin-dur-{{ $index }}" class="input" maxlength="100" [(ngModel)]="l.duracion" />
+                </td>
+                <td>
+                  <label class="sr-only" for="lin-inst-{{ $index }}">Instrucciones</label>
+                  <input id="lin-inst-{{ $index }}" class="input" maxlength="500" [(ngModel)]="l.instrucciones" />
+                </td>
+                <td class="acciones">
+                  <button
+                    type="button"
+                    class="btn small menu-trigger"
+                    [matMenuTriggerFor]="mLineaRec"
+                    [attr.aria-label]="'Acciones de la línea de la receta'"
+                  >
+                    <mat-icon>menu</mat-icon>
+                    <mat-icon class="caret">arrow_drop_down</mat-icon>
+                  </button>
+                  <mat-menu #mLineaRec="matMenu">
+                    <button
+                      type="button"
+                      mat-menu-item
+                      class="peligro"
+                      [disabled]="formReceta.lineas.length === 1"
+                      (click)="eliminarLinea($index)"
+                    >
+                      Quitar
+                    </button>
+                  </mat-menu>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lineas-acciones">
+        <ui-button size="sm" (clicked)="agregarLinea()">+ Agregar medicamento</ui-button>
+      </div>
+
+      @if (errorReceta) {
+        <div class="msg error">{{ errorReceta }}</div>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!!errorReceta" (click)="guardarReceta()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL ANULAR ============================ -->
+@if (modalAnular) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Anular receta" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Anular receta No. {{ receta?.id }}</h2>
+      <div class="sub">La receta se conserva en el historial con el motivo de anulación.</div>
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="anul-motivo">Motivo *</label>
+          <textarea id="anul-motivo" class="input" maxlength="255" [(ngModel)]="motivo"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn danger" [disabled]="!motivo.trim()" (click)="anular()">Anular receta</button>
+      </div>
+    </div>
+  </div>
+}

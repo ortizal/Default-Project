@@ -25,9 +25,17 @@ public class AuditoriaService {
 
     @Transactional(readOnly = true)
     public Page<AuditoriaResponse> listar(String q, String modulo, int page, int size) {
+        return listar(q, modulo, null, null, page, size);
+    }
+
+    /** Filtro exacto de una fila (entidad + identificador), plan §3.7. */
+    @Transactional(readOnly = true)
+    public Page<AuditoriaResponse> listar(String q, String modulo, String entidad,
+                                          Long entidadId, int page, int size) {
         String query = q == null ? "" : q.trim();
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "createdAt"));
-        return auditoriaRepository.buscar(query, modulo, pageable).map(this::toResponse);
+        return auditoriaRepository.buscar(query, modulo, entidad, entidadId, pageable)
+                .map(this::toResponse);
     }
 
     private AuditoriaResponse toResponse(Auditoria a) {

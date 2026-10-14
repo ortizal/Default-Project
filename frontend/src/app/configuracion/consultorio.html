@@ -80,7 +80,74 @@
             </button>
           }
         </div>
+        @if (puedeConfigurarFacturacion) {
+          @if (configFacturacion; as config) {
+            <div class="signature-status" data-testid="firma-estado">
+              <strong>Validación:</strong> {{ config.firmaModo }}
+              @if (config.firmaMotivo) { <span class="muted">· {{ config.firmaMotivo }}</span> }
+              @if (config.firmaTitular) {
+                <div><strong>Titular:</strong> {{ config.firmaTitular }}</div>
+                <div><strong>Vigencia:</strong> {{ config.firmaValidoDesde | date:'mediumDate' }} – {{ config.firmaValidoHasta | date:'mediumDate' }}</div>
+              }
+            </div>
+          }
+          <form class="signature-password" (ngSubmit)="guardarPasswordFirma()">
+            <label class="field">
+              <span class="label">Contraseña del archivo .p12</span>
+              <input class="input" name="firmaPassword" type="password" autocomplete="new-password"
+                     [(ngModel)]="firmaPassword" maxlength="200" [disabled]="!form.firmaDigitalCargada || firmaPasswordGuardando">
+            </label>
+            <button class="btn" type="submit" [disabled]="!form.firmaDigitalCargada || firmaPasswordGuardando">
+              {{ firmaPasswordGuardando ? 'Validando certificado...' : 'Validar y guardar contraseña' }}
+            </button>
+          </form>
+        }
       </section>
+
+      @if (puedeConfigurarFacturacion) {
+        <section class="signature-section" aria-labelledby="facturacion-config-title" data-testid="configuracion-sri">
+          <h2 id="facturacion-config-title">Ambiente y numeración SRI</h2>
+          @if (cargandoFacturacion) {
+            <p class="muted" role="status">Cargando configuración tributaria...</p>
+          } @else if (configFacturacion; as config) {
+            <div class="field-grid">
+              <label class="field">
+                <span class="label">Ambiente efectivo</span>
+                <select class="input" name="ambienteSri" [(ngModel)]="config.ambiente">
+                  <option value="PRUEBAS">Pruebas SRI</option>
+                  <option value="PRODUCCION">Producción</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="label">Tipo de emisión</span>
+                <select class="input" name="tipoEmisionSri" [(ngModel)]="config.tipoEmision">
+                  <option value="NORMAL">Normal</option>
+                  <option value="CONTINGENCIA">Contingencia</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="label">Establecimiento</span>
+                <input class="input" name="establecimientoSri" [(ngModel)]="config.establecimiento" maxlength="3" inputmode="numeric">
+              </label>
+              <label class="field">
+                <span class="label">Punto de emisión</span>
+                <input class="input" name="puntoEmisionSri" [(ngModel)]="config.puntoEmision" maxlength="3" inputmode="numeric">
+              </label>
+              <label class="field">
+                <span class="label">Secuencial actual</span>
+                <input class="input" name="secuencialSri" type="number" min="0" max="999999999" [(ngModel)]="config.secuencialActual">
+              </label>
+            </div>
+            <p class="muted">Siguiente: {{ config.secuencialSiguiente }} · URL activa: {{ config.sriUrlActiva }}</p>
+            @if (config.ambiente === 'PRODUCCION') {
+              <div class="msg error" role="alert">Producción: los comprobantes pueden tener validez tributaria y contactar servicios reales del SRI.</div>
+            }
+            <button class="btn primary" type="button" (click)="guardarConfiguracionFacturacion()" [disabled]="guardandoFacturacion">
+              {{ guardandoFacturacion ? 'Guardando...' : 'Guardar ambiente y numeración' }}
+            </button>
+          }
+        </section>
+      }
 
       <div class="form-actions">
         <button class="btn primary" type="submit" [disabled]="guardando">

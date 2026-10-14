@@ -1,0 +1,28 @@
+<ui-page-header title="Centro de inteligencia" />
+
+<section class="intelligence-section" aria-labelledby="paneles-title" data-testid="centro-inteligencia">
+  <div class="section-heading">
+    <div>
+      <h2 id="paneles-title">Paneles disponibles</h2>
+      <p class="muted">Cada panel conserva sus fuentes de datos y permisos.</p>
+    </div>
+    @if (puedeConsultarReportes) {
+      <a class="btn outline" routerLink="/reportes">Centro de reportes</a>
+    }
+  </div>
+
+  @if (disponibles.length) {
+    <div class="intelligence-grid">
+      @for (panel of disponibles; track panel.ruta) {
+        <a class="card m-0 intelligence-link" [routerLink]="panel.ruta">
+          <span class="intelligence-icon"><mat-icon>{{ panel.icono }}</mat-icon></span>
+          <span class="intelligence-title">{{ panel.nombre }}</span>
+          <span class="muted">{{ panel.descripcion }}</span>
+          <span class="text-link">Abrir panel <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+    </div>
+  } @else {
+    <div class="empty">No tienes paneles habilitados para tu perfil.</div>
+  }
+</section>

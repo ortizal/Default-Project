@@ -6,11 +6,16 @@ import { Page, WhatsappSesion } from '../core/models';
 import { withLoading } from '../core/loading';
 import { UiPageHeaderComponent, UiPaginationComponent, UiConfirmService } from '../ui';
 
+import { MatMenuModule } from '@angular/material/menu';
+
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-sesiones',
   templateUrl: './sesiones.html',
   styleUrl: './sesiones.css',
-  imports: [CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
+  imports: [
+    MatIconModule,
+    MatMenuModule,CommonModule, FormsModule, UiPageHeaderComponent, UiPaginationComponent],
 })
 export class SesionesComponent implements OnInit {
   private readonly api = inject(Api);

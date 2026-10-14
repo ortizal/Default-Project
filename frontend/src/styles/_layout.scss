@@ -114,6 +114,8 @@ app-sidebar {
   flex-direction: column;
   width: $ls-sidebar-w;
   height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   background: var(--ls-sidebar-bg);
   color: var(--ls-sidebar-fg);
   overflow: hidden;
@@ -127,11 +129,11 @@ app-sidebar {
   .brand {
     display: flex;
     align-items: center;
-    gap: $ls-space-2;
-    height: $ls-topbar-h;
+    gap: $ls-space-3;
+    min-height: 76px;
     padding: 0 $ls-space-4;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 16px;
     color: var(--ls-on-dark);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     white-space: nowrap;
@@ -140,18 +142,18 @@ app-sidebar {
     .brand-mark {
       display: grid;
       place-items: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       background: var(--ls-primary);
       color: var(--ls-on-primary);
       font-size: 17px;
       flex: 0 0 auto;
 
       mat-icon {
-        font-size: 17px;
-        width: 17px;
-        height: 17px;
+        font-size: 21px;
+        width: 21px;
+        height: 21px;
         line-height: 1;
       }
     }
@@ -162,14 +164,30 @@ app-sidebar {
     }
   }
 
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
   .brand-name {
-    @include truncate;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ls-on-dark);
+  }
+
+  // Colapsada, sólo queda el icono: la marca ALANTEK se oculta.
+  &.collapsed .alantek {
+    display: none;
   }
 
   .sidebar-nav {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: $ls-space-2 0;
   }
 
@@ -206,6 +224,7 @@ app-sidebar {
       width: 20px;
       height: 20px;
       flex: 0 0 auto;
+      color: currentColor;
     }
 
     &:hover {
@@ -230,22 +249,38 @@ app-sidebar {
   }
 
   .sidebar-footer {
-    padding: $ls-space-3 $ls-space-4;
+    flex: 0 0 auto;
+    padding: $ls-space-3 $ls-space-4 calc(#{$ls-space-3} + env(safe-area-inset-bottom, 0px));
     font-size: var(--ls-text-xs);
     color: rgba(255, 255, 255, 0.55);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
 
     strong {
+      display: inline-block;
+      max-width: 100%;
       color: var(--ls-on-dark);
       font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 40px;
+      margin-top: $ls-space-2;
+      white-space: normal;
     }
   }
 
   // ---- estado colapsado (desktop) ----
   &.collapsed {
-    .brand-name,
+    .brand-text,
     .section,
     .sidebar-footer {
       display: none;
@@ -349,6 +384,37 @@ app-sidebar {
 }
 // Zona de contenido de página (bloques apilados)
 
+// ------------------------------------------------------------- marca ALANTEK
+// Wordmark tipográfico compartido: login, sidebar y pie. El color del texto
+// hereda del contenedor (siempre supera el contraste mínimo) y el distintivo
+// aporta la identidad con el primario del sistema.
+.alantek {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: inherit;
+
+  .alantek-badge {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--ls-primary);
+    color: var(--ls-on-primary);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0;
+    flex: 0 0 auto;
+  }
+}
+
 // ------------------------------------------------------------- footer
 .app-footer {
   flex: 0 0 auto;
@@ -374,7 +440,7 @@ app-sidebar {
 // Refuerzo de especificidad: los estilos M3 de Angular Material se
 // emiten con selectores de dos clases (.mat-mdc-toolbar.mdc-toolbar).
 // Estas reglas van después y con mayor peso para que la identidad
-// Little Smile gane siempre.
+// CRM Dental AT gane siempre.
 // ---------------------------------------------------------------------
 .app-shell .main .topbar {
   height: $ls-topbar-h;
@@ -411,7 +477,9 @@ app-sidebar {
   --mat-toolbar-container-color: var(--ls-muted);
 
 }
-.app-shell .main .app-footer span {
+// Sólo los spans directos (copyright / versión): los anidados (p. ej. el
+// distintivo del wordmark ALANTEK) conservan sus propios estilos.
+.app-shell .main .app-footer > span {
   font-size: var(--ls-text-xs);
   line-height: 1.4;
   color: var(--ls-muted);

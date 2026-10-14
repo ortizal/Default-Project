@@ -1,0 +1,318 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="odo-toolbar">
+  <div class="seg" role="group" aria-label="Dentición">
+    @for (m of modos; track m.id) {
+      <button
+        type="button"
+        class="seg-btn"
+        [class.active]="modo === m.id"
+        [attr.aria-pressed]="modo === m.id"
+        (click)="modo = m.id"
+      >
+        {{ m.label }}
+      </button>
+    }
+  </div>
+
+  <div class="flex gap-2 wrap items-center">
+    <label class="text-sm" for="odo-version">Versión</label>
+    <select id="odo-version" class="input odo-select" [(ngModel)]="versionSel" (change)="cargarVersion()">
+      @for (h of historial; track h.id) {
+        <option [ngValue]="h.version">V{{ h.version }} · {{ h.fecha }} · {{ h.registros }} registros</option>
+      }
+      @if (!historial.length) {
+        <option [ngValue]="0">—</option>
+      }
+    </select>
+    @if (puedeEditar) {
+      <ui-button (clicked)="nuevaVersion()">+ Nueva versión</ui-button>
+      <ui-button variant="outline" (clicked)="nuevaCondicion()">+ Condición</ui-button>
+    }
+  </div>
+</div>
+
+@if (cargando) {
+  <div class="muted">Cargando odontograma…</div>
+} @else if (!odontograma) {
+  <div class="empty">
+    <p>Todavía no hay odontograma para este paciente.</p>
+    @if (escribir) {
+      <ui-button variant="primary" (clicked)="nuevaVersion()">Crear primera versión</ui-button>
+    }
+  </div>
+} @else {
+  <section class="odo-seccion" aria-labelledby="odo-titulo-diag">
+    <div class="between wrap gap-2">
+      <h2 id="odo-titulo-diag" class="card-title">
+        Odontograma FDI · versión {{ odontograma.version }}
+        <span class="muted text-sm"> · {{ odontograma.fecha }}</span>
+      </h2>
+      <div class="flex gap-2 wrap items-center text-sm">
+        <label for="odo-desde" class="text-sm">Desde</label>
+        <select id="odo-desde" class="input odo-select" [(ngModel)]="cmpDesde">
+          @for (h of historial; track h.id) {
+            <option [ngValue]="h.version">V{{ h.version }}</option>
+          }
+        </select>
+        <label for="odo-hasta" class="text-sm">Hasta</label>
+        <select id="odo-hasta" class="input odo-select" [(ngModel)]="cmpHasta">
+          @for (h of historial; track h.id) {
+            <option [ngValue]="h.version">V{{ h.version }}</option>
+          }
+        </select>
+        <ui-button size="sm" variant="outline" (clicked)="comparar()" [disabled]="!cmpDesde || !cmpHasta">
+          Comparar
+        </ui-button>
+      </div>
+    </div>
+
+    @if (comparacion; as c) {
+      <div class="card odo-comparacion">
+        <p class="text-sm">
+          <strong>V{{ c.desde.version }}</strong> → <strong>V{{ c.hasta.version }}</strong> ·
+          {{ c.cambios.length }} cambio(s)
+        </p>
+        @if (!c.cambios.length) {
+          <div class="empty">Sin diferencias entre ambas versiones.</div>
+        } @else {
+          <ul class="odo-cambios">
+            @for (cambio of c.cambios; track $index) {
+              <li>
+                <ui-badge [tone]="cambio.tipo === 'NUEVO' ? 'ok' : cambio.tipo === 'ELIMINADO' ? 'danger' : 'warn'">
+                  {{ cambio.tipo }}
+                </ui-badge>
+                {{ etiquetaCambio(cambio) }}
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    <div class="odo-arquitectura">
+      @for (fila of filas; track fila.etiqueta) {
+        <div class="fila-odo">
+          <span class="fila-label text-sm">{{ fila.etiqueta }}</span>
+          <svg
+            class="odo-svg"
+            aria-hidden="true"
+            [attr.width]="ancho(fila)"
+            [attr.height]="ALTO_PIEZA"
+            [attr.viewBox]="'0 0 ' + ancho(fila) + ' ' + ALTO_PIEZA"
+          >
+            @for (numero of fila.numeros; track numero; let i = $index) {
+              <g class="pieza" [attr.transform]="'translate(' + i * PASO + ',0)'">
+                <g class="regiones" transform="translate(0,14)">
+                  @for (region of regiones; track region) {
+                    <polygon
+                      class="region"
+                      [attr.points]="poligonos[region]"
+                      [attr.fill]="colorDe(numero, region)"
+                      [class.llena]="condicionesDe(numero, region).length > 0"
+                      (click)="abrir(numero, region)"
+                      (keydown.enter)="abrir(numero, region)"
+                    >
+                      <title>{{ etiquetaRegion(numero, region) }}</title>
+                    </polygon>
+                  }
+                </g>
+                <text
+                  class="num"
+                  x="18"
+                  y="11"
+                  text-anchor="middle"
+                  [class.tachado]="completa(numero)"
+                  (click)="abrir(numero, null)"
+                  (keydown.enter)="abrir(numero, null)"
+                >
+                  {{ numero }}
+                </text>
+              </g>
+            }
+          </svg>
+        </div>
+      }
+    </div>
+
+    <section class="odo-leyenda" aria-label="Leyenda del odontograma">
+      <h3 class="text-sm">Estados</h3>
+      <ul class="odo-leyenda-lista">
+        @for (e of estados; track e.id) {
+          <li>
+            <span class="odo-punto" [style.background]="e.color" aria-hidden="true"></span>
+            {{ e.label }}
+          </li>
+        }
+      </ul>
+      <h3 class="text-sm">Condiciones</h3>
+      <p class="text-sm muted">{{ condiciones.join(' · ') }}</p>
+    </section>
+  </section>
+
+  <section class="odo-seccion" aria-labelledby="odo-titulo-tabla">
+    <div class="between wrap gap-2">
+      <h2 id="odo-titulo-tabla" class="card-title">
+        Condiciones registradas ({{ odontograma.dientes.length }})
+      </h2>
+      @if (!esVigente) {
+        <ui-badge tone="warn">Sólo lectura: no es la versión vigente</ui-badge>
+      }
+    </div>
+
+    @if (!odontograma.dientes.length) {
+      <div class="empty">Sin condiciones registradas en esta versión.</div>
+    } @else {
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th scope="col">Diente</th>
+              <th scope="col">Superficie</th>
+              <th scope="col">Condición</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Notas</th>
+              @if (puedeEditar) {
+                <th scope="col">Acciones</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of odontograma.dientes; track d.id) {
+              <tr>
+                <td>{{ d.diente }}</td>
+                <td>{{ etiquetaSuperficie(d.superficie) }}</td>
+                <td>{{ etiquetaCondicion(d.condicion) }}</td>
+                <td>
+                  <ui-badge [tone]="tonoEstado(d.estado)">{{ etiquetaEstado(d.estado) }}</ui-badge>
+                </td>
+                <td class="truncate">{{ d.notas || '—' }}</td>
+                @if (puedeEditar) {
+                  <td class="flex">
+                    <button
+                      type="button"
+                      class="btn small menu-trigger"
+                      [matMenuTriggerFor]="mOdo"
+                      [attr.aria-label]="'Acciones del diente ' + d.diente"
+                    >
+                      <mat-icon>menu</mat-icon>
+                      <mat-icon class="caret">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #mOdo="matMenu">
+                      <button mat-menu-item (click)="editarDesdeTabla(d)">Editar</button>
+                    </mat-menu>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <details class="odo-log">
+      <summary>Historial de cambios ({{ eventos.length }})</summary>
+      <ul>
+        @for (ev of eventos; track ev.id) {
+          <li class="text-sm">
+            {{ ev.fecha | date: 'short' }} — <strong>{{ accionEvento(ev.accion) }}</strong>
+            @if (ev.diente) {
+              · diente {{ ev.diente }}
+            }
+            @if (ev.condicion) {
+              · {{ etiquetaCondicion(ev.condicion) }}
+            }
+            @if (ev.estadoAnterior) {
+              · {{ ev.estadoAnterior }} → {{ ev.estadoNuevo }}
+            }
+            @if (ev.detalle) {
+              · {{ ev.detalle }}
+            }
+          </li>
+        }
+      </ul>
+    </details>
+  </section>
+}
+
+@if (modal) {
+  <div role="presentation" class="modal-backdrop" (click)="cerrarModal()">
+    <div role="dialog" aria-modal="true" aria-label="Condición del odontograma" class="modal" (click)="$event.stopPropagation()" (keydown.escape)="cerrarModal()">
+      <h2>{{ editando ? 'Editar condición' : 'Nueva condición' }}</h2>
+      <div class="form-row">
+        <div>
+          <label class="label" for="odo-diente">Diente (FDI) *</label>
+          <input
+            id="odo-diente"
+            class="input"
+            type="number"
+            min="11"
+            max="85"
+            [(ngModel)]="form.diente"
+          />
+        </div>
+        <div>
+          <label class="label" for="odo-superficie">Superficie</label>
+          <select id="odo-superficie" class="input" [(ngModel)]="form.superficie">
+            <option value="">Diente completo</option>
+            <option value="OCLUSAL">Oclusal</option>
+            <option value="INCISAL">Incisal</option>
+            <option value="MESIAL">Mesial</option>
+            <option value="DISTAL">Distal</option>
+            <option value="VESTIBULAR">Vestibular</option>
+            <option value="LINGUAL">Lingual</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="label" for="odo-condicion">Condición *</label>
+          <input
+            id="odo-condicion"
+            class="input"
+            list="odo-condiciones"
+            maxlength="40"
+            placeholder="CARIES, IMPLANTE…"
+            [(ngModel)]="form.condicion"
+          />
+          <datalist id="odo-condiciones">
+            @for (c of condiciones; track c) {
+              <option [value]="c"></option>
+            }
+          </datalist>
+        </div>
+        <div>
+          <label class="label" for="odo-estado">Estado</label>
+          <select id="odo-estado" class="input" [(ngModel)]="form.estado">
+            @for (e of estados; track e.id) {
+              <option [ngValue]="e.id">{{ e.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="label" for="odo-notas">Notas</label>
+        <input id="odo-notas" class="input" maxlength="255" [(ngModel)]="form.notas" />
+      </div>
+      <div class="modal-actions">
+        @if (editando) {
+          <button type="button" class="btn danger" (click)="eliminar()">Eliminar</button>
+        }
+        <button
+          type="button"
+          class="btn primary"
+          [disabled]="!form.condicion.trim() || !form.diente"
+          (click)="guardar()"
+        >
+          Guardar
+        </button>
+        <button type="button" class="btn" (click)="cerrarModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+}

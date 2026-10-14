@@ -1,0 +1,330 @@
+@if (exito) {
+  <div class="msg ok">{{ exito }}</div>
+}
+@if (error) {
+  <div class="msg error">{{ error }}</div>
+}
+
+<div class="toolbar">
+  <span class="card-title">Consentimientos ({{ consentimientos.length }})</span>
+  @if (escribir) {
+    <ui-button size="sm" variant="primary" (clicked)="nuevo()">+ Nuevo consentimiento</ui-button>
+    <ui-button size="sm" (clicked)="abrirPlantillas()">Plantillas</ui-button>
+  }
+  @if (consentimiento) {
+    <ui-button size="sm" (clicked)="descargarPdf()">Descargar PDF</ui-button>
+  }
+</div>
+
+@if (!consentimientos.length) {
+  <p class="empty">Este paciente todavía no tiene consentimientos informados.</p>
+} @else {
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Fecha</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Título</th>
+          <th scope="col">Plantilla</th>
+          <th scope="col">Profesional</th>
+          <th scope="col">Firmante</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of consentimientos; track c.id) {
+          <tr [class.fila-sel]="consentimiento?.id === c.id">
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(c)">{{ c.fecha }}</button>
+            </td>
+            <td>
+              <button type="button" class="btn-link" (click)="seleccionar(c)">
+                <ui-badge [tone]="toneEstado(c.estado)">{{ etiquetaEstado(c.estado) }}</ui-badge>
+              </button>
+            </td>
+            <td>{{ c.titulo }}</td>
+            <td>{{ c.plantillaCodigo }} v{{ c.plantillaVersion }}</td>
+            <td>{{ c.odontologo || '—' }}</td>
+            <td>{{ c.firmante || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (consentimiento; as c) {
+  <section class="detalle" aria-label="Detalle del consentimiento">
+    <div class="toolbar">
+      <span class="card-title">Consentimiento No. {{ c.id }}</span>
+      <ui-badge [tone]="toneEstado(c.estado)">{{ etiquetaEstado(c.estado) }}</ui-badge>
+      <span class="muted text-sm">{{ c.fecha }}</span>
+      <span class="muted text-sm">{{ c.plantillaCodigo }} v{{ c.plantillaVersion }}</span>
+      <span class="separador"></span>
+      @if (escribir && c.estado === 'BORRADOR') {
+        <ui-button size="sm" (clicked)="editar()">Editar</ui-button>
+        <ui-button size="sm" variant="primary" (clicked)="abrirFirmar()">Firmar</ui-button>
+        <ui-button size="sm" variant="danger" (clicked)="abrirEliminar()">Eliminar</ui-button>
+      }
+      <ui-button size="sm" (clicked)="descargarPdf()">PDF</ui-button>
+    </div>
+
+    <div class="totales">
+      <span>Paciente: <strong>{{ c.paciente }}</strong></span>
+      <span>Categoría: <strong>{{ c.categoria || '—' }}</strong></span>
+      <span>Tutor: <strong>{{ c.tutorNombre || '—' }}</strong></span>
+      <span>Profesional: <strong>{{ c.odontologo || '—' }}</strong></span>
+      @if (c.tutorNombre) {
+        <span>
+          Tutor: <strong>{{ c.tutorNombre }}</strong>
+          @if (c.tutorParentesco) {
+            ({{ c.tutorParentesco }})
+          }
+          @if (c.tutorTelefono) {
+            · {{ c.tutorTelefono }}
+          }
+        </span>
+      } @else if (menor) {
+        <span class="msg error">Menor de edad sin tutor registrado</span>
+      }
+    </div>
+
+    @if (c.observaciones) {
+      <p class="muted text-sm">{{ c.observaciones }}</p>
+    }
+    @if (c.estado === 'BORRADOR') {
+      <p class="msg error">Borrador sin firmar: el texto aún puede editarse.</p>
+    }
+
+    <article class="contenido">
+      <h3 class="titulo">{{ c.titulo }}</h3>
+      @for (p of parrafos(c.contenido); track $index) {
+        <p>{{ p }}</p>
+      }
+    </article>
+
+    <div class="firma-box">
+      <div>
+        <span class="label">Firma del paciente/tutor</span>
+        @if (c.firmaImagen) {
+          <img class="firma-img" [src]="c.firmaImagen" alt="Firma de {{ c.firmante }}" />
+        } @else {
+          <span class="muted">Sin firma manuscrita</span>
+        }
+        <p class="muted text-sm">
+          {{ c.firmante || '—' }}
+          @if (c.firmadoEn) {
+            · {{ c.firmadoEn }}
+          }
+        </p>
+      </div>
+      <div>
+        <span class="label">Huella SHA-256</span>
+        <code class="hash">{{ c.firmaHash || '— pendiente de firma —' }}</code>
+      </div>
+    </div>
+  </section>
+}
+
+<!-- ===================== MODAL NUEVO / EDITAR ===================== -->
+@if (modalConsentimiento) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Consentimiento" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>{{ editando ? 'Editar consentimiento' : 'Nuevo consentimiento' }}</h2>
+
+      <div class="form-row">
+        @if (editando) {
+          <div class="full">
+            <label class="label" for="con-titulo">Título *</label>
+            <input id="con-titulo" class="input" maxlength="150" [(ngModel)]="formEditar.titulo" />
+          </div>
+        } @else {
+          <div class="full">
+            <label class="label" for="con-plantilla">Plantilla *</label>
+            <select id="con-plantilla" class="input" [(ngModel)]="formNuevo.plantillaCodigo">
+              @for (p of plantillas; track p.codigo) {
+                <option [value]="p.codigo">{{ p.nombre }} ({{ p.categoria || 'sin categoría' }})</option>
+              }
+            </select>
+          </div>
+        }
+        <div>
+          <label class="label" for="con-fecha">Fecha *</label>
+          <input
+            id="con-fecha"
+            class="input"
+            type="date"
+            [ngModel]="editando ? formEditar.fecha : formNuevo.fecha"
+            (ngModelChange)="editando ? (formEditar.fecha = $event) : (formNuevo.fecha = $event)"
+          />
+        </div>
+        <div class="full">
+          <label class="label" for="con-tutor-sel">Tutor / representante</label>
+          <select
+            id="con-tutor-sel"
+            class="input"
+            [ngModel]="editando ? formEditar.tutorId : formNuevo.tutorId"
+            (ngModelChange)="asignarTutor($event)"
+          >
+            <option [ngValue]="null">— Sin tutor registrado (texto libre) —</option>
+            @for (t of tutores; track t.id) {
+              <option [ngValue]="t.id">{{ etiquetaTutor(t) }}</option>
+            }
+          </select>
+          @if (!(editando ? formEditar.tutorId : formNuevo.tutorId)) {
+            <input
+              id="con-tutor"
+              class="input"
+              maxlength="150"
+              placeholder="Nombre del tutor"
+              [ngModel]="editando ? formEditar.tutorNombre : formNuevo.tutorNombre"
+              (ngModelChange)="editando ? (formEditar.tutorNombre = $event) : (formNuevo.tutorNombre = $event)"
+            />
+          }
+          @if (menor && !tutores.length) {
+            <p class="muted text-sm">
+              El paciente es menor de edad y no tiene tutores registrados en Pacientes: escriba el nombre del tutor.
+            </p>
+          }
+        </div>
+        <div class="full">
+          <label class="label" for="con-profesional">Profesional</label>
+          <select
+            id="con-profesional"
+            class="input"
+            [ngModel]="editando ? formEditar.odontologoId : formNuevo.odontologoId"
+            (ngModelChange)="editando ? (formEditar.odontologoId = $event) : (formNuevo.odontologoId = $event)"
+          >
+            <option [ngValue]="null">— Sin asignar —</option>
+            @for (o of odontologos; track o.id) {
+              <option [ngValue]="o.id">{{ o.nombres }} {{ o.apellidos }}</option>
+            }
+          </select>
+        </div>
+        <div class="full">
+          <label class="label" for="con-obs">Observaciones</label>
+          <textarea
+            id="con-obs"
+            class="input"
+            [ngModel]="editando ? formEditar.observaciones : formNuevo.observaciones"
+            (ngModelChange)="editando ? (formEditar.observaciones = $event) : (formNuevo.observaciones = $event)"
+          ></textarea>
+        </div>
+      </div>
+
+      @if (editando) {
+        <div class="sub">El texto queda congelado al firmarse; mientras sea borrador puede corregirse.</div>
+        <label class="label" for="con-contenido">Texto del consentimiento *</label>
+        <textarea id="con-contenido" class="input contenido-edit" rows="12" [(ngModel)]="formEditar.contenido"></textarea>
+      } @else {
+        <div class="sub">Se copia el texto de la plantilla al emitir: cambios futuros de la plantilla no afectan a este consentimiento.</div>
+      }
+
+      @if (errorForm) {
+        <div class="msg error">{{ errorForm }}</div>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!!errorForm" (click)="guardar()">{{ editando ? 'Guardar' : 'Emitir borrador' }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL FIRMAR ============================ -->
+@if (modalFirmar) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Firmar consentimiento" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Firmar consentimiento No. {{ consentimiento?.id }}</h2>
+      <div class="sub">Al firmar el consentimiento queda congelado y se calcula su huella SHA-256.</div>
+      @if (menor) {
+        <div class="msg error">
+          El paciente es menor de edad: quien firma debe ser su tutor
+          {{ consentimiento?.tutorNombre ? '(' + consentimiento!.tutorNombre + ')' : 'registrado' }}.
+        </div>
+      }
+
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="firm-nombre">Nombre de quien firma *</label>
+          <input id="firm-nombre" class="input" maxlength="150" [(ngModel)]="firmante" />
+        </div>
+      </div>
+
+      <span class="label">Firma manuscrita (opcional, dibuje con el mouse o dedo)</span>
+      <div class="lienzo-marco">
+        <canvas
+          id="firma-lienzo"
+          #firmaCanvas
+          width="520"
+          height="150"
+          (pointerdown)="inicioTrazo($event)"
+          (pointermove)="trazar($event)"
+          (pointerup)="finTrazo()"
+          (pointerleave)="finTrazo()"
+        ></canvas>
+      </div>
+      <div class="lineas-acciones">
+        <ui-button size="sm" (clicked)="limpiarFirma()">Limpiar firma</ui-button>
+      </div>
+
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!firmante.trim()" (click)="firmar()">Firmar consentimiento</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL ELIMINAR ============================ -->
+@if (modalEliminar) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Eliminar consentimiento" class="modal" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Eliminar consentimiento No. {{ consentimiento?.id }}</h2>
+      <div class="sub">Sólo se pueden eliminar los borradores; los firmados se conservan por seguridad jurídica.</div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn danger" (click)="eliminar()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ============================ MODAL PLANTILLAS ============================ -->
+@if (modalPlantillas) {
+  <div role="presentation" class="modal-backdrop" (click)="close($event)">
+    <div role="dialog" aria-modal="true" aria-label="Plantillas de consentimiento" class="modal wide" (click)="stop($event)" (keydown.escape)="cerrarTodos()">
+      <h2>Plantillas de consentimiento</h2>
+      <div class="sub">Al guardar sube la versión de la plantilla; los consentimientos ya emitidos conservan su texto.</div>
+
+      <div class="form-row">
+        <div class="full">
+          <label class="label" for="tpl-codigo">Plantilla</label>
+          <select id="tpl-codigo" class="input" [ngModel]="plantillaSel" (ngModelChange)="seleccionarPlantilla($event)">
+            @for (p of plantillas; track p.codigo) {
+              <option [value]="p.codigo">{{ p.nombre }} (v{{ p.version }})</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <span class="label">Versión actual: {{ plantillaVersion }}</span>
+      <label class="label" for="tpl-contenido">Texto</label>
+      <textarea id="tpl-contenido" class="input contenido-edit" rows="14" [(ngModel)]="plantillaContenido"></textarea>
+
+      @if (error) {
+        <div class="msg error">{{ error }}</div>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="cerrarTodos()">Cancelar</button>
+        <button type="button" class="btn primary" [disabled]="!plantillaContenido.trim()" (click)="guardarPlantilla()">Guardar plantilla</button>
+      </div>
+    </div>
+  </div>
+}

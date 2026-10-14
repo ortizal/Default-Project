@@ -1,0 +1,136 @@
+.odo-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.odo-select {
+  min-width: 13rem;
+}
+
+.odo-seccion {
+  margin-bottom: 26px;
+}
+
+.odo-arquitectura {
+  overflow-x: auto;
+  padding: 10px 0 4px;
+}
+
+.fila-odo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.fila-label {
+  min-width: 11rem;
+  flex: 0 0 auto;
+}
+
+.odo-svg {
+  display: block;
+}
+
+.odo-svg .region {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.odo-svg .region:focus-visible,
+.odo-svg .num:focus-visible {
+  outline: 2px solid var(--ls-primary, #a1cb35);
+  outline-offset: 1px;
+}
+
+.odo-svg .region.llena:hover {
+  filter: brightness(0.92);
+}
+
+.odo-svg .num {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--ls-text, #111827);
+  cursor: pointer;
+}
+
+.odo-svg .num.tachado {
+  text-decoration: line-through;
+  fill: #94a3b8;
+}
+
+.odo-leyenda {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ls-border, #e5e7eb);
+}
+
+.odo-leyenda-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 12px;
+  font-size: 0.85rem;
+}
+
+.odo-punto {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.odo-comparacion {
+  margin-top: 12px;
+}
+
+.odo-cambios {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+
+.odo-log {
+  margin-top: 14px;
+}
+
+.odo-log summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.odo-log ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 4px;
+}
+
+.theme-dark .odo-svg .region {
+  stroke: #475569;
+}
+
+@media (max-width: 720px) {
+  .fila-odo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .fila-label {
+    min-width: 0;
+  }
+}

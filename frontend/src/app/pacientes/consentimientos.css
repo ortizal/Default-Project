@@ -1,0 +1,132 @@
+/* Estilos propios de la pestaña "Consentimientos" (Fase E, §4.13).
+   Todo lo demás lo aportan los estilos globales del sistema. */
+
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--ls-primary-text);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ls-primary-dark);
+  }
+}
+
+.tbl tr.fila-sel td,
+.tbl tr.fila-sel th {
+  background: var(--ls-primary-soft);
+}
+
+.detalle {
+  margin-top: var(--ls-space-5);
+}
+
+.detalle > .toolbar {
+  flex-wrap: wrap;
+}
+
+.separador {
+  flex: 1 1 auto;
+}
+
+.totales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ls-space-4);
+  margin: var(--ls-space-3) 0;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  background: var(--ls-surface-2);
+  font-size: var(--ls-text-sm);
+}
+
+.contenido {
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  background: var(--ls-surface);
+  padding: var(--ls-space-4);
+  margin-top: var(--ls-space-3);
+}
+
+.contenido .titulo {
+  margin: 0 0 var(--ls-space-3);
+  font-size: var(--ls-text-md, 1rem);
+}
+
+.contenido p {
+  margin: 0 0 var(--ls-space-3);
+  white-space: pre-wrap;
+}
+
+.contenido p:last-child {
+  margin-bottom: 0;
+}
+
+.firma-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ls-space-5);
+  margin-top: var(--ls-space-3);
+  padding: var(--ls-space-3);
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  background: var(--ls-surface-2);
+  font-size: var(--ls-text-sm);
+}
+
+.firma-box > div {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.firma-img {
+  display: block;
+  max-width: 240px;
+  max-height: 80px;
+  margin-top: var(--ls-space-2);
+  border: 1px solid var(--ls-border);
+  border-radius: var(--ls-radius-sm, 4px);
+  background: #fff;
+}
+
+.hash {
+  display: block;
+  margin-top: var(--ls-space-2);
+  font-size: var(--ls-text-xs, 0.75rem);
+  word-break: break-all;
+  color: var(--ls-muted-text, #555);
+}
+
+.lineas-acciones {
+  margin-top: var(--ls-space-3);
+}
+
+.contenido-edit {
+  width: 100%;
+  min-height: 220px;
+  font-family: inherit;
+}
+
+.lienzo-marco {
+  margin-top: var(--ls-space-2);
+  border: 1px dashed var(--ls-border);
+  border-radius: var(--ls-radius-md);
+  background: #fff;
+  padding: var(--ls-space-2);
+  overflow: auto;
+}
+
+.lienzo-marco canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+  touch-action: none;
+  cursor: crosshair;
+}

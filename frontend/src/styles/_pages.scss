@@ -206,6 +206,13 @@
   text-align: center;
 
 }
+.login-brand {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 2px;
+  color: var(--ls-muted);
+
+}
 .login-card .sub {
   text-align: center;
 

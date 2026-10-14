@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
@@ -41,6 +42,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(ApiError.of(400, "VALIDACION", ex.getParameterName() + ": El parámetro es obligatorio",
                         request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUpload(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return ResponseEntity.badRequest()
+                .body(ApiError.of(400, "ARCHIVO_DEMASIADO_GRANDE",
+                        "El archivo supera el tamaño máximo permitido", request.getRequestURI()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

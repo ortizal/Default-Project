@@ -18,8 +18,8 @@ public class OpenApiConfig {
         String schemeName = "bearerAuth";
         return new OpenAPI()
                 .info(new Info()
-                        .title("CRM Odontológico API")
-                        .description("API REST del CRM odontológico con WhatsApp, OpenWA y Google Calendar")
+                        .title("CRM Dental AT API")
+                        .description("API REST de CRM Dental AT (marca ALANTEK) con WhatsApp, OpenWA y Google Calendar")
                         .version("v0.1.0"))
                 .addSecurityItem(new SecurityRequirement().addList(schemeName))
                 .components(new Components().addSecuritySchemes(schemeName,
