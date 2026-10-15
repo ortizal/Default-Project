@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { FacturacionCajaComponent } from './caja';
 import { Caja } from '../core/models';
+import { UiConfirmService } from '../ui';
 
 function caja(): Caja {
   return {
@@ -100,6 +101,10 @@ describe('Caja del consultorio (Fase F, §3.4)', () => {
   function componente(): FacturacionCajaComponent {
     const fixture = TestBed.createComponent(FacturacionCajaComponent);
     fixture.detectChanges();
+    // ngOnInit pide el catálogo de pacientes para el selector de movimientos.
+    httpTesting
+      .expectOne((r) => r.url.startsWith('/api/v1/pacientes?'))
+      .flush({ content: [] });
     return fixture.componentInstance;
   }
 
@@ -108,7 +113,11 @@ describe('Caja del consultorio (Fase F, §3.4)', () => {
   }
 
   function expectHistorial() {
-    return httpTesting.expectOne((r) => r.url === '/api/v1/facturacion/cajas');
+    return httpTesting.expectOne(
+      (r) =>
+        r.url === '/api/v1/facturacion/cajas' ||
+        r.url.startsWith('/api/v1/facturacion/cajas?'),
+    );
   }
 
   it('sin sesión abierta deja la caja en null (404) y carga el historial', () => {
@@ -193,21 +202,79 @@ describe('Caja del consultorio (Fase F, §3.4)', () => {
     expect(c.mensaje).toBe('Caja cerrada con diferencia $ -5.00.');
   });
 
-  it('anula un movimiento con motivo en la petición', () => {
+  it('anula un movimiento pidiendo el motivo en el diálogo', async () => {
     const c = componente();
     expectActual().flush(caja());
     expectHistorial().flush([caja()]);
+    const confirm = TestBed.inject(UiConfirmService);
 
-    c.anular(32);
+    const pendiente = c.anular(32, 'Insumos');
+    expect(confirm.peticion()?.campo?.requerido).toBe(true);
+    confirm.texto.set('Cobro duplicado');
+    confirm.confirmado();
+    await pendiente;
 
     const req = httpTesting.expectOne((r) =>
       r.url.startsWith('/api/v1/facturacion/cajas/7/movimientos/32/anular'),
     );
     const params = new URLSearchParams(req.request.url.split('?')[1]);
-    expect(params.get('motivo')).toBe('Anulado desde el módulo de caja');
+    expect(params.get('motivo')).toBe('Cobro duplicado');
     req.flush(caja());
 
     expect(c.mensaje).toBe('Movimiento anulado.');
+  });
+
+  it('cancelar la anulación en el diálogo no envía nada', async () => {
+    const c = componente();
+    expectActual().flush(caja());
+    expectHistorial().flush([caja()]);
+    const confirm = TestBed.inject(UiConfirmService);
+
+    const pendiente = c.anular(31, 'Cobro de cuenta');
+    confirm.cancelado();
+    await pendiente;
+
+    expect(c.mensaje).toBe('');
+    httpTesting.expectNone((r) => r.url.includes('/anular'));
+  });
+
+  it('filtra el historial por rango de fechas', () => {
+    const c = componente();
+    expectActual().flush(caja());
+    expectHistorial().flush([caja()]);
+
+    c.historialDesde = '2026-10-01';
+    c.historialHasta = '2026-10-31';
+    c.buscarHistorial();
+
+    const req = expectHistorial();
+    expect(req.request.url).toContain('desde=2026-10-01');
+    expect(req.request.url).toContain('hasta=2026-10-31');
+    req.flush([caja()]);
+    expect(c.historial.length).toBe(1);
+  });
+
+  it('despliega y pliega el detalle de una sesión del historial', () => {
+    const c = componente();
+    expectActual().flush(caja());
+    expectHistorial().flush([caja()]);
+
+    expect(c.detalleHistorial).toBeNull();
+    c.alternarDetalle(7);
+    expect(c.detalleHistorial).toBe(7);
+    c.alternarDetalle(7);
+    expect(c.detalleHistorial).toBeNull();
+  });
+
+  it('el selector de paciente deja el movimiento sin paciente al vaciarse', () => {
+    const c = componente();
+    expectActual().flush(caja());
+    expectHistorial().flush([caja()]);
+
+    c.setPaciente('12');
+    expect(c.mov.pacienteId).toBe(12);
+    c.setPaciente('');
+    expect(c.mov.pacienteId).toBeUndefined();
   });
 
   it('sin permiso muestra el mensaje de 403', () => {

@@ -11,6 +11,12 @@ import java.util.List;
 
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
 
+    /**
+     * Lote del worker: trae automatización, plantilla, cita y paciente ya
+     * inicializados, porque el envío corre en el hilo scheduler sin sesión
+     * Hibernate y los proxies lazy revientan con "no session".
+     */
+    @EntityGraph(attributePaths = {"automatizacion", "plantilla", "cita", "paciente"})
     List<Notificacion> findByEstadoAndProgramadaAtLessThanEqual(EstadoNotificacion estado, Instant tope, Pageable pageable);
 
     @Query("""

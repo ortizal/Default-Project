@@ -8,7 +8,11 @@ import org.dentalcrm.domain.cita.Cita;
 import org.dentalcrm.domain.cita.CitaConfirmadaEvent;
 import org.dentalcrm.domain.cita.CitaModificadaEvent;
 import org.dentalcrm.domain.cita.CitaRepository;
+import org.dentalcrm.domain.cuenta.CobroRealizadoEvent;
+import org.dentalcrm.domain.cuenta.FormaPago;
+import org.dentalcrm.domain.cuenta.TipoMovimientoCuenta;
 import org.dentalcrm.domain.paciente.Paciente;
+import org.dentalcrm.domain.paciente.PacienteRepository;
 import org.dentalcrm.domain.whatsapp.EstadoSesionWhatsapp;
 import org.dentalcrm.domain.whatsapp.WhatsappSesion;
 import org.dentalcrm.domain.whatsapp.WhatsappSesionRepository;
@@ -45,13 +49,16 @@ class NotificacionServiceTest {
     private WhatsappSesionRepository sesionRepository;
     @Mock
     private CorreoService correoService;
+    @Mock
+    private PacienteRepository pacienteRepository;
 
     private NotificacionService servicio;
 
     @BeforeEach
     void setUp() {
         servicio = new NotificacionService(notificacionRepository, automatizacionService,
-                citaRepository, messagingProvider, sesionRepository, correoService);
+                citaRepository, messagingProvider, sesionRepository, correoService,
+                pacienteRepository, null);
     }
 
     private Notificacion notificacion(Long id, String telefono) {
@@ -258,6 +265,74 @@ class NotificacionServiceTest {
 
         servicio.procesar(n);
 
+        verify(correoService, never()).enviar(anyString(), anyString(), anyString());
+    }
+
+    // ------------------------------------------------------------------
+    // Notificación post-cobro (openwa + correo)
+    // ------------------------------------------------------------------
+
+    @Test
+    void elCobroGeneraElAvisoParaElPacienteSinCita() {
+        Paciente paciente = new Paciente();
+        paciente.setId(7L);
+        paciente.setNombres("Ana");
+        paciente.setTelefono("+593991111222");
+        when(pacienteRepository.findById(7L)).thenReturn(Optional.of(paciente));
+        CobroRealizadoEvent e = new CobroRealizadoEvent(55L, 7L, TipoMovimientoCuenta.ABONO,
+                "Limpieza dental", new java.math.BigDecimal("40.00"), FormaPago.EFECTIVO,
+                new java.math.BigDecimal("10.00"), LocalDate.of(2026, 10, 14));
+
+        servicio.onCobroRealizado(e);
+
+        verify(automatizacionService).generarCobro(eq(e), same(paciente));
+        verifyNoMoreInteractions(automatizacionService);
+    }
+
+    @Test
+    void elCobroDeUnPacienteInexistenteNoGeneraNada() {
+        when(pacienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        servicio.onCobroRealizado(new CobroRealizadoEvent(56L, 99L, TipoMovimientoCuenta.ANTICIPO,
+                "Anticipo", new java.math.BigDecimal("25.00"), FormaPago.TARJETA,
+                new java.math.BigDecimal("0.00"), LocalDate.of(2026, 10, 14)));
+
+        verify(automatizacionService, never()).generarCobro(any(), any());
+    }
+
+    @Test
+    void elAvisoPostCobroTambienSalePorCorreoYSinCita() {
+        Notificacion n = notificacion(11L, "+593998877665");
+        n.setCita(null);
+        n.getPaciente().setEmail("ana@ejemplo.com");
+        n.setAutomatizacion(automatizacion(EventoAutomatizacion.COBRO_REALIZADO));
+        when(sesionRepository.findByEstado(EstadoSesionWhatsapp.CONECTADA))
+                .thenReturn(List.of(sesionConectada()));
+        when(correoService.configurado()).thenReturn(true);
+
+        servicio.procesar(n);
+
+        assertEquals(EstadoNotificacion.ENVIADA, n.getEstado());
+        // Sin cita la cola no debe troncar (NPE) y el asunto es el de pago.
+        verify(correoService).enviar(eq("ana@ejemplo.com"), eq("Pago recibido"),
+                eq("Hola {{nombre}}"));
+        verify(messagingProvider).enviarMensaje(eq("principal"), eq("+593998877665"),
+                eq("Hola {{nombre}}"));
+    }
+
+    @Test
+    void elCobroSinSesionDeWhatsappReintentaSinTumbarElCorreo() {
+        Notificacion n = notificacion(12L, "+593998877665");
+        n.setCita(null);
+        n.getPaciente().setEmail("ana@ejemplo.com");
+        n.setAutomatizacion(automatizacion(EventoAutomatizacion.COBRO_REALIZADO));
+        when(sesionRepository.findByEstado(EstadoSesionWhatsapp.CONECTADA)).thenReturn(List.of());
+
+        servicio.procesar(n);
+
+        assertEquals(EstadoNotificacion.PENDIENTE, n.getEstado());
+        assertEquals(1, n.getIntentos());
+        // El correo sólo acompaña a un WhatsApp ya entregado.
         verify(correoService, never()).enviar(anyString(), anyString(), anyString());
     }
 

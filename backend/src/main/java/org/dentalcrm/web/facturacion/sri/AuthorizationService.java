@@ -33,9 +33,12 @@ import java.util.Objects;
  * </ol>
  *
  * <p><b>Modo simulado</b> (firma sin certificado .p12): el webservice del SRI
- * <b>nunca</b> se llama. Sólo se permite en ambiente de pruebas; el documento
- * queda local, con firma SIMULADA y estado tributario PENDIENTE. Nunca se
- * fabrican datos de recepción o autorización. En producción exige certificado.
+ * <b>nunca</b> se llama. Sólo se permite en ambiente de pruebas; el "SRI
+ * local" recibe y autoriza el documento (número de autorización = clave de
+ * acceso, XML autorizado = XML firmado, mensaje «Autorización simulada») para
+ * poder ejercitar RIDE, notas de crédito y anulaciones sin salir de la
+ * máquina. El badge `simulado` en la UI recuerda que no tiene validez
+ * tributaria. En producción exige certificado.
  */
 @Service
 public class AuthorizationService {
@@ -46,7 +49,7 @@ public class AuthorizationService {
     private static final String RESPUESTA_ENVIO_SIMULADO =
             "Prueba interna: el comprobante no salió de este equipo ni fue recibido por el SRI.";
     private static final String RESPUESTA_AUTORIZACION_SIMULADA =
-            "Prueba interna: no se consultó al SRI; la autorización tributaria sigue pendiente.";
+            "Autorización simulada (ambiente de pruebas): el comprobante se autorizó localmente; el SRI no fue consultado.";
 
     private final SriGateway gateway;
     private final ComprobanteElectronicoRepository repository;
@@ -117,11 +120,23 @@ public class AuthorizationService {
     public ComprobanteElectronico autorizar(ComprobanteElectronico comprobante) {
         if (modoSimulado(comprobante)) {
             exigirAmbientePruebas(comprobante);
+            // §3.8/§3.9: en ambiente de pruebas sin certificado el "SRI
+            // local" recibe y autoriza el documento para poder ejercitar de
+            // punta a punta el RIDE, las notas de crédito y las anulaciones
+            // sin salir de esta máquina. El número de autorización es la
+            // propia clave de acceso (como en el SRI real) y el XML
+            // autorizado es el firmado, que nadie más firmó.
+            exigirXml(comprobante);
             comprobante.setSimulado(true);
             comprobante.setSriEstado(ESTADO_SIMULADO);
             comprobante.setSriRespuesta(RESPUESTA_AUTORIZACION_SIMULADA);
+            comprobante.setEstadoGeneracion(EstadoGeneracion.ENVIADO);
+            comprobante.setEstadoTributario(EstadoTributario.AUTORIZADO);
+            comprobante.setAutorizacionNumero(comprobante.getClaveAcceso());
+            comprobante.setAutorizacionFecha(Instant.now());
+            comprobante.setXmlAutorizado(comprobante.getXmlFirmado());
             comprobante.setErrorMensaje(null);
-            return guardar(comprobante, "CONSULTAR_AUTORIZACION_SIMULADA");
+            return guardar(comprobante, "AUTORIZAR_COMPROBANTE_SIMULADO");
         }
 
         if (comprobante.getEstadoGeneracion() != EstadoGeneracion.ENVIADO) {

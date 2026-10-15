@@ -2,6 +2,8 @@ package org.dentalcrm.web.automatizacion;
 
 import org.dentalcrm.domain.automatizacion.*;
 import org.dentalcrm.domain.cita.Cita;
+import org.dentalcrm.domain.cuenta.CobroRealizadoEvent;
+import org.dentalcrm.domain.paciente.Paciente;
 import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.web.automatizacion.dto.AutomatizacionRequest;
@@ -147,6 +149,37 @@ public class AutomatizacionService {
             generadas += generarPara(cita, evento, variables);
         }
         return generadas;
+    }
+
+    /**
+     * Notificación post-cobro ({@code COBRO_REALIZADO}): no hay cita de por
+     * medio, sólo el paciente que pagó. El aviso va dirigido al propio
+     * paciente; las reglas de odontólogo se omiten (no hay odontólogo en el
+     * evento, sería otra notificación).
+     */
+    @Transactional
+    public int generarCobro(CobroRealizadoEvent e, Paciente paciente) {
+        var variables = variableResolver.variablesCobro(paciente, e);
+        int creadas = 0;
+        for (Automatizacion a : automatizacionRepository
+                .findByActivaTrueAndEvento(EventoAutomatizacion.COBRO_REALIZADO)) {
+            if (a.getDestinatario() != DestinatarioNotificacion.PACIENTE) {
+                continue;
+            }
+            Notificacion n = new Notificacion();
+            n.setCita(null);
+            n.setAutomatizacion(a);
+            n.setPaciente(paciente);
+            n.setTelefono(paciente.getTelefono());
+            n.setDestinatario(DestinatarioNotificacion.PACIENTE);
+            n.setPlantilla(a.getPlantilla());
+            n.setMensajeGenerado(variableResolver.renderizar(a.getPlantilla().getContenido(), variables));
+            n.setProgramadaAt(Instant.now());
+            n.setEstado(EstadoNotificacion.PENDIENTE);
+            notificacionRepository.save(n);
+            creadas++;
+        }
+        return creadas;
     }
 
     private int generarPara(Cita cita, EventoAutomatizacion evento, Map<String, String> variables) {

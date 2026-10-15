@@ -199,9 +199,15 @@ class ComprobanteElectronicoServiceTest {
         when(authorizationService.autorizar(any(ComprobanteElectronico.class))).thenAnswer(inv -> {
             ComprobanteElectronico c = inv.getArgument(0);
                         if (ElectronicSignatureService.MODO_SIMULADA.equals(c.getModoFirma())) {
-                                c.setEstadoTributario(EstadoTributario.PENDIENTE);
+                                // Como hace el AuthorizationService real: el
+                                // "SRI local" recibe y autoriza en pruebas.
+                                c.setEstadoGeneracion(EstadoGeneracion.ENVIADO);
+                                c.setEstadoTributario(EstadoTributario.AUTORIZADO);
                                 c.setSriEstado("SIMULADA");
-                                c.setSriRespuesta("Prueba interna: no se consultó al SRI.");
+                                c.setSriRespuesta("Autorización simulada (ambiente de pruebas).");
+                                c.setAutorizacionNumero(c.getClaveAcceso());
+                                c.setAutorizacionFecha(java.time.Instant.now());
+                                c.setXmlAutorizado(c.getXmlFirmado());
                         } else {
                                 c.setEstadoTributario(EstadoTributario.AUTORIZADO);
                                 c.setAutorizacionNumero(c.getClaveAcceso());
@@ -239,10 +245,12 @@ class ComprobanteElectronicoServiceTest {
         assertTrue(respuesta.simulado());
         assertEquals(EstadoGeneracion.FIRMADO, estadoAlGuardar,
                 "el comprobante se guarda firmado antes de hablar con el SRI");
-        assertEquals(EstadoTributario.PENDIENTE.name(), respuesta.estadoTributario());
-        assertEquals(EstadoGeneracion.FIRMADO.name(), respuesta.estadoGeneracion());
-        assertNull(respuesta.autorizacionNumero());
-        assertTrue(respuesta.sriRespuesta().contains("no existe recepción"));
+        assertEquals(EstadoTributario.AUTORIZADO.name(), respuesta.estadoTributario(),
+                "el SRI local de pruebas autoriza el comprobante");
+        assertEquals(EstadoGeneracion.ENVIADO.name(), respuesta.estadoGeneracion());
+        assertEquals(respuesta.claveAcceso(), respuesta.autorizacionNumero());
+        assertNotNull(respuesta.autorizacionFecha());
+        assertTrue(respuesta.sriRespuesta().contains("Autorización simulada"));
 
         assertEquals(0, respuesta.total().compareTo(new BigDecimal("150.00")),
                 "los precios ya llevan IVA: 100.00 + 50.00");
@@ -466,8 +474,10 @@ class ComprobanteElectronicoServiceTest {
         }
 
         @Test
-        void noGeneraRideParaComprobanteSimuladoNiPendiente() {
+        void noGeneraRideSinAutorizacion() {
                 ComprobanteElectronico comprobante = comprobanteEmitido();
+                // comprobanteEmitido() queda PENDIENTE: ni simulado ni real
+                // hay RIDE sin autorización.
                 comprobante.setSimulado(true);
                 comprobante.setXmlFirmado("<factura/>");
                 when(comprobanteRepo.findById(5L)).thenReturn(Optional.of(comprobante));
@@ -478,7 +488,7 @@ class ComprobanteElectronicoServiceTest {
         }
 
         @Test
-        void normalizaAutorizacionSimuladaHistoricaEnRespuestas() {
+        void exponeLaAutorizacionSimuladaTalCualSeGuardo() {
                 ComprobanteElectronico comprobante = comprobanteEmitido();
                 comprobante.setSimulado(true);
                 comprobante.setEstadoGeneracion(EstadoGeneracion.ENVIADO);
@@ -489,15 +499,14 @@ class ComprobanteElectronicoServiceTest {
 
                 ComprobanteElectronicoResponse respuesta = ComprobanteElectronicoResponse.from(comprobante);
 
-                // §3.8: el estado de generación sí se conserva (el XML se
-                // generó y firmó); lo que no se puede exponer como hecho es
-                // la autorización, porque en modo simulado el SRI nunca
-                // respondió. Por eso se degrada el estado tributario.
+                // El "SRI local" de pruebas autoriza de verdad (§3.8): la
+                // respuesta expone el estado guardado; el único aviso de que
+                // no tiene validez tributaria es el flag `simulado`.
                 assertEquals(EstadoGeneracion.ENVIADO.name(), respuesta.estadoGeneracion());
-                assertEquals(EstadoTributario.PENDIENTE.name(), respuesta.estadoTributario());
-                assertNull(respuesta.autorizacionNumero());
-                assertNull(respuesta.autorizacionFecha());
-                assertTrue(respuesta.sriRespuesta().contains("no existe recepción"));
+                assertEquals(EstadoTributario.AUTORIZADO.name(), respuesta.estadoTributario());
+                assertEquals(comprobante.getClaveAcceso(), respuesta.autorizacionNumero());
+                assertNotNull(respuesta.autorizacionFecha());
+                assertTrue(respuesta.simulado());
         }
 
     @Test
@@ -654,6 +663,29 @@ class ComprobanteElectronicoServiceTest {
     }
 
     @Test
+    void anulaLocalmenteEnModoSimuladoSinConsultarAlSri() {
+        ComprobanteElectronico comprobante = comprobanteEmitido();
+        comprobante.setSimulado(true);
+        comprobante.setEstadoTributario(EstadoTributario.AUTORIZADO);
+        when(comprobanteRepo.buscarParaModificar(5L)).thenReturn(Optional.of(comprobante));
+        when(comprobanteRepo.save(any(ComprobanteElectronico.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(anulacionRepo.save(any(AnulacionComprobante.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        ComprobanteElectronicoResponse respuesta =
+                servicio.anular(5L, new AnularComprobanteRequest("Paciente canceló el tratamiento"));
+
+        assertEquals(EstadoTributario.ANULADO, comprobante.getEstadoTributario());
+        assertEquals(EstadoTributario.ANULADO.name(), respuesta.estadoTributario());
+        assertEquals("SIMULADA", comprobante.getSriEstado());
+        assertTrue(comprobante.getSriRespuesta().contains("Anulación simulada"));
+        verify(anulacionRepo).save(argThat(a -> AnulacionComprobante.ESTADO_APLICADA.equals(a.getEstado())
+                && a.getAplicadoEn() != null
+                && "Paciente canceló el tratamiento".equals(a.getMotivo())));
+    }
+
+    @Test
     void noAnulaUnComprobanteQueNoEstaAutorizado() {
         ComprobanteElectronico comprobante = comprobanteEmitido();
         when(comprobanteRepo.buscarParaModificar(5L)).thenReturn(Optional.of(comprobante));
@@ -702,7 +734,8 @@ class ComprobanteElectronicoServiceTest {
                 new EmitirFacturaRequest(1L, null, null));
 
         assertEquals("001-001-000000001", respuesta.numeroComprobante());
-        assertEquals(EstadoTributario.PENDIENTE.name(), respuesta.estadoTributario());
+        assertEquals(EstadoTributario.AUTORIZADO.name(), respuesta.estadoTributario(),
+                "la reemisión también pasa por el SRI local de pruebas");
     }
 
     @Test

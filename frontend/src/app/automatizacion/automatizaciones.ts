@@ -11,8 +11,10 @@ const EVENTOS = [
   'CITA_PROXIMA',
   'CITA_CONFIRMADA',
   'CITA_CANCELADA',
+  'CITA_MODIFICADA',
   'CITA_ATENDIDA',
   'NO_ASISTIO',
+  'COBRO_REALIZADO',
 ];
 
 import { MatMenuModule } from '@angular/material/menu';

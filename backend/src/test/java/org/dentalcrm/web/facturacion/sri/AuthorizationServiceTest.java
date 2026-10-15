@@ -112,23 +112,25 @@ class AuthorizationServiceTest {
     }
 
     @Test
-        void autorizarSimuladoMantienePendienteSinLlamarAlSri() {
+        void autorizarSimuladoAutorizaLocalmenteSinLlamarAlSri() {
         ComprobanteElectronico comprobante = comprobante(AmbienteSri.PRUEBAS,
-                ElectronicSignatureService.MODO_SIMULADA, EstadoGeneracion.ENVIADO);
+                ElectronicSignatureService.MODO_SIMULADA, EstadoGeneracion.FIRMADO);
 
         servicio.autorizar(comprobante);
 
-        assertEquals(EstadoTributario.PENDIENTE, comprobante.getEstadoTributario());
-        // §3.8: el paso simulado de autorización no altera el estado de
-        // generación; el documento sigue "enviado" (simulado) y a la espera
-        // de una autorización real.
+        // §3.8/§3.9: el "SRI local" recibe y autoriza para poder ejercitar
+        // RIDE, notas de crédito y anulaciones sin salir de la máquina.
+        assertEquals(EstadoTributario.AUTORIZADO, comprobante.getEstadoTributario());
         assertEquals(EstadoGeneracion.ENVIADO, comprobante.getEstadoGeneracion());
         assertTrue(comprobante.isSimulado());
         assertEquals("SIMULADA", comprobante.getSriEstado());
-        assertNull(comprobante.getAutorizacionNumero());
-        assertNull(comprobante.getAutorizacionFecha());
-        assertNull(comprobante.getXmlAutorizado());
-        assertTrue(comprobante.getSriRespuesta().contains("no se consultó al SRI"));
+        assertEquals(CLAVE, comprobante.getAutorizacionNumero(),
+                "el número de autorización simulado es la clave de acceso, como en el SRI real");
+        assertNotNull(comprobante.getAutorizacionFecha());
+        assertEquals(XML, comprobante.getXmlAutorizado(),
+                "el XML autorizado es el firmado: nadie más lo firmó");
+        assertNull(comprobante.getErrorMensaje());
+        assertTrue(comprobante.getSriRespuesta().contains("Autorización simulada"));
         verifyNoInteractions(gateway);
     }
 

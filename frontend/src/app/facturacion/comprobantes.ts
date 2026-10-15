@@ -243,7 +243,7 @@ export class FacturacionComprobantesComponent implements OnInit {
   descargarRide(comprobante: Identificado): void {
     this.error = '';
     if (!this.puedeDescargarRide(comprobante)) {
-      this.error = 'El RIDE solo está disponible después de una autorización real del SRI.';
+      this.error = 'El RIDE sólo está disponible una vez autorizado el comprobante.';
       return;
     }
     this.api.getBlob(`/facturacion/comprobantes/${comprobante.id}/ride`).subscribe({
@@ -256,7 +256,9 @@ export class FacturacionComprobantesComponent implements OnInit {
   }
 
   puedeDescargarRide(comprobante: Identificado): boolean {
-    return !comprobante.simulado && comprobante.estadoTributario === 'AUTORIZADO';
+    // El entorno de pruebas autoriza localmente, así que un comprobante
+    // `simulado` también tiene RIDE cuando llegó a AUTORIZADO.
+    return comprobante.estadoTributario === 'AUTORIZADO';
   }
 
   reenviar(comprobante: Identificado): void {
@@ -356,6 +358,12 @@ export class FacturacionComprobantesComponent implements OnInit {
   }
 
   /** Anulación: pide el motivo y no borra nunca la fila (§3.10). */
+  puedeAnularComprobante(c: Identificado): boolean {
+    // El "SRI local" de pruebas anula de inmediato; la anulación real
+    // todavía no está integrada con el SRI.
+    return this.puedeAnular && this.esAnulable(c) && (c.simulado || this.anulacionSriDisponible);
+  }
+
   abrirAnulacion(comprobante: Identificado): void {
     this.error = '';
     this.mensaje = '';

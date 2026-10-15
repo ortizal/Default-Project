@@ -474,9 +474,12 @@ saldo y el resumen de sesiones de caja. `desde > hasta` → `400 RANGO_INVALIDO`
 ### Comprobantes electrónicos (SRI)
 
 El ambiente `PRUEBAS` con P12 válido llama los servicios de pruebas del SRI. Sin P12, el modo
-`SIMULADA` es una **prueba local**: no hace llamadas de red, conserva `estadoGeneracion=FIRMADO`,
-`estadoTributario=PENDIENTE`, `simulado=true` y no crea número/fecha/XML autorizado. No equivale
-a recepción ni autorización del SRI. En `PRODUCCION`, firma simulada →
+`SIMULADA` es un **SRI local**: no hace llamadas de red y autoriza el comprobante en la misma
+transacción (`estadoGeneracion=ENVIADO`, `estadoTributario=AUTORIZADO`, número de autorización =
+clave de acceso, fecha actual, `xmlAutorizado` = XML firmado y `sriRespuesta` «Autorización
+simulada (ambiente de pruebas)…»), de modo que RIDE, notas de crédito y anulación funcionan
+end-to-end sin salir de la máquina. No equivale a recepción ni autorización del SRI real: el flag
+`simulado` de la respuesta es el aviso único de esa distinción. En `PRODUCCION`, firma simulada →
 `SRI_FIRMA_REAL_REQUERIDA`. `FacturaBuilder` actualmente presupone precio con IVA incluido y tarifa
 codificada de 15%; no emitir en productivo hasta confirmar tratamiento fiscal por concepto con
 la clínica/asesoría tributaria. Formas de pago: catálogo `01/16/19/20`.
@@ -497,12 +500,12 @@ Emisión: `POST /facturacion/comprobantes` con
 `{cuentaId, fechaEmision?, formasPago:[{codigo, total, plazo?, unidadTiempo?}]}`.
 La cuenta se factura una sola vez (`409 CUENTA_YA_FACTURADA`); se recalculan los
 totales, se genera la clave de 49 dígitos, el XML se valida contra el XSD y se firma. En firma
-SIMULADA queda local y pendiente; con certificado el backend llama recepción y autorización. Un
-timeout requiere consultar el mismo comprobante antes de considerar otro envío.
+SIMULADA el «SRI local» autoriza sin red; con certificado el backend llama recepción y
+autorización. Un timeout requiere consultar el mismo comprobante antes de considerar otro envío.
 
-El RIDE requiere autorización real, XML autorizado y `simulado=false`; pendiente o prueba local
-responde `409 RIDE_NO_AUTORIZADO`. Reenviar/consultar un simulado responde
-`409 COMPROBANTE_SIMULADO_NO_REINTENTABLE`.
+El RIDE requiere `estadoTributario=AUTORIZADO` y XML (firmado o autorizado); si no,
+`409 RIDE_NO_AUTORIZADO`. Reenviar/consultar un simulado responde
+`409 COMPROBANTE_SIMULADO_NO_REINTENTABLE` (el SRI no se consultó nunca).
 
 Bandeja: paginada (`{content, page:{…}}`) y filtrable por texto libre (número,
 clave o paciente), rango de fechas, `tipo` (factura/nota de crédito), `estado`
@@ -527,10 +530,14 @@ factura (XSD, firma, envío y autorización) y se lista en la misma bandeja.
 
 **Anulación** (plan §3.10): `POST /facturacion/comprobantes/{id}/anular` con
 auditoría. Repetir la anulación → `409 COMPROBANTE_YA_ANULADO` · ya con un
-ya no se admiten más notas (`409 COMPROBANTE_ANULADO`).
-`{motivo}` (5–500). La integración de anulación con respuesta SRI todavía no existe: el endpoint
-responde `501 SRI_ANULACION_NO_DISPONIBLE` y no cambia el comprobante ni crea trámite. No se debe
-interpretar una solicitud local como anulación tributaria.
+trámite vigente → `409 ANULACION_YA_SOLICITADA` · sin autorizar →
+`409 COMPROBANTE_NO_AUTORIZADO` · ya no se admiten más notas (`409 COMPROBANTE_ANULADO`).
+`{motivo}` (5–500). En modo simulado la anulación la aplica el **SRI local** en la misma
+transacción: el comprobante pasa a `ANULADO`, el trámite queda `APLICADA` con `aplicadoEn`, la
+respuesta SRI es «Anulación simulada (ambiente de pruebas)…» y se audita `ANULAR_COMPROBANTE`.
+La anulación real sigue sin estar integrada: un comprobante no simulado responde
+`501 SRI_ANULACION_NO_DISPONIBLE` y no cambia el comprobante ni crea trámite. No se debe
+interpretar una anulación local como anulación tributaria.
 
 La respuesta de comprobante incluye ahora `comprobanteReferenciaId` (la factura
 que modifica la nota) y `motivo`.
@@ -569,12 +576,19 @@ acepta movimientos manuales; una `ANULADA` no recibe ninguno.
 | GET | `/automatizaciones/notificaciones?limite=` | Cola de notificaciones generadas |
 
 Eventos válidos: `CITA_CREADA`, `CITA_PROXIMA`, `CITA_CONFIRMADA`, `CITA_ATENDIDA`,
-`CITA_CANCELADA`, `NO_ASISTIO`. Variables de plantilla: `{{paciente}}`, `{{odontologo}}`,
-`{{servicio}}`, `{{fecha}}`, `{{hora}}`, `{{clinica}}`, `{{direccion}}`, `{{telefono}}`.
+`CITA_CANCELADA`, `CITA_MODIFICADA`, `NO_ASISTIO`, `COBRO_REALIZADO`. Variables de plantilla
+(citas): `{{paciente}}`, `{{odontologo}}`, `{{servicio}}`, `{{fecha}}`, `{{hora}}`,
+`{{clinica}}`, `{{direccion}}`, `{{telefono}}`. Variables de plantilla (cobro):
+`{{nombre}}`, `{{apellido}}`, `{{nombre_completo}}`, `{{monto}}`, `{{forma_pago}}`,
+`{{concepto}}`, `{{saldo}}`, `{{tipo_movimiento}}`, `{{fecha}}`, `{{codigo_movimiento}}`.
 Las automatizaciones aceptan `destinatario: PACIENTE|ODONTOLOGO`; las reglas de `CITA_PROXIMA`
 usan `minutosAntes` (por ejemplo, 1440 para 24 horas o 120 para 2 horas). Al confirmar una cita
 se regeneran sus recordatorios pendientes. Los avisos para el odontólogo usan el teléfono del
-odontólogo asignado.
+odontólogo asignado. `COBRO_REALIZADO` se publica al registrar un abono o anticipo en la cuenta
+del paciente (`CuentaPacienteService.agregarMovimiento`); sólo admite destinatario `PACIENTE` y
+genera una notificación sin cita asociada (la plantilla sembrada es «Pago recibido», activa por
+tenant desde `V45`). El envío sale por WhatsApp (`MessagingProvider`) y, si sale bien, por correo
+secundario con asunto «Pago recibido» cuando el paciente tiene email.
 
 ## Agente IA
 

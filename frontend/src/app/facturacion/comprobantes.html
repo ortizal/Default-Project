@@ -111,7 +111,7 @@
                 <button mat-menu-item (click)="descargarXml(c)"
                         [attr.aria-label]="'Descargar el XML del comprobante ' + c.numeroComprobante">Descargar XML</button>
                 <button mat-menu-item (click)="descargarRide(c)" [disabled]="!puedeDescargarRide(c)"
-                  [attr.aria-label]="puedeDescargarRide(c) ? 'Descargar el RIDE del comprobante ' + c.numeroComprobante : 'RIDE disponible después de autorización real del SRI'">
+                  [attr.aria-label]="puedeDescargarRide(c) ? 'Descargar el RIDE del comprobante ' + c.numeroComprobante : 'RIDE disponible una vez autorizado el comprobante'">
                   {{ puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'RIDE pendiente de autorización' }}
                 </button>
                 @if (puedeEmitir && !c.simulado) {
@@ -125,10 +125,10 @@
                           [attr.aria-label]="'Emitir una nota de crédito sobre ' + c.numeroComprobante">Nota de crédito</button>
                 }
                 @if (puedeAnular && esAnulable(c)) {
-                  <button mat-menu-item type="button" [disabled]="!anulacionSriDisponible"
+                  <button mat-menu-item type="button" [disabled]="!puedeAnularComprobante(c)"
                           (click)="abrirAnulacion(c)" data-testid="fila-anular"
-                          [title]="anulacionSriDisponible ? '' : 'La anulación requiere una respuesta real del SRI'">
-                    {{ anulacionSriDisponible ? 'Anular' : 'Anulación SRI no disponible' }}
+                          [title]="puedeAnularComprobante(c) ? '' : 'La anulación real del SRI aún no está integrada'">
+                    {{ puedeAnularComprobante(c) ? 'Anular' : 'Anulación SRI no disponible' }}
                   </button>
                 }
                 <button mat-menu-item (click)="auditoria(c)"
@@ -226,7 +226,7 @@
                 data-testid="descargar-xml">Descargar XML</button>
         <button class="btn sm" type="button" (click)="descargarRide(c)"
           [disabled]="!puedeDescargarRide(c)"
-          [title]="puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'Disponible tras autorización real del SRI'"
+          [title]="puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'Disponible una vez autorizado el comprobante'"
           data-testid="descargar-ride">
           {{ puedeDescargarRide(c) ? 'Descargar RIDE autorizado' : 'RIDE pendiente de autorización' }}
         </button>
@@ -241,11 +241,11 @@
                   data-testid="nota-credito">Nota de crédito</button>
         }
         @if (puedeAnular && esAnulable(c)) {
-          <button class="btn sm danger" type="button" [disabled]="!anulacionSriDisponible"
+          <button class="btn sm danger" type="button" [disabled]="!puedeAnularComprobante(c)"
                   (click)="abrirAnulacion(c)"
-                  [title]="anulacionSriDisponible ? '' : 'La anulación requiere una respuesta real del SRI'"
+                  [title]="puedeAnularComprobante(c) ? '' : 'La anulación real del SRI aún no está integrada'"
                   data-testid="anular-comprobante">
-            {{ anulacionSriDisponible ? 'Anular' : 'Anulación SRI no disponible' }}
+            {{ puedeAnularComprobante(c) ? 'Anular' : 'Anulación SRI no disponible' }}
           </button>
         }
         <button class="btn sm outline" type="button" (click)="auditoria(c)"

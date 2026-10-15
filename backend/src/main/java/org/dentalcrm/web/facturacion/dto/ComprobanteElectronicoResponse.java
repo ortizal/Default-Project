@@ -1,8 +1,6 @@
 package org.dentalcrm.web.facturacion.dto;
 
 import org.dentalcrm.domain.comprobante.ComprobanteElectronico;
-import org.dentalcrm.domain.comprobante.EstadoGeneracion;
-import org.dentalcrm.domain.comprobante.EstadoTributario;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -49,7 +47,6 @@ public record ComprobanteElectronicoResponse(
 ) {
 
     public static ComprobanteElectronicoResponse from(ComprobanteElectronico c) {
-                boolean simulado = c.isSimulado();
         return new ComprobanteElectronicoResponse(
                 c.getId(),
                 c.getTipoComprobante() == null ? null : c.getTipoComprobante().codigo(),
@@ -59,17 +56,19 @@ public record ComprobanteElectronicoResponse(
                 c.getModoFirma(),
                 c.isSimulado(),
                 // §3.8: el estado de generación refleja lo que hizo la
-                // aplicación (BORRADOR → GENERADO → FIRMADO → ENVIADO). Un
-                // documento firmado con firma simulada se queda FIRMADO: la
-                // firma existió, sólo que no se contactó al SRI.
+                // aplicación (BORRADOR → GENERADO → FIRMADO → ENVIADO). En
+                // modo simulado el "SRI local" también recibe, así que
+                // llega a ENVIADO igual que en el flujo real.
                 c.getEstadoGeneracion() == null ? null : c.getEstadoGeneracion().name(),
-                simulado ? EstadoTributario.PENDIENTE.name()
-                        : c.getEstadoTributario() == null ? null : c.getEstadoTributario().name(),
+                // El entorno de pruebas autoriza localmente (ver
+                // AuthorizationService): se expone el estado guardado, con el
+                // badge `simulado` como única advertencia de validez.
+                c.getEstadoTributario() == null ? null : c.getEstadoTributario().name(),
                 c.getSriEstado(),
-                simulado ? "Prueba local: no existe recepción ni autorización del SRI." : c.getSriRespuesta(),
+                c.getSriRespuesta(),
                 c.getErrorMensaje(),
-                simulado ? null : c.getAutorizacionNumero(),
-                simulado ? null : c.getAutorizacionFecha(),
+                c.getAutorizacionNumero(),
+                c.getAutorizacionFecha(),
                 c.getTotal(),
                 c.getFechaEmision(),
                 c.getCuentaId(),

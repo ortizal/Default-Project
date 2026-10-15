@@ -7,6 +7,7 @@ import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.service.AuditService;
 import org.dentalcrm.service.CurrentUserService;
 import org.dentalcrm.web.facturacion.dto.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,19 +46,22 @@ public class CuentaPacienteService {
     private final AuditService auditService;
     private final CurrentUserService currentUserService;
     private final CajaService cajaService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CuentaPacienteService(CuentaPacienteRepository cuentaRepository,
                                  CuentaDetalleRepository detalleRepository,
                                  PacienteRepository pacienteRepository,
                                  AuditService auditService,
                                  CurrentUserService currentUserService,
-                                 CajaService cajaService) {
+                                 CajaService cajaService,
+                                 ApplicationEventPublisher eventPublisher) {
         this.cuentaRepository = cuentaRepository;
         this.detalleRepository = detalleRepository;
         this.pacienteRepository = pacienteRepository;
         this.auditService = auditService;
         this.currentUserService = currentUserService;
         this.cajaService = cajaService;
+        this.eventPublisher = eventPublisher;
     }
 
     /** Cargo que genera automáticamente una línea de plan completada (§5). */
@@ -152,6 +156,14 @@ public class CuentaPacienteService {
         cajaService.registrarDesdeCuenta(movimiento);
         recalcular(cuenta);
         cuentaRepository.save(cuenta);
+
+        // Notificación post-cobro (openwa + correo): sólo dinero recibido.
+        if (movimiento.getTipo().esDineroRecibido()) {
+            eventPublisher.publishEvent(new CobroRealizadoEvent(
+                    movimiento.getId(), paciente.getId(), movimiento.getTipo(),
+                    movimiento.getConcepto(), movimiento.getTotal(), movimiento.getFormaPago(),
+                    cuenta.getSaldo(), movimiento.getFecha()));
+        }
 
         auditService.registrar("AGREGAR_MOVIMIENTO", MODULO, ENTIDAD_MOVIMIENTO, movimiento.getId(),
                 null,

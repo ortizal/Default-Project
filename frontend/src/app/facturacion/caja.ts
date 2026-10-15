@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { AuthService } from '../core/auth.service';
 import { Caja, NuevoMovimientoCaja } from '../core/models';
-import { UiPageHeaderComponent } from '../ui';
+import { UiPageHeaderComponent, UiConfirmService } from '../ui';
 import {
   etiquetaCaja,
   etiquetaFormaPago,
@@ -15,10 +15,17 @@ import {
 const TIPOS_CAJA: string[] = ['INGRESO', 'EGRESO'];
 const FORMAS: string[] = ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'OTRO'];
 
+/** Opción de paciente para el selector del formulario de movimiento. */
+interface OpcionPaciente {
+  id: number;
+  nombre: string;
+}
+
 /**
  * Caja del consultorio (Fase F, §3.4): apertura con fondo inicial,
  * ingresos y egresos por forma de pago, cierre con efectivo declarado y
- * conciliación por diferencia, más el historial de sesiones.
+ * conciliación por diferencia, más el historial de sesiones con filtro
+ * de rango y detalle expandible.
  */
 import { MatMenuModule } from '@angular/material/menu';
 
@@ -34,6 +41,7 @@ export class FacturacionCajaComponent implements OnInit {
   private readonly api = inject(Api);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly auth = inject(AuthService);
+  private readonly confirmacion = inject(UiConfirmService);
 
   readonly moneda = moneda;
   readonly etiquetaCaja = etiquetaCaja;
@@ -47,6 +55,7 @@ export class FacturacionCajaComponent implements OnInit {
 
   caja: Caja | null = null;
   historial: Caja[] = [];
+  pacientes: OpcionPaciente[] = [];
   cargando = false;
   error = '';
   mensaje = '';
@@ -55,9 +64,18 @@ export class FacturacionCajaComponent implements OnInit {
   mov: NuevoMovimientoCaja = { tipo: 'INGRESO', concepto: '', formaPago: 'EFECTIVO', monto: 0 };
   cierre = { montoDeclarado: 0, observaciones: '' };
 
+  /** Filtro de rango del historial (yyyy-MM-dd, vacío = default backend). */
+  historialDesde = '';
+  historialHasta = '';
+  /** Sesión del historial con el detalle abierto (null = todas plegadas). */
+  detalleHistorial: number | null = null;
+
   ngOnInit(): void {
     this.puedeEscribir = this.auth.puede('CAJA_WRITE');
     this.puedeCerrar = this.auth.puede('CAJA_CERRAR');
+    if (this.puedeEscribir) {
+      this.cargarPacientes();
+    }
     this.cargar();
   }
 
@@ -88,8 +106,31 @@ export class FacturacionCajaComponent implements OnInit {
     });
   }
 
+  private cargarPacientes(): void {
+    this.api
+      .get<{ content: { id: number; nombres: string | null; apellidos: string | null }[] }>(
+        '/pacientes?estado=ACTIVO&page=0&size=200',
+      )
+      .subscribe({
+        next: (pagina) => {
+          this.pacientes = (pagina.content ?? []).map((p) => ({
+            id: p.id,
+            nombre: `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim() || `Paciente ${p.id}`,
+          }));
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          /* el selector es auxiliar; sin él el movimiento queda manual */
+        },
+      });
+  }
+
   private cargarHistorial(): void {
-    this.api.get<Caja[]>('/facturacion/cajas').subscribe({
+    const params: string[] = [];
+    if (this.historialDesde) params.push(`desde=${encodeURIComponent(this.historialDesde)}`);
+    if (this.historialHasta) params.push(`hasta=${encodeURIComponent(this.historialHasta)}`);
+    const qs = params.length ? `?${params.join('&')}` : '';
+    this.api.get<Caja[]>(`/facturacion/cajas${qs}`).subscribe({
       next: (lista) => {
         this.historial = lista;
         this.cdr.markForCheck();
@@ -98,6 +139,27 @@ export class FacturacionCajaComponent implements OnInit {
         /* el historial es secundario */
       },
     });
+  }
+
+  /** Aplica el filtro de fechas (el backend rechaza rangos invertidos). */
+  buscarHistorial(): void {
+    this.error = '';
+    this.detalleHistorial = null;
+    this.cargarHistorial();
+  }
+
+  /** Pliega/despliega el detalle de una sesión del historial. */
+  alternarDetalle(cajaId: number): void {
+    this.detalleHistorial = this.detalleHistorial === cajaId ? null : cajaId;
+  }
+
+  /** El selector de paciente escribe `undefined` cuando no hay elegido. */
+  setPaciente(valor: string | number | null | undefined): void {
+    if (valor === '' || valor === null || valor === undefined) {
+      delete this.mov.pacienteId;
+    } else {
+      this.mov.pacienteId = Number(valor);
+    }
   }
 
   abrir(): void {
@@ -157,13 +219,33 @@ export class FacturacionCajaComponent implements OnInit {
       });
   }
 
-  anular(movimientoId: number): void {
+  /**
+   * Pide el motivo en el diálogo del sistema UI y sólo entonces anula:
+   * la anulación queda trazada con lo que escribió el usuario.
+   */
+  async anular(movimientoId: number, concepto: string): Promise<void> {
     if (!this.caja) return;
+    const motivo = await this.confirmacion.abrirConCampo({
+      titulo: 'Anular movimiento',
+      mensaje: `Se excluirá "${concepto}" del corte de caja. El movimiento queda anulado con su motivo en la auditoría.`,
+      confirmarTexto: 'Anular',
+      cancelarTexto: 'Cancelar',
+      icono: 'block',
+      peligro: true,
+      campo: {
+        etiqueta: 'Motivo de la anulación',
+        placeholder: 'Ej. Cobro duplicado',
+        requerido: true,
+      },
+    });
+    if (motivo === null) {
+      return;
+    }
     this.error = '';
     this.api
       .post<Caja>(
         `/facturacion/cajas/${this.caja.id}/movimientos/${movimientoId}/anular?motivo=` +
-          encodeURIComponent('Anulado desde el módulo de caja'),
+          encodeURIComponent(motivo),
         {},
       )
       .subscribe({

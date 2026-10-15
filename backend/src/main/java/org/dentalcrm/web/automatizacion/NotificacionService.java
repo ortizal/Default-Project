@@ -5,6 +5,9 @@ import org.dentalcrm.domain.automatizacion.EventoAutomatizacion;
 import org.dentalcrm.domain.automatizacion.Notificacion;
 import org.dentalcrm.domain.automatizacion.NotificacionRepository;
 import org.dentalcrm.domain.cita.*;
+import org.dentalcrm.domain.cuenta.CobroRealizadoEvent;
+import org.dentalcrm.domain.paciente.Paciente;
+import org.dentalcrm.domain.paciente.PacienteRepository;
 import org.dentalcrm.domain.whatsapp.EstadoSesionWhatsapp;
 import org.dentalcrm.domain.whatsapp.WhatsappSesion;
 import org.dentalcrm.domain.whatsapp.WhatsappSesionRepository;
@@ -12,6 +15,7 @@ import org.dentalcrm.exception.BusinessException;
 import org.dentalcrm.integration.messaging.MessagingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,19 +44,30 @@ public class NotificacionService {
     private final MessagingProvider messagingProvider;
     private final WhatsappSesionRepository sesionRepository;
     private final CorreoService correoService;
+    private final PacienteRepository pacienteRepository;
+    /**
+     * Autoinyección para llamar a {@link #procesar} a través del proxy de
+     * Spring: self-invocation no intercepta, y sin transacción el worker
+     * choca con proxies lazy (Automatización, Paciente, Cita).
+     */
+    private final NotificacionService self;
 
     public NotificacionService(NotificacionRepository notificacionRepository,
                                AutomatizacionService automatizacionService,
                                CitaRepository citaRepository,
                                MessagingProvider messagingProvider,
                                WhatsappSesionRepository sesionRepository,
-                               CorreoService correoService) {
+                               CorreoService correoService,
+                               PacienteRepository pacienteRepository,
+                               @Lazy NotificacionService self) {
         this.notificacionRepository = notificacionRepository;
         this.automatizacionService = automatizacionService;
         this.citaRepository = citaRepository;
         this.messagingProvider = messagingProvider;
         this.sesionRepository = sesionRepository;
         this.correoService = correoService;
+        this.pacienteRepository = pacienteRepository;
+        this.self = self;
     }
 
     // ------------------------------------------------------------------
@@ -125,6 +140,28 @@ public class NotificacionService {
     }
 
     // ------------------------------------------------------------------
+    // Notificación post-cobro (openwa + correo)
+    // ------------------------------------------------------------------
+
+    /**
+     * Un abono o anticipo en la cuenta del paciente dispara el aviso
+     * post-cobro: se encola y sale por WhatsApp (openwa) y, si el SMTP está
+     * configurado, también por correo.
+     */
+    @EventListener
+    public void onCobroRealizado(CobroRealizadoEvent e) {
+        Paciente paciente = pacienteRepository.findById(e.pacienteId()).orElse(null);
+        if (paciente == null) {
+            log.warn("Cobro {}: paciente {} no encontrado, no se genera el aviso",
+                    e.movimientoId(), e.pacienteId());
+            return;
+        }
+        int n = automatizacionService.generarCobro(e, paciente);
+        log.info("Cobro {} del paciente {}: {} notificaciones generadas",
+                e.movimientoId(), e.pacienteId(), n);
+    }
+
+    // ------------------------------------------------------------------
     // Procesamiento programado
     // ------------------------------------------------------------------
 
@@ -137,7 +174,9 @@ public class NotificacionService {
         }
         log.info("Procesando {} notificaciones pendientes", aProcesar.size());
         for (Notificacion n : aProcesar) {
-            procesar(n);
+            // A través del proxy: la transacción de procesar() es necesaria
+            // para tocar los proxies lazy (automatización, cita, paciente).
+            self.procesar(n);
         }
     }
 
@@ -155,7 +194,10 @@ public class NotificacionService {
     }
 
     @Transactional
-    protected void procesar(Notificacion n) {
+    public void procesar(Notificacion n) {
+        log.debug("procesar() notificación {} transacción activa={}", n.getId(),
+                org.springframework.transaction.support.TransactionSynchronizationManager
+                        .isActualTransactionActive());
         if (n.getTelefono() == null || n.getTelefono().isBlank()) {
             fallar(n, "El destinatario no tiene teléfono");
             return;
@@ -169,15 +211,17 @@ public class NotificacionService {
         notificacionRepository.save(n);
         try {
             messagingProvider.enviarMensaje(sesion.get().getSesionId(), n.getTelefono(), n.getMensajeGenerado());
-            // El correo es el canal secundario del aviso de cambio de hora: se
-            // envía sólo cuando el WhatsApp salió bien, para no duplicarlo en
-            // los reintentos del canal principal.
+            // El correo es el canal secundario: se envía sólo cuando el
+            // WhatsApp salió bien, para no duplicarlo en los reintentos del
+            // canal principal (aviso de hora reprogramada y post-cobro).
             enviarCorreoSiAplica(n);
             n.setEstado(EstadoNotificacion.ENVIADA);
             n.setEnviadaAt(Instant.now());
             n.setError(null);
             notificacionRepository.save(n);
-            log.info("Notificación {} (cita {}) enviada a {}", n.getId(), n.getCita().getId(), n.getTelefono());
+            log.info("Notificación {} (cita {}) enviada a {}", n.getId(),
+                    n.getCita() == null ? "s/cita" : String.valueOf(n.getCita().getId()),
+                    n.getTelefono());
         } catch (Exception ex) {
             log.warn("Fallo al enviar notificación {}: {}", n.getId(), ex.getMessage());
             n.setEstado(EstadoNotificacion.PENDIENTE);
@@ -186,13 +230,12 @@ public class NotificacionService {
     }
 
     /**
-     * El aviso de que una cita cambió de día u hora también llega por correo al
-     * paciente, si tiene email y el SMTP está configurado. Si no, se omite sin
-     * tumbar el envío por WhatsApp.
+     * El aviso de que una cita cambió de día u hora y el comprobante de un
+     * cobro también llegan por correo al paciente, si tiene email y el SMTP
+     * está configurado. Si no, se omite sin tumbar el envío por WhatsApp.
      */
     private void enviarCorreoSiAplica(Notificacion n) {
-        if (n.getAutomatizacion() == null
-                || n.getAutomatizacion().getEvento() != EventoAutomatizacion.CITA_MODIFICADA) {
+        if (n.getAutomatizacion() == null || !conCorreo(n.getAutomatizacion().getEvento())) {
             return;
         }
         var paciente = n.getPaciente() != null
@@ -208,12 +251,24 @@ public class NotificacionService {
             return;
         }
         try {
-            correoService.enviar(email, "Cita reprogramada", n.getMensajeGenerado());
+            correoService.enviar(email, asuntoCorreo(n), n.getMensajeGenerado());
             log.info("Notificación {}: aviso enviado por correo a {}", n.getId(), email);
         } catch (Exception ex) {
             // El WhatsApp ya llegó: el fallo de correo sólo queda en el log.
             log.warn("Notificación {}: no se pudo enviar el correo a {}: {}", n.getId(), email, ex.getMessage());
         }
+    }
+
+    /** Eventos que, además de WhatsApp, se replican por correo. */
+    private boolean conCorreo(EventoAutomatizacion evento) {
+        return evento == EventoAutomatizacion.CITA_MODIFICADA
+                || evento == EventoAutomatizacion.COBRO_REALIZADO;
+    }
+
+    private String asuntoCorreo(Notificacion n) {
+        return n.getAutomatizacion().getEvento() == EventoAutomatizacion.COBRO_REALIZADO
+                ? "Pago recibido"
+                : "Cita reprogramada";
     }
 
     private void reintentar(Notificacion n, String motivo) {

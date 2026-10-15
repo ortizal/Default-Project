@@ -2,6 +2,8 @@ package org.dentalcrm.web.automatizacion;
 
 import org.dentalcrm.domain.automatizacion.*;
 import org.dentalcrm.domain.cita.Cita;
+import org.dentalcrm.domain.cuenta.CobroRealizadoEvent;
+import org.dentalcrm.domain.cuenta.TipoMovimientoCuenta;
 import org.dentalcrm.domain.odontologo.Odontologo;
 import org.dentalcrm.domain.paciente.Paciente;
 import org.dentalcrm.exception.BusinessException;
@@ -181,5 +183,57 @@ class AutomatizacionServiceTest {
         assertEquals("+593991112233", captor.getValue().getTelefono());
         assertEquals(DestinatarioNotificacion.ODONTOLOGO, captor.getValue().getDestinatario());
         assertSame(p, captor.getValue().getPaciente());
+    }
+
+    // ------------------------------------------------------------------
+    // Notificación post-cobro (COBRO_REALIZADO)
+    // ------------------------------------------------------------------
+
+    @Test
+    void generarCobroCreaElAvisoSinCitaYConLasVariablesDePago() {
+        Paciente p = paciente(7L);
+        Automatizacion regla = automatizacion(5L, EventoAutomatizacion.COBRO_REALIZADO);
+        when(automatizacionRepository.findByActivaTrueAndEvento(EventoAutomatizacion.COBRO_REALIZADO))
+                .thenReturn(List.of(regla));
+        when(variableResolver.variablesCobro(eq(p), any())).thenReturn(new java.util.HashMap<>());
+        when(variableResolver.renderizar(anyString(), anyMap()))
+                .thenReturn("Hola Ana, recibimos $ 40.00");
+        CobroRealizadoEvent e = new CobroRealizadoEvent(55L, 7L, TipoMovimientoCuenta.ABONO,
+                "Limpieza dental", new java.math.BigDecimal("40.00"),
+                org.dentalcrm.domain.cuenta.FormaPago.EFECTIVO,
+                new java.math.BigDecimal("10.00"), LocalDate.of(2026, 10, 14));
+
+        int n = servicio.generarCobro(e, p);
+
+        assertEquals(1, n);
+        var captor = org.mockito.ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository).save(captor.capture());
+        Notificacion guardada = captor.getValue();
+        assertNull(guardada.getCita());
+        assertSame(p, guardada.getPaciente());
+        assertEquals("+593 99 887 7665", guardada.getTelefono());
+        assertEquals(DestinatarioNotificacion.PACIENTE, guardada.getDestinatario());
+        assertEquals("Hola Ana, recibimos $ 40.00", guardada.getMensajeGenerado());
+        assertEquals(EventoAutomatizacion.COBRO_REALIZADO, guardada.getAutomatizacion().getEvento());
+        assertNotNull(guardada.getProgramadaAt());
+        verify(variableResolver).variablesCobro(same(p), eq(e));
+    }
+
+    @Test
+    void generarCobroOmiteLasReglasDeOdontologo() {
+        Paciente p = paciente(7L);
+        Automatizacion reglaOdonto = automatizacion(6L, EventoAutomatizacion.COBRO_REALIZADO);
+        reglaOdonto.setDestinatario(DestinatarioNotificacion.ODONTOLOGO);
+        when(automatizacionRepository.findByActivaTrueAndEvento(EventoAutomatizacion.COBRO_REALIZADO))
+                .thenReturn(List.of(reglaOdonto));
+        when(variableResolver.variablesCobro(any(), any())).thenReturn(new java.util.HashMap<>());
+
+        int n = servicio.generarCobro(new CobroRealizadoEvent(55L, 7L, TipoMovimientoCuenta.ANTICIPO,
+                "Anticipo", new java.math.BigDecimal("25.00"),
+                org.dentalcrm.domain.cuenta.FormaPago.TARJETA,
+                new java.math.BigDecimal("0.00"), LocalDate.of(2026, 10, 14)), p);
+
+        assertEquals(0, n);
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
     }
 }

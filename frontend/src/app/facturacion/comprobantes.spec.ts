@@ -234,16 +234,22 @@ describe('Bandeja de comprobantes (Fase G, §3.7)', () => {
     expect(c.error).toBe('');
   });
 
-  it('no solicita RIDE para comprobantes simulados o pendientes', () => {
+  it('no solicita RIDE sin autorizar, pero un simulado autorizado sí lo descarga', () => {
     const c = componente();
     expectListado().flush(listado());
-    const comprobante = detalle();
-    comprobante.simulado = true;
 
-    c.descargarRide(comprobante);
-
-    expect(c.error).toBe('El RIDE solo está disponible después de una autorización real del SRI.');
+    const pendiente = { ...detalle(), estadoTributario: 'PENDIENTE' as const };
+    c.descargarRide(pendiente);
+    expect(c.error).toBe('El RIDE sólo está disponible una vez autorizado el comprobante.');
     httpTesting.expectNone('/api/v1/facturacion/comprobantes/1/ride');
+
+    // El "SRI local" de pruebas autoriza: un comprobante simulado con
+    // estado AUTORIZADO también tiene RIDE.
+    const simulado = { ...detalle(), simulado: true, estadoTributario: 'AUTORIZADO' as const };
+    c.descargarRide(simulado);
+    const req = httpTesting.expectOne('/api/v1/facturacion/comprobantes/1/ride');
+    req.flush(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    expect(c.error).toBe('');
   });
 
   it('pagina hacia atrás y adelante', () => {
@@ -319,6 +325,18 @@ describe('Nota de crédito y anulación (Fase H.2, §3.9/§3.10)', () => {
     expect(c.esAnulable({ ...c.rows[0], tipo: '04' })).toBe(true);
     expect(c.esAnulable({ ...c.rows[0], estadoTributario: 'ANULADO' })).toBe(false);
     expect(c.esAnulable({ ...c.rows[0], estadoTributario: 'PENDIENTE' })).toBe(false);
+  });
+
+  it('habilita Anular para los comprobantes simulados pero no para los reales', () => {
+    const c = conListado();
+
+    // El "SRI local" de pruebas anula de inmediato (fila de listado simulada).
+    expect(c.puedeAnularComprobante(c.rows[0])).toBe(true);
+    // La anulación real del SRI aún no está integrada.
+    expect(
+      c.puedeAnularComprobante({ ...c.rows[0], simulado: false, estadoTributario: 'AUTORIZADO' }),
+    ).toBe(false);
+    expect(c.puedeAnularComprobante({ ...c.rows[0], estadoTributario: 'PENDIENTE' })).toBe(false);
   });
 
   it('pide FACTURACION_ANULAR para ofrecer las acciones', () => {

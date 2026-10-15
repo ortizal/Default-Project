@@ -9,6 +9,7 @@ import org.dentalcrm.service.CurrentUserService;
 import org.dentalcrm.web.facturacion.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ class CuentaPacienteServiceTest {
     private AuditService auditoria;
 
     private CajaService cajaService;
+    private ApplicationEventPublisher eventPublisher;
     private Paciente paciente;
     /** Estado simulado de la BD: una cuenta por paciente y su libro. */
     private CuentaPaciente cuenta;
@@ -44,6 +46,7 @@ class CuentaPacienteServiceTest {
         pacienteRepo = mock(PacienteRepository.class);
         auditoria = mock(AuditService.class);
         cajaService = mock(CajaService.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
 
         paciente = new Paciente();
         paciente.setId(1L);
@@ -100,7 +103,7 @@ class CuentaPacienteServiceTest {
                         .toList());
 
         servicio = new CuentaPacienteService(cuentaRepo, detalleRepo, pacienteRepo,
-                auditoria, usuarioActual, cajaService);
+                auditoria, usuarioActual, cajaService, eventPublisher);
     }
 
     // ------------------------------ utilidades ------------------------------
@@ -455,5 +458,40 @@ class CuentaPacienteServiceTest {
                         null)).getCode());
         assertEquals("FORMA_PAGO_INVALIDA",
                 fallo(() -> servicio.pagos(null, null, null, "BITCOIN")).getCode());
+    }
+
+    // --------------------- notificación post-cobro ----------------------
+
+    @Test
+    void elAbonoPublicaElEventoQueDisparaElAvisoPostCobro() {
+        servicio.agregarMovimiento(1L, cargo("Limpieza", "80", "0"));
+
+        servicio.agregarMovimiento(1L, abono("50", FormaPago.EFECTIVO));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(CobroRealizadoEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        CobroRealizadoEvent e = captor.getValue();
+        assertEquals(TipoMovimientoCuenta.ABONO, e.tipo());
+        assertEquals(1L, e.pacienteId());
+        assertEquals("Abono", e.concepto());
+        assertEquals(0, new BigDecimal("50.00").compareTo(e.monto()));
+        assertEquals(FormaPago.EFECTIVO, e.formaPago());
+        assertNotNull(e.saldo());
+        assertNotNull(e.fecha());
+    }
+
+    @Test
+    void unCargoOUnaDevolucionNoPublicanElEventoDeCobro() {
+        servicio.agregarMovimiento(1L, cargo("Limpieza", "80", "0"));
+        servicio.agregarMovimiento(1L, abono("80", FormaPago.TARJETA));
+        verify(eventPublisher, times(1)).publishEvent(any(CobroRealizadoEvent.class));
+        reset(eventPublisher);
+
+        servicio.agregarMovimiento(1L, cargo("Control", "120", "0"));
+        servicio.agregarMovimiento(1L, new NuevoMovimientoCuentaRequest(
+                TipoMovimientoCuenta.DEVOLUCION, "Devolución", null, null, null, null, null,
+                new BigDecimal("30"), FormaPago.EFECTIVO, LocalDate.now(), null));
+
+        verify(eventPublisher, never()).publishEvent(any(CobroRealizadoEvent.class));
     }
 }

@@ -3,6 +3,17 @@
 Estado: auditoría del código terminada; primera corrección de seguridad planificada. No se han
 realizado llamadas reales al SRI, SMTP ni WhatsApp durante esta revisión.
 
+> **Resolución (2026-10-15, §2.22 de `ESTADO_DEL_SISTEMA.md`):** la recomendación de esta
+> auditoría de *dejar la simulación en `PENDIENTE` sin autorizar* **no se adoptó**. Por decisión
+> de diseño explícita, el modo simulado es ahora un «SRI local» que **autoriza y anula
+> localmente** (número de autorización = clave de acceso, XML autorizado = XML firmado, trámite
+> `APLICADA`), para que RIDE, notas de crédito y anulación funcionen end-to-end en pruebas. El
+> aviso único de que nada de eso vale tributariamente es el flag `simulado` de la respuesta (y su
+> badge en la UI). Los puntos que esta auditoría marcaba como resueltos por la corrección antigua
+> quedan así: RIDE exige `AUTORIZADO` sí, la anulación real sigue bloqueada (`501`), y
+> reenviar/consultar al SRI siguen prohibidos para simulados. Las demás deudas del documento
+> (P12, idempotencia outbox, entrega SMTP/WhatsApp) siguen abiertas.
+
 ## Diagnóstico
 
 Existe un flujo de cuenta → comprobante → XML/XSD → firma → SOAP de recepción/autorización y RIDE.
@@ -22,10 +33,10 @@ está listo para asegurar un ciclo tributario y entrega extremo a extremo de for
 | XML/XSD | `SriXmlGenerator` v1.1.0; `SriXmlValidator` usa XSD en `resources/sri` | XSD local y parseo protegido. Sin clasificación fiscal por línea; el verificador XSD no verifica criptográficamente la firma |
 | Firma | `ElectronicSignatureService`: XMLDSig enveloped, RSA-SHA1/SHA1 con `KeyInfo` X509; sin P12, deja XML sin firma | No se verifican vigencia/identidad/uso del certificado ni se prueba el perfil de firma contra SRI real. Requiere validación contra la ficha técnica vigente antes de usar en producción |
 | Recepción SRI | `SriHttpGateway` implementa SOAP HTTP a URLs PRUEBAS/PRODUCCION, timeout 20 s | Interfaz y parser disponibles; pruebas automatizadas usan gateway simulado. No se verificó conectividad/aceptación real |
-| Autorización SRI | `AuthorizationService.autorizar` procesa AUT/NAT/PPR | PPR conserva PENDIENTE. Modo simulado actualmente guarda `AUTORIZADO`, autorización y XML autorizado sin respuesta remota: hallazgo crítico |
+| Autorización SRI | `AuthorizationService.autorizar` procesa AUT/NAT/PPR | PPR conserva PENDIENTE. Modo simulado guarda `AUTORIZADO` con autorización y XML autorizado sin respuesta remota: era «hallazgo crítico» de esta auditoría; hoy es **decisión de diseño** (SRI local, §2.22) con `simulado` como única salvedad |
 | Reintentos | Bandeja permite `reenviar` o `consultar`; se bloquea reenvío si figura ENVIADO o definitivo | El timeout tras recepción remota puede quedar ERROR y permitir reenvío sin consulta previa; requiere estado de intento y estrategia de recuperación |
-| PDF/RIDE | `RideGenerator` obtiene XML autorizado si existe; si no, usa XML firmado | `ride()` no exige autorizado real, así que permite un PDF desde comprobante pendiente/simulado; no debe presentarse como RIDE autorizado |
-| Anulación | `ComprobanteElectronicoService.aplicarAnulacion` crea trámite y marca ANULADO/APLICADA localmente | No existe método de anulación en `SriGateway`; el flujo marca como aplicado sin evidencia SRI. Debe bloquearse hasta implementar integración real |
+| PDF/RIDE | `RideGenerator` obtiene XML autorizado si existe; si no, usa XML firmado | `ride()` exige `AUTORIZADO` + XML (§2.22): un pendiente responde `409 RIDE_NO_AUTORIZADO`; los simulados autorizados sí generan PDF |
+| Anulación | `ComprobanteElectronicoService.aplicarAnulacion` | En simulado aplica localmente (`ANULADO` + trámite `APLICADA`, §2.22); los comprobantes reales quedan bloqueados con `501 SRI_ANULACION_NO_DISPONIBLE` hasta implementar `anular` en `SriGateway` |
 | Email | `CorreoService.enviar` usa `SimpleMailMessage` | SMTP configurable y secreto cifrado, pero solo texto; no adjunta PDF/XML y no está conectado a emisión |
 | WhatsApp | `OpenWAProvider` envía documentos a través de sesión `@c.us` | Es el gateway OpenWA/Baileys existente; no es WhatsApp Business Platform. Por la restricción solicitada no se usará para facturas |
 | Entrega/auditoría | Auditoría guarda acciones tributarias; `ComprobanteElectronico` no tiene estado/fecha/destino de entrega | No existe estado de correo/WhatsApp, idempotencia de entrega ni enlace seguro. La factura y cada canal requieren estados separados |
@@ -50,8 +61,9 @@ configuración tributaria en Angular.
 - `ElectronicSignatureServiceTest` usa `backend/src/test/resources/firma-test.p12`, un artefacto de
   pruebas con contraseña de fixture en el test. No es la firma de la clínica; nunca se debe copiar
   una firma real o contraseña real a este directorio.
-- `AuthorizationServiceTest` afirma actualmente que el modo simulado queda `AUTORIZADO`; esta
-  expectativa se corregirá. Los tests SRI son mocks; no equivalen a autorización real.
+- `AuthorizationServiceTest` afirma que el modo simulado queda `AUTORIZADO`: esta expectativa es
+  hoy la **especificación vigente** (SRI local, §2.22), no una deuda. Los tests SRI son mocks; no
+  equivalen a autorización real.
 - `ComprobanteElectronicoServiceTest` valida secuencial, XML/XSD, notas y estados usando firma/SRI
   simulados.
 - No se encontró test de envío de factura SMTP ni proveedor oficial WhatsApp Business.
@@ -59,6 +71,11 @@ configuración tributaria en Angular.
   destinatario de prueba ni credenciales SMTP/WhatsApp Business. Ninguno debe pegarse al chat.
 
 ## Primera corrección segura
+
+> **Superado (2026-10-15):** este plan de dejar la simulación en `GENERADO`/`PENDIENTE` **no se
+> aplicó** por decisión de diseño contraria (§2.22): el SRI local autoriza y anula localmente.
+> Sí se mantienen del plan: no consultar/reenviar al SRI desde un comprobante simulado y exigir
+> `AUTORIZADO` para el RIDE. El resto del documento conserva su análisis original.
 
 Archivos previstos: `AuthorizationService`, `ComprobanteElectronicoService`, `RideGenerator` o su
 fachada, componentes de cuenta/comprobantes y pruebas unitarias/E2E correspondientes. La simulación

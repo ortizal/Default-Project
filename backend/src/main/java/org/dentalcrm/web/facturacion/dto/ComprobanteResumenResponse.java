@@ -1,8 +1,6 @@
 package org.dentalcrm.web.facturacion.dto;
 
 import org.dentalcrm.domain.comprobante.ComprobanteElectronico;
-import org.dentalcrm.domain.comprobante.EstadoGeneracion;
-import org.dentalcrm.domain.comprobante.EstadoTributario;
 import org.dentalcrm.domain.paciente.Paciente;
 
 import java.math.BigDecimal;
@@ -47,10 +45,12 @@ public record ComprobanteResumenResponse(
                 paciente == null ? null : paciente.getCedula(),
                 c.getTotal(),
                 c.getFechaEmision(),
-                c.isSimulado() ? EstadoGeneracion.GENERADO.name()
-                    : c.getEstadoGeneracion() == null ? null : c.getEstadoGeneracion().name(),
-                c.isSimulado() ? EstadoTributario.PENDIENTE.name()
-                    : c.getEstadoTributario() == null ? null : c.getEstadoTributario().name(),
+                c.getEstadoGeneracion() == null ? null : c.getEstadoGeneracion().name(),
+                // En modo simulado el "SRI local" autoriza (ver
+                // AuthorizationService); se expone el estado guardado y el
+                // badge `simulado` de la UI avisa que no tiene validez
+                // tributaria.
+                c.getEstadoTributario() == null ? null : c.getEstadoTributario().name(),
                 c.isSimulado(),
                 c.getErrorMensaje(),
                 c.getCuentaId(),

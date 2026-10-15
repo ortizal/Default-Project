@@ -18,6 +18,9 @@ import { UiConfirmService } from './confirm.service';
         [cancelText]="p.cancelarTexto ?? 'Cancelar'"
         [icon]="p.icono ?? 'warning'"
         [danger]="p.peligro ?? true"
+        [campo]="p.campo ?? null"
+        [campoValor]="confirmacion.texto()"
+        (campoValorChange)="confirmacion.texto.set($event)"
         (confirm)="confirmacion.confirmado()"
         (cancelled)="confirmacion.cancelado()"
       />

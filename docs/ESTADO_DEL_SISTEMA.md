@@ -289,13 +289,13 @@ menú + flecha hacia abajo y `aria-label` con el nombre de la fila).
 | Esquema XSD | ✅ `sri/NotaCredito_V1.1.0.xsd` (SHA-256 `379e9f27…`) junto a `factura_V1.1.0.xsd`; `SriXmlValidator` es **multi-esquema**: elige el XSD por el elemento raíz (`factura`, `notaCredito`) y tolera la declaración `<?xml?>` al detectarlo |
 | Motor | ✅ `NotaCreditoBuilder` lee el **XML de la factura original como fuente de verdad** (comprador, establecimiento, líneas e impuestos) y devuelve total —todas las líneas— o parcial —`{linea, cantidad}` con prorrateo del descuento y recálculo del impuesto—; `SriXmlGenerator.generarNotaCredito` emite `<notaCredito>` 1.1.0 con `codigoInterno`, `codDocModificado`/`numDocModificado`/`fechaEmisionDocSustento`, `valorModificacion` y `<motivo>` (sin `direccionComprador`, sin `pagos` y sin `tarifa` en `totalImpuesto`, como exige el esquema). Clave de acceso con `codDoc` **`04`** y **secuencial propio** de notas de crédito |
 | Reglas | ✅ Sólo sobre una factura `AUTORIZADO` (`409 COMPROBANTE_NO_AUTORIZADO`) y no anulada (`409 COMPROBANTE_ANULADO`); `motivo` obligatorio (5–300); cantidad por línea ≤ la facturada (`CANTIDAD_EXCEDE`), líneas duplicadas/rango (`LINEA_DUPLICADA`/`LINEA_INVALIDA`); **tope global** `409 NOTA_CREDITO_EXCEDE` (lo ya devuelto con notas vigentes + la nueva ≤ total de la factura); la factura original se carga con bloqueo pesimista, así que dos notas simultáneas no escapan del tope |
-| Anulación | ✅ `POST /comprobantes/{id}/anular` con `FACTURACION_ANULAR`: sólo facturas y notas `AUTORIZADO`, una vez (`409 COMPROBANTE_YA_ANULADO`, `409 ANULACION_YA_SOLICITADA`); **nunca se borra la fila** — pasa a `ANULADO` y queda el trámite con motivo, usuario, fechas y resultado. La cuenta vuelve a ser facturable (el comprobante `ANULADO` ya no la bloquea) |
+| Anulación | ✅ `POST /comprobantes/{id}/anular` con `FACTURACION_ANULAR`: sólo facturas y notas `AUTORIZADO`, una vez (`409 COMPROBANTE_YA_ANULADO`, `409 ANULACION_YA_SOLICITADA`); **nunca se borra la fila** — pasa a `ANULADO` y queda el trámite con motivo, usuario, fechas y resultado. La cuenta vuelve a ser facturable (el comprobante `ANULADO` ya no la bloquea). En modo simulado la aplica el SRI local en la misma transacción (§2.22); con certificado real responde `501 SRI_ANULACION_NO_DISPONIBLE` |
 | Endpoints | ✅ `POST /api/v1/facturacion/notas-credito` y `POST /api/v1/facturacion/comprobantes/{id}/anular`, ambos con `PERMISO_FACTURACION_ANULAR` (V27); `ComprobanteElectronicoResponse` y `ComprobanteResumenResponse` añaden `comprobanteReferenciaId` y `motivo` |
 | RIDE | ✅ `RideXmlParser` acepta `infoFactura` **e** `infoNotaCredito` (importe total desde `valorModificacion`, código de línea desde `codigoInterno`, tarifa deducida cuando el XSD no la trae) y `RideGenerator` pinta «NOTA DE CRÉDITO ELECTRÓNICA» |
 | Auditoría | ✅ `GENERAR_NOTA_CREDITO_SRI` sobre la nota nueva y `SOLICITAR_ANULACION_COMPROBANTE` → `ANULAR_COMPROBANTE_SRI` → `APLICAR_ANULACION_COMPROBANTE` sobre la factura, todos con `entidad=COMPROBANTE_ELECTRONICO` (enlazables desde la bandeja) |
 | Tests | ✅ backend **500/500** (+28: `NotaCreditoBuilderTest` 12, casos de nota en `SriXmlGeneratorTest` +5, y 11 pruebas nuevas de `ComprobanteElectronicoServiceTest` para nota/anulación) · lint ✔ · unit **170/170** · build **720.52 kB / 147.39 kB gzip** · e2e **63/63** |
 | Smoke | ✅ `/tmp/opencode/smoke_h1.sh` (9 pasos, **31/31** contra el backend reconstruido con `V43`): nota total (tipo `04`, referencia, clave con `04` en las posiciones 9–10, XML `<notaCredito>` y RIDE `%PDF`), tope `409 NOTA_CREDITO_EXCEDE`, devolución parcial con `valorModificacion`, `400` por motivo corto y `404` por comprobante inexistente, anulación a `ANULADO` + `409` al repetir + `409 COMPROBANTE_ANULADO` al facturar de nuevo, y los 4 eventos de auditoría |
-| Pendiente | ⛔ **H.2** (interfaz: acciones *Nota de crédito* y *Anular* en la bandeja de comprobantes) · notas de débito y retenciones · UI de `anulaciones_comprobante` |
+| Pendiente | ⛔ ~~**H.2** (interfaz: acciones *Nota de crédito* y *Anular* en la bandeja de comprobantes)~~ → **hecho en §2.22** · notas de débito y retenciones · UI de `anulaciones_comprobante` |
 
 ### 2.20 Plan de identificación, agendamiento y calendario (2026-10-12)
 
@@ -312,6 +312,43 @@ menú + flecha hacia abajo y `aria-label` con el nombre de la fila).
 | Odontólogo primero (§3/§4) | ✅ Orden del plan: identificación → odontólogo (doctores primero, "cualquier" al final) → modalidad → servicio → fecha → franja → cupos → "Confirma:" |
 | Tests | ✅ backend **552/552** (+10 nuevos: saludos con typos, estado terminal tras cancelar, conservación del contexto de transferencia con motivo/odontólogo, fallback del calendario con agenda nula, propósito `VIEW_AVAILABILITY`, `slotToken` y su resolución/rechazo en `/reservar`) · lint ✔ · unit **194/194** · e2e ✔ (`agenda-publica.spec.ts`: marca Little Smile, reintentar, enlace anónimo sin saludo; axe verde con `tbl-wrap[tabindex]` restaurado) |
 | Reserva web (P4) | ✅ idempotencia explícita por `idempotencyKey` (`V44__reserva_web_idempotencia`, UNIQUE por tenant+key, se responde `REPETIDA` sin crear otra) + auditoría `RESERVA_WEB` módulo `AGENDA` + dedupe natural por persona/hora · estado `NO_LABORABLE` (excepción `esCerrado()` o sin horario activo ese día) en `GET /public/agenda/dias`, con etiqueta "No atiende" en el calendario Angular |
+
+### 2.21 Caja y notificaciones post-cobro (2026-10-15)
+
+| Área | Estado |
+|---|---|
+| Evento de cobro | ✅ `CobroRealizadoEvent` (record: movimientoId, pacienteId, tipo, concepto, monto, formaPago, saldo, fecha) publicado por `CuentaPacienteService.agregarMovimiento` **sólo** cuando `TipoMovimientoCuenta.esDineroRecibido()` (ABONO/ANTICIPO; nunca DEVOLUCION ni cargos) |
+| Variables | ✅ `VariableResolver.variablesCobro(paciente, evento)` da `{{nombre}}`, `{{apellido}}`, `{{nombre_completo}}`, `{{monto}}`, `{{saldo}}` (siempre 2 decimales), `{{forma_pago}}` en español, `{{concepto}}`, `{{tipo_movimiento}}`, `{{fecha}}` y `{{codigo_movimiento}}`; no depende de una cita |
+| Generación | ✅ `AutomatizacionService.generarCobro()` filtra reglas `COBRO_REALIZADO` con destinatario `PACIENTE` (un `ODONTOLOGO` se omite) y crea notificación con `programadaAt=now`; `NotificacionService.onCobroRealizado` resuelve el paciente (si no existe, warn y no genera nada) y loguea sin NPE cuando la notificación no tiene cita |
+| Envío | ✅ WhatsApp por `MessagingProvider` (openWA) y **correo secundario** cuando el WhatsApp salió bien y el paciente tiene email: asunto «Pago recibido» (el de CITA_MODIFICADA sigue «Cita reprogramada»); `conCorreo` aplica a CITA_MODIFICADA y COBRO_REALIZADO |
+| Semilla | ✅ `V45__notificacion_cobro.sql`: comentario del evento en `plantillas_mensajes`, plantilla «Pago recibido» (`cobro_registrado`) y automatización «Aviso de cobro recibido» **activa** por tenant (destinatario PACIENTE, guards NOT EXISTS); nombres con sufijo `- {tenant}` (restricción UNIQUE global) |
+| Listas de eventos (FE) | ✅ `automatizaciones.ts` y el filtro de `/notificaciones` deshardcodeados: += `CITA_MODIFICADA` y `COBRO_REALIZADO` |
+| Caja — anulación | ✅ `UiConfirmService.abrirConCampo({campo:{etiqueta,placeholder,requerido}})` resuelve el texto escrito (null si cancela/vacío); el diálogo habilita «Confirmar» sólo con el campo obligatorio completo; la anulación de movimientos de caja ahora pide el **motivo real del usuario** (antes un texto fijo) y lo manda como `?motivo=` |
+| Caja — UI | ✅ Responsable con `responsable` (nombre) y fallback `abiertoPor`; observaciones de apertura en el alta; **selector de paciente** (`GET /pacientes?estado=ACTIVO`) en el formulario de movimientos (opcional); badges de origen por `cuentaDetalleId` («Cobro de cuenta» vs «Manual»); el anulado muestra su motivo |
+| Caja — historial | ✅ Filtros **desde/hasta** (type=date) que usan `GET /facturacion/cajas?desde&hasta` (el backend ya rechazaba rangos invertidos con `RANGO_INVALIDO`); **detalle expandible por sesión** (abierta/cerrada por, totales y tabla de movimientos) servido por el `movimientos[]` que `listar` ya devolvía — sin endpoints nuevos |
+| Worker de envío (bug pre-existente, arreglado) | ✅ El scheduler tocaba proxies lazy fuera de sesión (`Could not initialize proxy [Automatizacion#N] - no session` — 8 notificaciones históricas en ERROR): `@Transactional` en `procesar()` no aplicaba por self-invocation. Fix doble: autoinyección `@Lazy NotificacionService self` con `self.procesar(n)` + **`@EntityGraph`** (automatización, plantilla, cita y paciente) en `findByEstadoAndProgramadaAtLessThanEqual`, que es la consulta del lote |
+| Tests | ✅ backend **564/564** (+12: `VariableResolverTest` 3, `NotificacionServiceTest` +4 —evento, paciente inexistente, correo sin cita y sin sesión, `AutomatizacionServiceTest` +2 —`generarCobro` y omisión de ODONTOLOGO—, `CuentaPacienteServiceTest` +2 —evento en abono, nunca en cargo/devolución—) · lint ✔ · unit **198/198** (+4: cancelar anulación, filtro de historial, detalle expandible, selector de paciente) · build ✔ · e2e **67/68** (`facturacion.spec.ts` 6/6 con el rediseño de caja; el único fallo — `comprobantes.spec.ts:59`, por datos `simulado=true` mapeados a `PENDIENTE`— se resolvió en **§2.22**, hoy **68/68**) |
+| Smoke end-to-end | ✅ Backend reconstruido en Docker con `V45` (Flyway 44→45); plantilla «Pago recibido» y automatización «Aviso de cobro recibido» sembradas por tenant; abono real en la cuenta del paciente → movimiento de caja `INGRESO` con `cuenta_detalle_id` → notificación `COBRO_REALIZADO` → worker la procesó y **WhatsApp enviado** vía openWA (estado `ENVIADA`); el correo se omite sin tumbar nada cuando SMTP no está configurado |
+| Pendiente | ⛔ Plantilla de correo con HTML; notificaciones históricas en ERROR por el bug viejo no se re-procesan (sólo PENDIENTE); reintento de correo si el WhatsApp falla |
+
+### 2.22 Simulación SRI con autorización local y Fase H.2 completada (2026-10-15)
+
+> **Decisión de diseño:** el modo `SIMULADA` deja de ser una «prueba a medias»: es un
+> **SRI local** (plan §3.8) que recibe y responde en la misma máquina, para que RIDE,
+> notas de crédito y anulación funcionen end-to-end sin salir de la máquina de pruebas.
+> El flag `simulado` de la respuesta es el único aviso de que nada de eso vale
+> tributariamente.
+
+| Área | Estado |
+|---|---|
+| Autorización simulada | ✅ `AuthorizationService.autorizar()` en modo simulado: `estadoGeneracion=ENVIADO`, `estadoTributario=AUTORIZADO`, `autorizacionNumero` = clave de acceso, `autorizacionFecha` = ahora, `xmlAutorizado` = XML firmado, `sriRespuesta` «Autorización simulada (ambiente de pruebas): el comprobante se autorizó localmente; el SRI no fue consultado», `errorMensaje=null`; sin llamar al gateway y auditando `AUTORIZAR_COMPROBANTE_SIMULADO` |
+| DTOs | ✅ `ComprobanteElectronicoResponse.from()` y `ComprobanteResumenResponse.de()` **ya no degradan** lo simulado a `PENDIENTE`/`GENERADO`: exponen los estados y la autorización guardados tal cual; la distinción queda sólo en `simulado` (badge en la UI) |
+| RIDE | ✅ `ride()` exige `AUTORIZADO` + XML y ya no `simulado=false`: un comprobante simulado autorizado sí genera PDF (`409 RIDE_NO_AUTORIZADO` sigue para pendientes); en FE, `puedeDescargarRide(c)` = `estadoTributario === 'AUTORIZADO'` y los textos pasan a «disponible una vez autorizado el comprobante» |
+| Anulación local | ✅ `aplicarAnulacion`: si el comprobante es simulado lo **anula en la misma transacción** — pasa a `ANULADO`, `sriEstado=SIMULADA`, `sriRespuesta` «Anulación simulada (ambiente de pruebas)…», trámite en `anulaciones_comprobante` `APLICADA` con `aplicadoEn`/resultado `AUTORIZADA` y auditoría `ANULAR_COMPROBANTE`; un comprobante no simulado sigue respondiendo `501 SRI_ANULACION_NO_DISPONIBLE` (la anulación real con respuesta del SRI no está integrada) |
+| UI H.2 | ✅ `puedeAnularComprobante(c)` = permiso + `esAnulable(c)` + (`c.simulado` o `anulacionSriDisponible`): el menú de fila y el detalle habilitan «Anular» en simulado y muestran «Anulación SRI no disponible» en los comprobantes reales |
+| Reenviar/consultar | ✅ siguen ocultos/bloqueados para simulado (`409 COMPROBANTE_SIMULADO_NO_REINTENTABLE`): el SRI real nunca se llamó, no hay a qué reenviar |
+| Tests | ✅ backend **565/565** (+1: `anulaLocalmenteEnModoSimuladoSinConsultarAlSri`; reescritos `autorizarSimuladoAutorizaLocalmenteSinLlamarAlSri`, `exponeLaAutorizacionSimuladaTalCualSeGuardo` y `noGeneraRideSinAutorizacion`; la reemisión ahora espera `AUTORIZADO`) · lint ✔ · unit **199/199** (+1: «habilita Anular para los comprobantes simulados pero no para los reales»; el test de RIDE ahora afirma que simulado+autorizado sí descarga y pendiente no) · build ✔ · e2e **68/68** — `comprobantes.spec.ts:59` (H.2: diálogo de nota de crédito con validación y diálogo de anulación) pasa de 67/68 a verde |
+| Despliegue | ✅ Backend reconstruido en Docker (`docker compose up -d --build backend`) y verificado (login 200); smoke de lectura: la bandeja expone `ENVIADO`/`AUTORIZADO` con `simulado=true` en los comprobantes existentes |
 
 ---
 
@@ -402,7 +439,7 @@ Default Project/
 - **Periodontograma (Fase E):** exámenes versionados (una versión vigente; `Nuevo examen` copia la anterior por defecto) con mediciones por **diente + sitio** (`VESTIBULAR/MESIAL/DISTAL/LINGUAL`: sondaje, margen, inserción y signos `sangrado/placa/supuración`) y datos por pieza (movilidad 0–3, furcación 0–3, notas); upsert por clave única, FDI y rangos validados en servidor, comparación de dos versiones (nuevos/modificados/eliminados por campo) y PDF con matriz diente × sitio.
 - **Recetas (Fase E):** recetas por paciente con estado `VIGENTE/ANULADA`; cada línea guarda medicamento, concentración, presentación, dosis, vía, frecuencia, duración e instrucciones; editar reemplaza la pauta completa, anular exige motivo y queda auditado (`CREAR/MODIFICAR/ANULAR_RECETA`); el PDF lleva cabecera del consultorio, tabla de medicamentos, instrucciones por línea y sello de anulación
 - **Consentimientos (Fase E):** plantillas por tenant con versión incrementada al editar; al emitir el consentimiento **copia el texto y la versión** de la plantilla (los cambios posteriores no lo afectan); sólo se edita o borra en `BORRADOR` (`409 CONSENTIMIENTO_FIRMADO`), la firma exige `firmante`, guarda la imagen del lienzo en data URL, calcula `firmaHash` (SHA-256) y lo congela (`409 CONSENTIMIENTO_YA_FIRMADO`); el PDF lleva el texto, el bloque de firma y la huella, o la marca `BORRADOR SIN FIRMAR`
-- **Comprobantes electrónicos (Fase G):** la emisión arranca desde la cuenta del paciente (un comprobante por cuenta), calcula totales con IVA 13% incluido en los precios, arma el XML con la clave de 49 dígitos (`1` = pruebas), lo firma en **modo simulado** y lo envía al SRI de pruebas; el estado pasa `GENERADO → ENVIADO → AUTORIZADO/RECHAZADO` con reintentos manuales (`/reenviar`, `/consultar`) y la autorización se persiste con su RIDE y XML descargables. **Fase H.1**: sobre una factura `AUTORIZADO` se emite una **nota de crédito** (devolución total o parcial por líneas, con motivo obligatorio, secuencial propio del tipo `04`, tope de «no devolver más de lo facturado» y RIDE) y un comprobante se **anula** sin borrarse jamás (`ANULADO` + trámite en `anulaciones_comprobante`); al anular, la cuenta vuelve a ser facturable. **Pendiente**: firma real (`SRI_FIRMA_REAL_REQUERIDA`), notas de débito y retenciones (resto de la Fase H).
+- **Comprobantes electrónicos (Fase G):** la emisión arranca desde la cuenta del paciente (un comprobante por cuenta), calcula totales con IVA 13% incluido en los precios, arma el XML con la clave de 49 dígitos (`1` = pruebas), lo firma en **modo simulado** y lo envía al SRI de pruebas; el estado pasa `GENERADO → ENVIADO → AUTORIZADO/RECHAZADO` con reintentos manuales (`/reenviar`, `/consultar`) y la autorización se persiste con su RIDE y XML descargables. **Fase H.1**: sobre una factura `AUTORIZADO` se emite una **nota de crédito** (devolución total o parcial por líneas, con motivo obligatorio, secuencial propio del tipo `04`, tope de «no devolver más de lo facturado» y RIDE) y un comprobante se **anula** sin borrarse jamás (`ANULADO` + trámite en `anulaciones_comprobante`); al anular, la cuenta vuelve a ser facturable. **Fase H.2 (§2.22)**: la simulación es un **SRI local** que autoriza y anula localmente, y la interfaz de `/facturacion/comprobantes` ofrece *Nota de crédito* y *Anular* con sus diálogos. **Pendiente**: firma real (`SRI_FIRMA_REAL_REQUERIDA`), anulación real con respuesta del SRI, notas de débito y retenciones (resto de la Fase H).
 - **Multi-tenant:** `tenant_id` en 16+ tablas, aislamiento automático vía `@TenantId` + `TenantContext` (fijado por el claim JWT); roles/permisos globales.
 - **Reportes:** KPIs del día/mes + estadísticas por rango (citas por día/odontólogo, servicios, estados, confirmaciones por fuente, cancelaciones/inasistencia).
 - **Finanzas (Fase F):** el libro mayor `cuenta_detalles` alimenta el saldo del paciente y, a la vez, la caja (cada abono/anticipo/devolución genera su movimiento en la sesión abierta); una sola sesión de caja `ABIERTA` por tenant, conciliación por efectivo esperado vs. declarado y estados de cuenta derivados del saldo; el dashboard y los cuatro reportes financieros se calculan en servidor sobre el mismo rango (`desde`/`hasta` con `400 RANGO_INVALIDO`).
@@ -543,14 +580,14 @@ Grupos principales: `DATABASE_*` · `JWT_SECRET`/`JWT_EXPIRATION_MS` · `CORS_AL
 
 ```bash
 # backend
-cd backend && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn -o test      # 386/386 (40 clases)
+cd backend && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn -o test      # 565/565 (55 clases)
 
 # frontend
 cd frontend
 npx ng lint                          # ✔
-npx ng test --no-watch               # 155/155 (18 specs)
-npx ng build --configuration production   # 717.63 kB / 146.90 kB gzip, 0 warnings (usar --output-path /tmp/opencode/dist-ng: frontend/dist da EACCES)
-npx playwright test                  # 61/61 (~11 min, 20 specs, sin flaky)
+npx ng test --watch=false            # 199/199 (23 specs)
+npx ng build --output-path /tmp/opencode/dist-ng   # 725.95 kB / 148.99 kB gzip (frontend/dist da EACCES; 2 warnings preexistentes NG8109/NG8117 en ui-table.ts)
+npx playwright test --reporter=line  # 68/68 (~13 min, 22 specs; el reporter por defecto se cuelga)
 
 # infra
 docker compose config --quiet && docker compose ps
@@ -606,8 +643,8 @@ curl -s http://127.0.0.1:18082/actuator/health
 12. **Paginación sólo resuelta en facturación**: la API pagina con `{content, page:{size,number,totalElements,totalPages}}` y las páginas de pacientes/usuarios/citas siguen leyendo `r.totalPages` (inexistente ⇒ muestran sólo la primera página). Helpers `paginasDe(r)`/`totalDe(r)` en `core/models.ts`; falta migrar el resto de listados.
 13. **`contribuyenteEspecial` / `agenteRetencion` no se emiten en el XML** (quedan en la configuración del consultorio); documentado como pendiente hasta confirmar el XSD vigente del SRI.
 14. **Propiedades de `root` en `frontend/dist`, `frontend/node_modules` y `.git`** por builds con `sudo`: `sudo chown -R "$USER:$USER" frontend/node_modules frontend/dist .git` (el `sudo` no está disponible en esta sesión).
-15. **La anulación se aplica de inmediato en pruebas** (`anulaciones_comprobante` pasa a `APLICADA` en la misma transacción, con el mensaje «Anulación aplicada en ambiente de pruebas»); con el SRI real haría falta un trámite con respuesta diferida (estado `PENDIENTE → APLICADA/RECHAZADA`).
-16. **La interfaz todavía no ofrece nota de crédito ni anulación** (Fase H.2): las acciones existen en la API (`FACTURACION_ANULAR`) pero sólo son invocables desde `curl`/Swagger.
+15. ~~**La anulación se aplica de inmediato en pruebas**~~ → **resuelto para modo simulado (§2.22)**: el SRI local anula en la misma transacción (`APLICADA` + `ANULADO`, auditoría `ANULAR_COMPROBANTE`); con el SRI real aún haría falta un trámite con respuesta diferida (`PENDIENTE → APLICADA/RECHAZADA`), igual que la integración de anulación que responde `501` para comprobantes no simulados.
+16. ~~**La interfaz todavía no ofrece nota de crédito ni anulación** (Fase H.2)~~ → **hecho (§2.22)**: *Nota de crédito* y *Anular* están en el menú de fila y en el detalle de `/facturacion/comprobantes`, con sus diálogos y validaciones (e2e `comprobantes.spec.ts:59`).
 
 ---
 
@@ -616,7 +653,7 @@ curl -s http://127.0.0.1:18082/actuator/health
 ### Inmediato (esta semana) — cierre de la Fase G y salida a producción
 
 - [x] **G.6**: smoke productivo del flujo `Cuenta → Emitir factura → SRI pruebas → RIDE` y checklist de §9 → **hecho 2026-10-09** (§2.18).
-- [ ] Fase H: notas de crédito/débito, retenciones y anulación de comprobantes → **H.1 hecho** (§2.19): notas de crédito y anulación; faltan **notas de débito**, **retenciones** y **H.2** (interfaz).
+- [ ] Fase H: notas de crédito/débito, retenciones y anulación de comprobantes → **H.1 hecho** (§2.19) y **H.2 hecho** (§2.22: interfaz *Nota de crédito*/*Anular* + simulación que autoriza y anula localmente); faltan **notas de débito** y **retenciones**.
 - [ ] Migrar el resto de listados a `paginasDe`/`totalDe` (§12.2, #12).
 - [ ] Ejecutar `./scripts/deploy.sh` en el servidor y completar el checklist de §9.
 - [ ] Aislar el 403 del login con la secuencia de `curl` (si persiste: revisar WAF de Cloudflare / FortiGate).

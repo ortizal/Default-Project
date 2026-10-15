@@ -201,15 +201,13 @@ public class ComprobanteElectronicoService {
         return ComprobanteElectronicoResponse.from(comprobante);
     }
 
-    /** RIDE en PDF: solo se genera desde el XML autorizado devuelto por el SRI. */
+    /** RIDE en PDF: disponible con el comprobante autorizado (el modo simulado autoriza localmente). */
     public byte[] ride(Long id) {
         ComprobanteElectronico comprobante = buscar(id);
-        if (comprobante.isSimulado()
-                || comprobante.getEstadoTributario() != EstadoTributario.AUTORIZADO
-                || comprobante.getXmlAutorizado() == null
-                || comprobante.getXmlAutorizado().isBlank()) {
+        if (comprobante.getEstadoTributario() != EstadoTributario.AUTORIZADO
+                || xmlDe(comprobante) == null || xmlDe(comprobante).isBlank()) {
             throw new BusinessException(HttpStatus.CONFLICT, "RIDE_NO_AUTORIZADO",
-                    "El RIDE solo está disponible después de una autorización real del SRI");
+                    "El RIDE sólo está disponible una vez autorizado el comprobante");
         }
         return rideGenerator.generar(comprobante);
     }
@@ -641,8 +639,28 @@ public class ComprobanteElectronicoService {
                         "El comprobante indicado no existe"));
         exigirAnulable(comprobante);
         exigirSinAnulacionVigente(id);
-        throw new BusinessException(HttpStatus.NOT_IMPLEMENTED, "SRI_ANULACION_NO_DISPONIBLE",
-            "La anulación no está integrada con el SRI; no se modificó el comprobante ni se creó un trámite");
+        if (!comprobante.isSimulado()) {
+            throw new BusinessException(HttpStatus.NOT_IMPLEMENTED, "SRI_ANULACION_NO_DISPONIBLE",
+                "La anulación no está integrada con el SRI; no se modificó el comprobante ni se creó un trámite");
+        }
+        // §3.8: el "SRI local" de pruebas anula de inmediato, como autoriza.
+        comprobante.setEstadoTributario(EstadoTributario.ANULADO);
+        comprobante.setSriEstado("SIMULADA");
+        comprobante.setSriRespuesta("Anulación simulada (ambiente de pruebas): el comprobante se anuló "
+                + "localmente; el SRI no fue consultado.");
+        ComprobanteElectronico guardado = comprobanteRepository.save(comprobante);
+        AnulacionComprobante anulacion = new AnulacionComprobante();
+        anulacion.setComprobanteId(id);
+        anulacion.setMotivo(motivo);
+        anulacion.setEstado(AnulacionComprobante.ESTADO_APLICADA);
+        anulacion.setResultado("AUTORIZADA");
+        anulacion.setMensaje("Anulación simulada: aplicada localmente sin consulta al SRI.");
+        anulacion.setSolicitadoPor(currentUserService.idUsuarioActual().orElse(null));
+        anulacion.setAplicadoEn(Instant.now());
+        anulacionRepository.save(anulacion);
+        auditService.registrar("ANULAR_COMPROBANTE", MODULO, ENTIDAD, guardado.getId(),
+                null, guardado.datosAuditoria());
+        return guardado;
     }
 
     /** Sólo facturas y notas de crédito autorizadas y todavía vigentes. */
@@ -656,9 +674,9 @@ public class ComprobanteElectronicoService {
             throw new BusinessException(HttpStatus.CONFLICT, "COMPROBANTE_YA_ANULADO",
                     "El comprobante ya está anulado: revise el trámite en la bandeja");
         }
-        if (comprobante.isSimulado() || comprobante.getEstadoTributario() != EstadoTributario.AUTORIZADO) {
+        if (comprobante.getEstadoTributario() != EstadoTributario.AUTORIZADO) {
             throw new BusinessException(HttpStatus.CONFLICT, "COMPROBANTE_NO_AUTORIZADO",
-                    "Sólo se anulan comprobantes autorizados por el SRI");
+                    "Sólo se anulan comprobantes autorizados");
         }
     }
 
